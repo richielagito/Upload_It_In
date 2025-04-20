@@ -4,6 +4,7 @@ import fitz  # PyMuPDF
 import re
 import pandas as pd
 import datetime
+import psycopg2
 
 from werkzeug.utils import secure_filename
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
@@ -42,6 +43,26 @@ def get_grade(sim):
         return 'D'
     else:
         return 'E'
+
+def simpan_ke_postgres(results):
+    try:
+        conn = psycopg2.connect(
+            host="localhost",
+            port=8000,  # <- tambahkan port di sini
+            database="penilaian_essai",
+            user="postgres",
+            password="m171807074"  # <- ganti dengan passwordmu
+        )
+        cursor = conn.cursor()
+        for r in results:
+            cursor.execute('''
+                INSERT INTO hasil_penilaian (nama_murid, similarity, nilai)
+                VALUES (%s, %s, %s)
+            ''', (r["name"], r["similarity"], r["grade"]))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Gagal menyimpan ke database:", e)
 
 @app.route('/')
 def index():
@@ -83,15 +104,17 @@ def grade():
             "grade": get_grade(sim)
         })
 
-    # === Simpan ke CSV ===
+    # Simpan ke CSV
     df = pd.DataFrame(results)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    csv_filename = f"hasil_penilaian_{timestamp}.csv"
+    os.makedirs("data", exist_ok=True)
+    csv_filename = os.path.join("data", f"hasil_penilaian_{timestamp}.csv")
     df.to_csv(csv_filename, index=False)
 
-    return jsonify(results)
+    # Simpan ke database PostgreSQL
+    simpan_ke_postgres(results)
 
-    
+    return jsonify(results)
 
 if __name__ == '__main__':
     app.run(debug=True)
