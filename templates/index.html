@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Essay Grader</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h2>Essay Grader</h2>
+  <form id="upload-form" enctype="multipart/form-data">
+    <label>Upload Guru PDF:</label>
+    <input type="file" name="guru" required><br>
+    <label>Upload Murid PDFs (multiple):</label>
+    <input type="file" name="murid" multiple required><br><br>
+    <button type="submit">Proses Penilaian</button>
+  </form>
+
+  <div id="results"></div>
+
+  <script>
+    document.getElementById("upload-form").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const response = await fetch("/grade", {
+        method: "POST",
+        body: formData
+      });
+      const data = await response.json();
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "<h3>Hasil Penilaian:</h3>";
+      data.forEach(d => {
+        resultsDiv.innerHTML += `<p><b>${d.name}</b> => Similarity: ${d.similarity}, Nilai: <strong>${d.grade}</strong></p>`;
+      });
+    });
+  </script>
+</body>
+</html>
