@@ -1,68 +1,18 @@
 from flask import Flask, request, render_template, jsonify
-import os
-import fitz  # PyMuPDF
-import re
-import pandas as pd
-import datetime
-import psycopg2
-
 from werkzeug.utils import secure_filename
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
-from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics.pairwise import cosine_similarity
+import os
+import datetime
+import pandas as pd
+
+from utils.pdf_reader import extract_text_from_pdf
+from utils.preprocessing import preprocess
+from utils.lsa_manual import perform_lsa_and_similarity
+from utils.db import simpan_ke_postgres
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# Sastrawi tools
-stemmer = StemmerFactory().create_stemmer()
-stopwords = set(StopWordRemoverFactory().get_stop_words())
-
-def extract_text_from_pdf(path):
-    doc = fitz.open(path)
-    return " ".join(page.get_text() for page in doc)
-
-def preprocess(text):
-    text = text.lower()
-    text = re.sub(r'[^\w\s]', '', text)
-    words = text.split()
-    words = [word for word in words if word not in stopwords]
-    return " ".join([stemmer.stem(word) for word in words])
-
-def get_grade(sim):
-    if sim >= 1:
-        return 'A'
-    elif sim >= 0.8:
-        return 'B'
-    elif sim >= 0.7:
-        return 'C'
-    elif sim >= 0.6:
-        return 'D'
-    else:
-        return 'E'
-
-def simpan_ke_postgres(results):
-    try:
-        conn = psycopg2.connect(
-            host="localhost",
-            port=8000,  # <- tambahkan port di sini
-            database="penilaian_essai",
-            user="postgres",
-            password="m171807074"  # <- ganti dengan passwordmu
-        )
-        cursor = conn.cursor()
-        for r in results:
-            cursor.execute('''
-                INSERT INTO hasil_penilaian (nama_murid, similarity, nilai)
-                VALUES (%s, %s, %s)
-            ''', (r["name"], r["similarity"], r["grade"]))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print("Gagal menyimpan ke database:", e)
+os.makedirs("data", exist_ok=True)
 
 @app.route('/')
 def index():
@@ -72,46 +22,49 @@ def index():
 def grade():
     files = request.files
     guru_file = files.get('guru')
-    murid_files = request.files.getlist('murid')
+    murid_files = files.getlist('murid')
 
+    if not guru_file or len(murid_files) == 0:
+        return jsonify({"error": "Pastikan file guru dan file murid sudah diupload!"}), 400
+
+    # Simpan file guru dan ekstrak teksnya
     guru_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(guru_file.filename))
     guru_file.save(guru_path)
     guru_text = extract_text_from_pdf(guru_path)
 
+    # Simpan file murid dan ekstrak teksnya
     murid_texts = []
     murid_names = []
     for f in murid_files:
-        murid_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename))
-        f.save(murid_path)
-        murid_texts.append(extract_text_from_pdf(murid_path))
+        path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename))
+        f.save(path)
+        murid_texts.append(extract_text_from_pdf(path))
         murid_names.append(f.filename.replace(".pdf", ""))
 
+    # Gabungkan teks guru dan murid lalu lakukan preprocessing
     all_texts = [guru_text] + murid_texts
-    all_preprocessed = [preprocess(text) for text in all_texts]
+    preprocessed = [preprocess(text) for text in all_texts]
 
-    vectorizer = TfidfVectorizer()
-    X = vectorizer.fit_transform(all_preprocessed)
-    n_components = min(2, X.shape[1] - 1)
-    svd = TruncatedSVD(n_components=n_components, random_state=42)
-    X_lsa = svd.fit_transform(X)
+    # Lakukan LSA manual dan hitung cosine similarity
+    sim_scores = perform_lsa_and_similarity(preprocessed)  # hasilnya list similarity antara guru dan tiap murid
 
+    # Buat hasil nilai berdasarkan score similarity
     results = []
-    for i, vec in enumerate(X_lsa[1:]):
-        sim = cosine_similarity([X_lsa[0]], [vec])[0][0]
+    for i, score in enumerate(sim_scores):
+        # Mapping threshold bisa disesuaikan sesuai kebutuhan
+        nilai = 'A' if score >= 0.85 else 'B' if score >= 0.75 else 'C' if score >= 0.65 else 'D' if score >= 0.5 else 'E'
         results.append({
             "name": murid_names[i],
-            "similarity": round(sim, 4),
-            "grade": get_grade(sim)
+            "similarity": round(score, 4),
+            "grade": nilai
         })
 
-    # Simpan ke CSV
+    # Simpan hasil ke file CSV
     df = pd.DataFrame(results)
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    os.makedirs("data", exist_ok=True)
-    csv_filename = os.path.join("data", f"hasil_penilaian_{timestamp}.csv")
+    csv_filename = f"data/hasil_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     df.to_csv(csv_filename, index=False)
 
-    # Simpan ke database PostgreSQL
+    # Simpan hasil ke PostgreSQL
     simpan_ke_postgres(results)
 
     return jsonify(results)

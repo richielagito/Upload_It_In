@@ -1,5 +1,6 @@
-Flask
-PyMuPDF
-Sastrawi
-scikit-learn
+flask
+pymupdf
 pandas
+numpy
+Sastrawi
+psycopg2-binary
