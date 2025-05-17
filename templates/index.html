@@ -11,6 +11,13 @@
         <div class="navbar">
             <div class="logo">Upload<span class="text-it-in">ItIn</span></div>
             <div class="user-profile">
+                <button class="upload-btn-navbar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                        <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
+                    </svg>
+                    Upload
+                </button>
                 <div class="dropdown-wrapper">
                     <button class="dropdown-menu" id="dropdownToggle">
                         <img src="./icon/chevron-down-svgrepo-com.svg" alt="chevron" />
@@ -135,12 +142,12 @@
                     <div class="modal-body">
                         <form class="upload-form" action="/grade" method="post" enctype="multipart/form-data">
                             <div class="form-group">
-                                <label class="form-label" for="guruFile">File Guru (PDF):</label>
-                                <input class="form-input" type="file" id="guruFile" name="guru" accept=".pdf" required />
+                                <label class="form-label" for="guruFile">File Jawaban (DOCX, PDF, TXT):</label>
+                                <input class="form-input" type="file" id="guruFile" name="guru" accept=".docx, .pdf, .txt" required />
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="muridFile">File Murid (PDF, multiple):</label>
-                                <input class="form-input" type="file" id="muridFile" name="murid" accept=".pdf" multiple required />
+                                <label class="form-label" for="muridFile">File Murid (DOCX, PDF, TXT):</label>
+                                <input class="form-input" type="file" id="muridFile" name="murid" accept=".docx, .pdf, .txt" multiple required />
                             </div>
                             <button class="form-submit" type="submit">Upload</button>
                         </form>

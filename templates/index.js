@@ -1,4 +1,5 @@
 const uploadBtn = document.querySelector(".upload-btn");
+const uploadBtnNav = document.querySelector(".upload-btn-navbar");
 const uploadModal = document.getElementById("uploadModal");
 const closeModal = document.getElementById("closeModal");
 const mobileMenuToggle = document.querySelector(".mobile-menu-toggle");
@@ -7,6 +8,10 @@ const mobileNavClose = document.querySelector(".mobile-nav-close");
 
 // Open Modal
 uploadBtn.addEventListener("click", function () {
+    uploadModal.classList.add("active");
+});
+
+uploadBtnNav.addEventListener("click", function () {
     uploadModal.classList.add("active");
 });
 
@@ -21,23 +26,6 @@ uploadModal.addEventListener("click", function (event) {
         uploadModal.classList.remove("active");
     }
 });
-
-// Mobile Menu Toggle if exists
-if (mobileMenuToggle && mobileNav && mobileNavClose) {
-    mobileMenuToggle.addEventListener("click", function () {
-        mobileNav.classList.add("active");
-    });
-
-    mobileNavClose.addEventListener("click", function () {
-        mobileNav.classList.remove("active");
-    });
-
-    mobileNav.addEventListener("click", function (event) {
-        if (event.target === mobileNav) {
-            mobileNav.classList.remove("active");
-        }
-    });
-}
 
 // Dropdown Menu
 const toggle = document.getElementById("dropdownToggle");
