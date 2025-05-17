@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login and Registration</title>
+        <link rel="stylesheet" href="login-register.css" />
+    </head>
+    <body>
+        <div class="container">
+            <!-- Register Screen -->
+            <div id="register-screen" class="screen active">
+                <div class="card">
+                    <div class="header">
+                        <h1>Create an Account</h1>
+                        <p>Create a account to continue</p>
+                    </div>
+                    <form id="register-form">
+                        <div class="form-group">
+                            <label for="reg-email">Email address</label>
+                            <input type="email" id="reg-email" placeholder="example: john@example.com" />
+                        </div>
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" placeholder="Username" />
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-password">Password</label>
+                            <input type="password" id="reg-password" placeholder="••••••" />
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="terms" />
+                            <label for="terms">I accept terms and conditions</label>
+                        </div>
+                        <button type="submit" class="btn">Sign Up</button>
+                    </form>
+                    <div class="footer">Already have an account? <a href="#" id="go-to-login">Login</a></div>
+                </div>
+            </div>
+
+            <!-- Login Screen -->
+            <div id="login-screen" class="screen">
+                <div class="card">
+                    <div class="header">
+                        <h1>Login to Account</h1>
+                        <p>Please enter your email and password to continue</p>
+                    </div>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-email">Email address</label>
+                            <input type="email" id="login-email" placeholder="example: john@example.com" />
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" placeholder="••••••" />
+                            <div class="forgot">
+                                <a href="#" id="forgot-password-link2">Forgot Password?</a>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">Sign In</button>
+                    </form>
+                    <div class="footer">Don't have an account? <a href="#" id="go-to-register">Create Account</a></div>
+                </div>
+            </div>
+        </div>
+        <script src="login-register.js"></script>
+    </body>
+</html>
