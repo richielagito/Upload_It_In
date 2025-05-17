@@ -2,6 +2,8 @@ import math
 from collections import Counter
 import numpy as np
 
+#NGITUNG VEKTORISASI HURUF UNTUK DI COMPARE
+
 def compute_tf(text):
     words = text.split()
     tf = Counter(words)

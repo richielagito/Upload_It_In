@@ -5,14 +5,14 @@ def simpan_ke_postgres(results):
     try:
         conn = psycopg2.connect(
             host="localhost",
-            port=8000,  # <- tambahkan port di sini
+            port=8000,  # <- GANTI PORT MASING-MASING
             database="penilaian_essai",
             user="postgres",
-            password="m171807074"  # <- ganti dengan passwordmu
+            password="m171807074"  # <- GANTI PASSWORD PGADMIN4 MASING2
         )
         cursor = conn.cursor()
         for r in results:
-            # Log data yang disimpan (opsional)
+            # Log yang disimpan buat ngecek masuk atau tidak (OPSIONAL)
             print(f"Menyimpan ke DB: {r['name']} | {r['similarity']} | {r['grade']}")
             cursor.execute('''
                 INSERT INTO hasil_penilaian (nama_murid, similarity, nilai)

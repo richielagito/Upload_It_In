@@ -1,4 +1,5 @@
 import re
+#STEMMING SAMA STOPWORD
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 

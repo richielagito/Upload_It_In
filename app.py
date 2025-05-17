@@ -27,12 +27,12 @@ def grade():
     if not guru_file or len(murid_files) == 0:
         return jsonify({"error": "Pastikan file guru dan file murid sudah diupload!"}), 400
 
-    # Simpan file guru dan ekstrak teksnya
+    # Uploads file guru untuk ekstrak teksnya
     guru_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(guru_file.filename))
     guru_file.save(guru_path)
     guru_text = extract_text_from_pdf(guru_path)
 
-    # Simpan file murid dan ekstrak teksnya
+    # Uploads file murid untuk ekstrak teksnya
     murid_texts = []
     murid_names = []
     for f in murid_files:
@@ -41,17 +41,17 @@ def grade():
         murid_texts.append(extract_text_from_pdf(path))
         murid_names.append(f.filename.replace(".pdf", ""))
 
-    # Gabungkan teks guru dan murid lalu lakukan preprocessing
+    # Merge teks guru dan murid untuk dilakukan preprocessing
     all_texts = [guru_text] + murid_texts
     preprocessed = [preprocess(text) for text in all_texts]
 
-    # Lakukan LSA manual dan hitung cosine similarity
-    sim_scores = perform_lsa_and_similarity(preprocessed)  # hasilnya list similarity antara guru dan tiap murid
+    # LSA manual dan hitung cosine similarity
+    sim_scores = perform_lsa_and_similarity(preprocessed)  # hasil list % similarity
 
-    # Buat hasil nilai berdasarkan score similarity
+    # Hasil nilai score similarity
     results = []
     for i, score in enumerate(sim_scores):
-        # Mapping threshold bisa disesuaikan sesuai kebutuhan
+        # Mapping threshold kalau dibutuhkan
         nilai = 'A' if score >= 0.85 else 'B' if score >= 0.75 else 'C' if score >= 0.65 else 'D' if score >= 0.5 else 'E'
         results.append({
             "name": murid_names[i],
@@ -59,12 +59,12 @@ def grade():
             "grade": nilai
         })
 
-    # Simpan hasil ke file CSV
+    # Simpan ke file CSV
     df = pd.DataFrame(results)
     csv_filename = f"data/hasil_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     df.to_csv(csv_filename, index=False)
 
-    # Simpan hasil ke PostgreSQL
+    # Simpan ke DATABASE PostgreSQL
     simpan_ke_postgres(results)
 
     return jsonify(results)

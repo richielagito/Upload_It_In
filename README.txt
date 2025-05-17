@@ -11,3 +11,6 @@ essay_grader/
 │   ├── tfidf_manual.py           # Perhitungan TF-IDF manual
 │   ├── lsa_manual.py             # SVD manual dan cosine similarity
 │   └── db.py                     # Simpan hasil ke PostgreSQL
+
+
+HARUS BUKA FILE db.py UNTUK CONNECT KE PG ADMIN, ROUTE DAN PASSWORD GANTI SESUAI YANG UDAH DI SETTING YA.

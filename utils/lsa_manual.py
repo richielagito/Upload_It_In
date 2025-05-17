@@ -1,6 +1,7 @@
 import numpy as np
 from .tfidf_manual import compute_tfidf_matrix
 
+#Singular Value Decomposition (SVD)
 def truncated_svd(matrix, k):
     U, S, Vt = np.linalg.svd(matrix, full_matrices=False)
     U_k = U[:, :k]
@@ -16,7 +17,7 @@ def cosine_similarity(vec1, vec2):
 
 def perform_lsa_and_similarity(texts, k=2):
     tfidf = compute_tfidf_matrix(texts)
-    # Jika TF-IDF menghasilkan matrix kosong, kembalikan list kosong
+    #IF TF-IDF = matrix kosong, kembalikan list = kosong
     if tfidf.size == 0:
         return [0.0] * (len(texts) - 1)
     lsa_vectors = truncated_svd(tfidf, k)
