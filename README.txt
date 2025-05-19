@@ -14,3 +14,5 @@ essay_grader/
 
 
 HARUS BUKA FILE db.py UNTUK CONNECT KE PG ADMIN, ROUTE DAN PASSWORD GANTI SESUAI YANG UDAH DI SETTING YA.
+
+pip install -r requirements.txt (UNTUK INSTALL LIBRARY DI requirements.txt)
