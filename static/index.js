@@ -79,7 +79,7 @@ document.querySelector(".upload-form").addEventListener("submit", async function
         if (uploadBtnForm) {
             uploadBtnForm.classList.add("active");
         }
-        formSubmitBtn.setAttribute("disabled", "false");
+        formSubmitBtn.removeAttribute("disabled");
         uploadModal.classList.remove("active");
         form.reset();
     } else {
