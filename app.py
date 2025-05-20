@@ -1,23 +1,27 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, redirect, url_for, session
 from werkzeug.utils import secure_filename
+from utils.db import register_user, login_user
 import os
 import datetime
 import pandas as pd
+import secrets
 
 from utils.pdf_reader import extract_text_from_pdf
 from utils.preprocessing import preprocess
 from utils.tfidf_manual import get_tfidf_matrix
 from utils.lsa_manual import compute_lsa_similarity
-from utils.db import save_to_csv, simpan_ke_postgres
+from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results
+
 
 app = Flask(__name__)
+app.secret_key = secrets.token_hex(32)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['CSV_FOLDER'] = 'data'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['CSV_FOLDER'], exist_ok=True)
 
 def get_grade(sim):
-    if sim >= 1:
+    if sim >= 0.9:
         return 'A'
     elif sim >= 0.8:
         return 'B'
@@ -71,6 +75,47 @@ def grade():
     except Exception as e:
         print(f"Error uploading results to PostgreSQL: {e}")
 
+    return jsonify(results)
+
+@app.route('/login-register')
+def login_register():
+    return render_template('login-register.html')
+
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.json
+    email = data.get('email')
+    username = data.get('username')
+    password = data.get('password')
+    if not email or not username or not password:
+        return jsonify({'success': False, 'message': 'Lengkapi semua field!'}), 400
+    success, msg = register_user(email, username, password)
+    if success:
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'message': msg}), 400
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    success, user_or_msg = login_user(email, password)
+    if success:
+        session['user_id'] = user_or_msg['id']
+        session['username'] = user_or_msg['username']
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'message': user_or_msg}), 401
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login_register'))
+
+@app.route('/api/results', methods=['GET'])
+def api_results():
+    results = fetch_all_results()
     return jsonify(results)
 
 if __name__ == '__main__':

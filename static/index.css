@@ -10,12 +10,14 @@
     --color-hover: #f5f5f5;
 
     /* Status Colors */
-    --color-granted: #00ba88;
-    --color-granted-bg: #e6f9f1;
-    --color-pending: #ffb020;
-    --color-pending-bg: #fff8e6;
-    --color-rejected: #f04438;
-    --color-rejected-bg: #fee7e7;
+    --color-very-good: #00ba88;
+    --color-very-good-bg: #dff8ed;
+    --color-good: #00ba88;
+    --color-good-bg: #e6f9f1;
+    --color-average: #ffb020;
+    --color-average-bg: #fff8e6;
+    --color-bad: #f04438;
+    --color-bad-bg: #fee7e7;
 
     /* Shadow */
     --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -343,19 +345,24 @@ td {
     display: inline-block;
 }
 
-.status-granted {
-    background-color: #e6f9f1;
-    color: #00ba88;
+.status-very-good {
+    background-color: var(--color-very-good-bg);
+    color: var(--color-very-good);
 }
 
-.status-pending {
-    background-color: #fff8e6;
-    color: #ffb020;
+.status-good {
+    background-color: var(--color-good-bg);
+    color: var(--color-good);
 }
 
-.status-rejected {
-    background-color: #fee7e7;
-    color: #f04438;
+.status-average {
+    background-color: var(--color-average-bg);
+    color: var(--color-average);
+}
+
+.status-bad {
+    background-color: var(--color-bad-bg);
+    color: var(--color-bad);
 }
 
 /* Modal Styles */

@@ -31,3 +31,45 @@ loginForm.addEventListener("submit", function (e) {
     // Login logic would go here
     console.log("Login submitted");
 });
+
+registerForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const email = document.getElementById("reg-email").value;
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("reg-password").value;
+    const terms = document.getElementById("terms").checked;
+    if (!terms) {
+        alert("Anda harus menyetujui terms and conditions!");
+        return;
+    }
+    const res = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, username, password }),
+    });
+    const data = await res.json();
+    if (data.success) {
+        alert("Registrasi berhasil! Silakan login.");
+        loginScreen.classList.add("active");
+        registerScreen.classList.remove("active");
+    } else {
+        alert(data.message || "Registrasi gagal!");
+    }
+});
+
+loginForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const email = document.getElementById("login-email").value;
+    const password = document.getElementById("login-password").value;
+    const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (data.success) {
+        window.location.href = "/"; // redirect ke dashboard
+    } else {
+        alert(data.message || "Login gagal!");
+    }
+});

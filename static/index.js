@@ -87,21 +87,54 @@ document.querySelector(".upload-form").addEventListener("submit", async function
     }
 });
 
-function updateDashboardTable(results) {
-    const tbody = document.querySelector(".main-content table tbody");
+async function loadDashboardData() {
+    const response = await fetch("/api/results");
+    if (response.ok) {
+        const results = await response.json();
+        updateDashboardTable(results, true);
+    }
+}
 
+function updateDashboardTable(results, replace = false) {
+    const tbody = document.querySelector(".main-content table tbody");
+    let status = "";
+    let statusColor = "";
+    if (replace) tbody.innerHTML = ""; // kosongkan jika replace
     results.forEach((item, idx) => {
+        switch (item.nilai) {
+            case "A":
+                status = "Very Good";
+                statusColor = "status-very-good";
+                break;
+            case "B":
+                status = "Good";
+                statusColor = "status-good";
+                break;
+            case "C":
+                status = "Average";
+                statusColor = "status-average";
+                break;
+            case "D":
+                status = "Bad";
+                statusColor = "status-bad";
+                break;
+            default:
+                status = "Bad";
+                statusColor = "status-bad";
+        }
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${item.name}</td>
+            <td>${item.nama_murid}</td>
             <td>${new Date().toLocaleDateString()}</td>
             <td>${new Date().toLocaleTimeString("id-ID", {
                 hour: "2-digit",
                 minute: "2-digit",
             })}</td>
-            <td>${item.grade} (${item.similarity})</td>
-            <td><span class="status-pill status-granted">Success</span></td>
+            <td>${item.nilai} (${item.similarity})</td>
+            <td><span class="status-pill ${statusColor}">${status}</span></td>
         `;
         tbody.appendChild(tr);
     });
 }
+
+window.addEventListener("DOMContentLoaded", loadDashboardData);

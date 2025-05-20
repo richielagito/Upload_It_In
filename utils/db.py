@@ -3,16 +3,54 @@ import traceback
 import os
 import csv
 import datetime
+from psycopg2.extras import RealDictCursor
+from werkzeug.security import generate_password_hash, check_password_hash
+
+def get_pg_conn():
+    return psycopg2.connect(
+        host="localhost",
+        port=8000,  # Ganti sesuai setting
+        database="postgres",
+        user="postgres",
+        password="567899"
+    )
+
+def register_user(email, username, password):
+    try:
+        conn = get_pg_conn()
+        cur = conn.cursor()
+        hashed_pw = generate_password_hash(password)
+        cur.execute(
+            "INSERT INTO users (email, username, password) VALUES (%s, %s, %s)",
+            (email, username, hashed_pw)
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True, None
+    except psycopg2.errors.UniqueViolation:
+        return False, "Email/Username sudah terdaftar!"
+    except Exception as e:
+        return False, str(e)
+
+def login_user(email, password):
+    try:
+        conn = get_pg_conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+        if user and check_password_hash(user['password'], password):
+            return True, user
+        else:
+            return False, "Email atau password salah!"
+    except Exception as e:
+        return False, str(e)
 
 def simpan_ke_postgres(results):
     try:
-        conn = psycopg2.connect(
-            host="localhost",
-            port=8000,  # <- GANTI PORT MASING-MASING
-            database="penilaian_essai",
-            user="postgres",
-            password="m171807074"  # <- GANTI PASSWORD PGADMIN4 MASING2
-        )
+        conn = get_pg_conn()
         cursor = conn.cursor()
         for r in results:
             # Log yang disimpan buat ngecek masuk atau tidak (OPSIONAL)
@@ -20,7 +58,7 @@ def simpan_ke_postgres(results):
             cursor.execute('''
                 INSERT INTO hasil_penilaian (nama_murid, similarity, nilai)
                 VALUES (%s, %s, %s)
-            ''', (r["name"], r["similarity"], r["grade"]))
+            ''', (r["name"], float(r["similarity"]), r["grade"]))
             print(f"Inserted row for {r['name']}")
         conn.commit()
         print("Transaction committed successfully.")
@@ -43,3 +81,19 @@ def save_to_csv(results, folder='data'):
         for r in results:
             writer.writerow(r)
     print(f"Results saved to {filepath}")
+
+def fetch_all_results():
+    try:
+        conn = get_pg_conn()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM public.hasil_penilaian ORDER BY nama_murid")
+        results = cur.fetchall()
+        cur.close()
+        conn.close()
+        # Pastikan similarity bertipe float standar
+        for r in results:
+            r['similarity'] = float(r['similarity'])
+        return results
+    except Exception as e:
+        print("Gagal fetch data dari PostgreSQL:", e)
+        return []
