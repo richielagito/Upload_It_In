@@ -89,7 +89,6 @@ document.querySelector(".upload-form").addEventListener("submit", async function
 
 function updateDashboardTable(results) {
     const tbody = document.querySelector(".main-content table tbody");
-    tbody.innerHTML = "";
 
     results.forEach((item, idx) => {
         const tr = document.createElement("tr");
