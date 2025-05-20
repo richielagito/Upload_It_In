@@ -1,5 +1,8 @@
 import psycopg2
 import traceback
+import os
+import csv
+import datetime
 
 def simpan_ke_postgres(results):
     try:
@@ -27,3 +30,16 @@ def simpan_ke_postgres(results):
     except Exception as e:
         print("Gagal menyimpan ke PostgreSQL:", e)
         traceback.print_exc()
+
+def save_to_csv(results, folder='data'):
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    filename = f"hasil_penilaian_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    filepath = os.path.join(folder, filename)
+    with open(filepath, mode='w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['name', 'similarity', 'grade']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for r in results:
+            writer.writerow(r)
+    print(f"Results saved to {filepath}")

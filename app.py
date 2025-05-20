@@ -6,13 +6,27 @@ import pandas as pd
 
 from utils.pdf_reader import extract_text_from_pdf
 from utils.preprocessing import preprocess
-from utils.lsa_manual import perform_lsa_and_similarity
-from utils.db import simpan_ke_postgres
+from utils.tfidf_manual import get_tfidf_matrix
+from utils.lsa_manual import compute_lsa_similarity
+from utils.db import save_to_csv, simpan_ke_postgres
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['CSV_FOLDER'] = 'data'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs("data", exist_ok=True)
+os.makedirs(app.config['CSV_FOLDER'], exist_ok=True)
+
+def get_grade(sim):
+    if sim >= 1:
+        return 'A'
+    elif sim >= 0.8:
+        return 'B'
+    elif sim >= 0.7:
+        return 'C'
+    elif sim >= 0.6:
+        return 'D'
+    else:
+        return 'E'
 
 @app.route('/')
 def index():
@@ -22,50 +36,40 @@ def index():
 def grade():
     files = request.files
     guru_file = files.get('guru')
-    murid_files = files.getlist('murid')
+    murid_files = request.files.getlist('murid')
 
-    if not guru_file or len(murid_files) == 0:
-        return jsonify({"error": "Pastikan file guru dan file murid sudah diupload!"}), 400
-
-    # Uploads file guru untuk ekstrak teksnya
     guru_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(guru_file.filename))
     guru_file.save(guru_path)
     guru_text = extract_text_from_pdf(guru_path)
 
-    # Uploads file murid untuk ekstrak teksnya
     murid_texts = []
     murid_names = []
     for f in murid_files:
-        path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename))
-        f.save(path)
-        murid_texts.append(extract_text_from_pdf(path))
+        murid_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename))
+        f.save(murid_path)
+        murid_texts.append(extract_text_from_pdf(murid_path))
         murid_names.append(f.filename.replace(".pdf", ""))
 
-    # Merge teks guru dan murid untuk dilakukan preprocessing
     all_texts = [guru_text] + murid_texts
-    preprocessed = [preprocess(text) for text in all_texts]
+    all_preprocessed = [preprocess(text) for text in all_texts]
 
-    # LSA manual dan hitung cosine similarity
-    sim_scores = perform_lsa_and_similarity(preprocessed)  # hasil list % similarity
+    X = get_tfidf_matrix(all_preprocessed)
+    similarities = compute_lsa_similarity(X)
 
-    # Hasil nilai score similarity
     results = []
-    for i, score in enumerate(sim_scores):
-        # Mapping threshold kalau dibutuhkan
-        nilai = 'A' if score >= 0.85 else 'B' if score >= 0.75 else 'C' if score >= 0.65 else 'D' if score >= 0.5 else 'E'
+    for i, sim in enumerate(similarities):
         results.append({
             "name": murid_names[i],
-            "similarity": round(score, 4),
-            "grade": nilai
+            "similarity": round(sim, 4),
+            "grade": get_grade(sim)
         })
 
-    # Simpan ke file CSV
-    df = pd.DataFrame(results)
-    csv_filename = f"data/hasil_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    df.to_csv(csv_filename, index=False)
+    save_to_csv(results, app.config['CSV_FOLDER'])
 
-    # Simpan ke DATABASE PostgreSQL
-    simpan_ke_postgres(results)
+    try:
+        simpan_ke_postgres(results)
+    except Exception as e:
+        print(f"Error uploading results to PostgreSQL: {e}")
 
     return jsonify(results)
 
