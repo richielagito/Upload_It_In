@@ -70,8 +70,7 @@ document.querySelector(".upload-form").addEventListener("submit", async function
     });
 
     if (response.ok) {
-        const results = await response.json();
-        updateDashboardTable(results);
+        await loadDashboardData();
         isLoading = false;
         if (loading) {
             loading.classList.remove("active");
@@ -101,7 +100,10 @@ function updateDashboardTable(results, replace = false) {
     let statusColor = "";
     if (replace) tbody.innerHTML = ""; // kosongkan jika replace
     results.forEach((item, idx) => {
-        switch (item.nilai) {
+        const nama = item.nama_murid || item.name || "-";
+        const nilai = item.nilai || item.grade || "-";
+        const similarity = item.similarity || "-";
+        switch (nilai) {
             case "A":
                 status = "Very Good";
                 statusColor = "status-very-good";
@@ -124,13 +126,13 @@ function updateDashboardTable(results, replace = false) {
         }
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${item.nama_murid}</td>
+            <td>${nama}</td>
             <td>${new Date().toLocaleDateString()}</td>
             <td>${new Date().toLocaleTimeString("id-ID", {
                 hour: "2-digit",
                 minute: "2-digit",
             })}</td>
-            <td>${item.nilai} (${item.similarity})</td>
+            <td>${nilai} (${similarity})</td>
             <td><span class="status-pill ${statusColor}">${status}</span></td>
         `;
         tbody.appendChild(tr);

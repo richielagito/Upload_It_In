@@ -9,10 +9,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 def get_pg_conn():
     return psycopg2.connect(
         host="localhost",
-        port=8000,  # Ganti sesuai setting
+        port=5432,  # Ganti sesuai setting
         database="postgres",
         user="postgres",
-        password="567899"
+        password="admin123"
     )
 
 def register_user(email, username, password):
