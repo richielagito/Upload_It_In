@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploadtin</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='homescreen.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-logo">Uploadtin</div>
+        <ul class="navbar-menu">
+            <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="#how-it-works"><i class="fas fa-cogs"></i> How It Works</a></li>
+            <li><a href="#testimonials"><i class="fas fa-comments"></i> Testimonials</a></li>
+            <li><a href="#contact"><i class="fas fa-envelope"></i> Contact</a></li>
+            <li><a href="/login-register" class="navbar-btn"><i class="fas fa-sign-in-alt"></i> Login / Register</a></li>
+        </ul>
+    </nav>
+
+    <div class="hero-section">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">Uploadtin</h1>
+                <div class="hero-subtitle">Platform Penilaian Essay Modern</div>
+                <p class="hero-description">
+                    Selamat datang di Uploadtin!<br>
+                    Platform penilaian essay modern yang membantu Anda mengelola dan menilai essay dengan mudah.<br>
+                    Mulai perjalanan Anda untuk penilaian yang lebih efisien.
+                </p>
+                <div class="hero-buttons">
+                    <a href="/login-register" class="btn btn-primary">
+                        <i class="fas fa-rocket"></i> Mulai Sekarang
+                    </a>
+                    <a href="#how-it-works" class="btn btn-secondary">
+                        <i class="fas fa-play"></i> Lihat Demo
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">1000+</span>
+                        <span class="stat-label">Essay Dinilai</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">500+</span>
+                        <span class="stat-label">Pengguna Aktif</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">98%</span>
+                        <span class="stat-label">Kepuasan</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="floating-card card-1">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Essay Teranalisis</span>
+                </div>
+                <div class="floating-card card-2">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Hasil Real-time</span>
+                </div>
+                <div class="floating-card card-3">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Aman & Terpercaya</span>
+                </div>
+                <svg class="main-illustration" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+                    <style>
+                        .primary { fill: #4a7eff; }
+                        .secondary { fill: #3a6adf; }
+                        .accent { fill: #ffffff; }
+                        .text { fill: #2d3748; }
+                    </style>
+                    <!-- Document Background -->
+                    <rect x="100" y="50" width="300" height="400" rx="20" class="accent" />
+                    
+                    <!-- Header Lines -->
+                    <rect x="130" y="80" width="240" height="10" rx="5" class="primary" opacity="0.3" />
+                    <rect x="130" y="100" width="180" height="10" rx="5" class="primary" opacity="0.2" />
+                    
+                    <!-- Content Lines -->
+                    <rect x="130" y="140" width="240" height="8" rx="4" class="text" opacity="0.1" />
+                    <rect x="130" y="160" width="200" height="8" rx="4" class="text" opacity="0.1" />
+                    <rect x="130" y="180" width="220" height="8" rx="4" class="text" opacity="0.1" />
+                    <rect x="130" y="200" width="190" height="8" rx="4" class="text" opacity="0.1" />
+                    
+                    <!-- Checkmarks and Annotations -->
+                    <circle cx="150" y="250" r="15" class="primary" />
+                    <path d="M145,250 L155,260 L165,240" stroke="white" stroke-width="3" fill="none" />
+                    
+                    <circle cx="150" y="300" r="15" class="secondary" />
+                    <path d="M145,300 L155,310 L165,290" stroke="white" stroke-width="3" fill="none" />
+                    
+                    <!-- Score Section -->
+                    <rect x="280" y="240" width="80" height="80" rx="10" class="primary" />
+                    <text x="320" y="285" text-anchor="middle" class="accent" style="font-size: 24px; font-weight: bold;">95</text>
+                    
+                    <!-- Decorative Elements -->
+                    <circle cx="400" y="100" r="30" class="primary" opacity="0.1" />
+                    <circle cx="80" y="300" r="40" class="secondary" opacity="0.1" />
+                    <circle cx="420" y="400" r="25" class="primary" opacity="0.1" />
+                    
+                    <!-- Progress Bar -->
+                    <rect x="130" y="350" width="240" height="20" rx="10" class="text" opacity="0.1" />
+                    <rect x="130" y="350" width="180" height="20" rx="10" class="primary" opacity="0.5" />
+                </svg>
+            </div>
+        </div>
+        <div class="hero-wave">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+                <path fill="#ffffff" fill-opacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+        </div>
+    </div>
+
+    <section id="how-it-works" class="section">
+        <h2>Cara Kerja</h2>
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-number">1</div>
+                <i class="fas fa-user-plus"></i>
+                <h3>Buat Akun</h3>
+                <p>Daftar dengan mudah menggunakan email Anda</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <i class="fas fa-file-upload"></i>
+                <h3>Upload Essay</h3>
+                <p>Upload file essay dalam format yang didukung</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <i class="fas fa-check-circle"></i>
+                <h3>Dapatkan Nilai</h3>
+                <p>Sistem akan menganalisis dan memberikan penilaian</p>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <i class="fas fa-chart-line"></i>
+                <h3>Lihat Hasil</h3>
+                <p>Akses laporan detail dan saran perbaikan</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="testimonials" class="section">
+        <h2>Testimonial Pengguna</h2>
+        <div class="testimonials-container">
+            <div class="testimonial">
+                <div class="testimonial-content">
+                    <i class="fas fa-quote-left"></i>
+                    <p>"Essay Grader sangat membantu saya dalam menilai essay mahasiswa dengan lebih efisien. Hasilnya akurat dan menghemat banyak waktu."</p>
+                </div>
+                <div class="testimonial-author">
+                    <img src="https://ui-avatars.com/api/?name=Budi+Santoso&background=random" alt="Budi Santoso">
+                    <div>
+                        <h4>Budi Santoso</h4>
+                        <p>Dosen Bahasa Indonesia</p>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial">
+                <div class="testimonial-content">
+                    <i class="fas fa-quote-left"></i>
+                    <p>"Platform yang luar biasa! Memudahkan saya dalam mengelola dan menilai essay dari banyak siswa sekaligus."</p>
+                </div>
+                <div class="testimonial-author">
+                    <img src="https://ui-avatars.com/api/?name=Siti+Rahayu&background=random" alt="Siti Rahayu">
+                    <div>
+                        <h4>Siti Rahayu</h4>
+                        <p>Guru Bahasa Inggris</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="section">
+        <h2>Hubungi Kami</h2>
+        <div class="contact-container">
+            <div class="contact-info">
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <h3>Email</h3>
+                    <p>support@essaygrader.com</p>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-phone"></i>
+                    <h3>Telepon</h3>
+                    <p>+62 123 4567 890</p>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Alamat</h3>
+                    <p>Jl. Pendidikan No. 123<br>Jakarta, Indonesia</p>
+                </div>
+            </div>
+            <form class="contact-form">
+                <div class="form-group">
+                    <input type="text" placeholder="Nama Lengkap" required>
+                </div>
+                <div class="form-group">
+                    <input type="email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <textarea placeholder="Pesan" required></textarea>
+                </div>
+                <button type="submit" class="btn">Kirim Pesan</button>
+            </form>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>Essay Grader</h3>
+                <p>Platform penilaian essay modern untuk pendidikan yang lebih baik.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="#how-it-works">Cara Kerja</a></li>
+                    <li><a href="#testimonials">Testimonial</a></li>
+                    <li><a href="#contact">Kontak</a></li>
+                    <li><a href="/login-register">Login/Register</a></li>
+                </ul>
+            </div>
+            <div class="footer-social">
+                <h4>Ikuti Kami</h4>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Essay Grader. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html> 

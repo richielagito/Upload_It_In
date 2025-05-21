@@ -140,3 +140,32 @@ function updateDashboardTable(results, replace = false) {
 }
 
 window.addEventListener("DOMContentLoaded", loadDashboardData);
+
+// Implementasi logout yang lebih baik
+function handleLogout() {
+    if (confirm('Apakah Anda yakin ingin keluar?')) {
+        fetch('/logout')
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    alert('Terjadi kesalahan saat logout. Silakan coba lagi.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat logout. Silakan coba lagi.');
+            });
+    }
+}
+
+// Menambahkan event listener untuk tombol logout di sidebar dan dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutButtons = document.querySelectorAll('a[href="/logout"]');
+    logoutButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleLogout();
+        });
+    });
+});

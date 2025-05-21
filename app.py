@@ -11,6 +11,8 @@ from utils.preprocessing import preprocess
 from utils.tfidf_manual import get_tfidf_matrix
 from utils.lsa_manual import compute_lsa_similarity
 from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results
+from psycopg2.extras import RealDictCursor
+from utils.db import get_pg_conn
 
 
 app = Flask(__name__)
@@ -33,7 +35,13 @@ def get_grade(sim):
         return 'E'
 
 @app.route('/')
-def index():
+def homescreen():
+    return render_template('homescreen.html')
+
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login_register'))
     return render_template('index.html')
 
 @app.route('/grade', methods=['POST'])
@@ -79,6 +87,8 @@ def grade():
 
 @app.route('/login-register')
 def login_register():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
     return render_template('login-register.html')
 
 @app.route('/register', methods=['POST'])
@@ -104,14 +114,17 @@ def login():
     if success:
         session['user_id'] = user_or_msg['id']
         session['username'] = user_or_msg['username']
-        return jsonify({'success': True})
+        return jsonify({
+            'success': True,
+            'redirect_url': url_for('dashboard')
+        })
     else:
         return jsonify({'success': False, 'message': user_or_msg}), 401
 
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('login_register'))
+    return redirect(url_for('homescreen'))
 
 @app.route('/api/results', methods=['GET'])
 def api_results():

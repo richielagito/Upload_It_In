@@ -68,7 +68,7 @@ loginForm.addEventListener("submit", async function (e) {
     });
     const data = await res.json();
     if (data.success) {
-        window.location.href = "/"; // redirect ke dashboard
+        window.location.href = data.redirect_url; // menggunakan redirect_url dari server
     } else {
         alert(data.message || "Login gagal!");
     }
