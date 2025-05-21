@@ -15,14 +15,25 @@ def cosine_similarity(vec1, vec2):
     return np.dot(vec1, vec2) / (norm1 * norm2)
 
 def perform_lsa_and_similarity(texts, k=2):
-    tfidf = compute_tfidf_matrix(texts)
-    # Jika TF-IDF menghasilkan matrix kosong, kembalikan list kosong
-    if tfidf.size == 0:
-        return [0.0] * (len(texts) - 1)
-    lsa_vectors = truncated_svd(tfidf, k)
-    guru_vec = lsa_vectors[0]
+    guru_text = texts[0]
     sim_scores = []
-    for i in range(1, len(lsa_vectors)):
-        sim = cosine_similarity(guru_vec, lsa_vectors[i])
+    
+    # Bandingkan setiap teks murid dengan guru secara individual
+    for i in range(1, len(texts)):
+        # Hanya proses guru dan satu murid saja per iterasi
+        current_texts = [guru_text, texts[i]]
+        tfidf = compute_tfidf_matrix(current_texts)
+        
+        # Periksa apakah matriks valid
+        if tfidf.shape[0] < 2 or tfidf.shape[1] == 0:
+            sim_scores.append(0.0)
+            continue
+            
+        # Lakukan LSA
+        lsa_vectors = truncated_svd(tfidf, min(k, min(tfidf.shape)))
+        
+        # Hitung cosine similarity
+        sim = cosine_similarity(lsa_vectors[0], lsa_vectors[1])
         sim_scores.append(sim)
+        
     return sim_scores
