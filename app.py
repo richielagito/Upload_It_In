@@ -8,8 +8,8 @@ import secrets
 
 from utils.pdf_reader import extract_text_from_pdf
 from utils.preprocessing import preprocess
-from utils.tfidf_manual import get_tfidf_matrix
-from utils.lsa_manual import compute_lsa_similarity
+from utils.tfidf_manual import compute_tfidf_matrix
+from utils.lsa_manual import perform_lsa_and_similarity
 from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results
 from psycopg2.extras import RealDictCursor
 from utils.db import get_pg_conn
@@ -65,8 +65,7 @@ def grade():
     all_texts = [guru_text] + murid_texts
     all_preprocessed = [preprocess(text) for text in all_texts]
 
-    X = get_tfidf_matrix(all_preprocessed)
-    similarities = compute_lsa_similarity(X)
+    similarities = perform_lsa_and_similarity(all_preprocessed)
 
     results = []
     for i, sim in enumerate(similarities):
