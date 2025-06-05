@@ -5,14 +5,17 @@ import csv
 import datetime
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def get_pg_conn():
     return psycopg2.connect(
-        host="localhost",
-        port=8000,  # Ganti sesuai setting
-        database="penilaian_essai",
-        user="postgres",
-        password="m171807074"
+        host=os.environ.get('SUPABASE_HOST'),
+        port=os.environ.get('SUPABASE_PORT', 5432),
+        database=os.environ.get('SUPABASE_DB', 'postgres'),
+        user=os.environ.get('SUPABASE_USER'),
+        password=os.environ.get('SUPABASE_PASSWORD')
     )
 
 def register_user(email, username, password):

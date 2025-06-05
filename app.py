@@ -7,6 +7,7 @@ import os
 import datetime
 import pandas as pd
 import secrets
+from dotenv import load_dotenv
 
 from utils.pdf_reader import extract_text_from_pdf
 from utils.preprocessing import preprocess
@@ -16,6 +17,8 @@ from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results
 from psycopg2.extras import RealDictCursor
 from utils.db import get_pg_conn
 
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
