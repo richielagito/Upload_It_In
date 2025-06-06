@@ -165,6 +165,7 @@ body {
     font-weight: 600;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(74, 126, 255, 0.2);
+    text-decoration: none;
 }
 
 .navbar-btn:hover {

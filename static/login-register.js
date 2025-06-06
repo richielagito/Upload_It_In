@@ -1,3 +1,5 @@
+import { supabase } from "./db.js";
+
 const registerScreen = document.getElementById("register-screen");
 const loginScreen = document.getElementById("login-screen");
 const goToLoginLink = document.getElementById("go-to-login");
@@ -20,56 +22,106 @@ goToRegisterLink.addEventListener("click", function (e) {
 });
 
 // Form submissions
-registerForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    // Registration logic would go here
-    console.log("Registration submitted");
-});
-
-loginForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    // Login logic would go here
-    console.log("Login submitted");
-});
-
 registerForm.addEventListener("submit", async function (e) {
     e.preventDefault();
-    const email = document.getElementById("reg-email").value;
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("reg-password").value;
-    const terms = document.getElementById("terms").checked;
-    if (!terms) {
-        alert("Anda harus menyetujui terms and conditions!");
+    const email = document.getElementById("reg-email").value.trim();
+    const password = document.getElementById("reg-password").value.trim();
+    const username = document.getElementById("username").value.trim();
+    if (!email || !password) {
+        alert("Email dan password harus diisi!");
         return;
     }
-    const res = await fetch("/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, username, password }),
+
+    // Tampilkan loader sebelum proses sign up
+    Swal.fire({
+        title: "Processing...",
+        text: "Please wait while we create your account.",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        },
     });
-    const data = await res.json();
-    if (data.success) {
-        alert("Registrasi berhasil! Silakan login.");
-        loginScreen.classList.add("active");
-        registerScreen.classList.remove("active");
+
+    // Proses sign up ke Supabase
+    const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+            data: {
+                username: username,
+            },
+        },
+    });
+
+    // Tutup loader setelah proses selesai
+    Swal.close();
+
+    if (error) {
+        Swal.fire({
+            title: "Error",
+            text: error.message,
+            icon: "error",
+        });
     } else {
-        alert(data.message || "Registrasi gagal!");
+        await Swal.fire({
+            title: "Success",
+            text: "Check your email to verify your account.",
+            icon: "success",
+            timer: 3000,
+            timerProgressBar: true,
+            showConfirmButton: false,
+        });
+        registerScreen.classList.remove("active");
+        loginScreen.classList.add("active");
     }
 });
 
 loginForm.addEventListener("submit", async function (e) {
     e.preventDefault();
-    const email = document.getElementById("login-email").value;
-    const password = document.getElementById("login-password").value;
-    const res = await fetch("/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
-    if (data.success) {
-        window.location.href = data.redirect_url; // menggunakan redirect_url dari server
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value.trim();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+        Swal.fire({
+            title: "Error",
+            text: error.message,
+            icon: "error",
+        });
     } else {
-        alert(data.message || "Login gagal!");
+        // Ambil access_token dari Supabase
+        const { data } = await supabase.auth.getSession();
+        const access_token = data.session.access_token;
+        // Kirim ke backend untuk set session
+        await fetch("/set_session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ access_token }),
+            credentials: "same-origin",
+        });
+        let timerInterval;
+        await Swal.fire({
+            title: "Success",
+            icon: "success",
+            html: "Login success! Redirecting you...",
+            timer: 2000,
+            timerProgressBar: true,
+            didOpen: () => {
+                Swal.showLoading();
+                const timer = Swal.getPopup().querySelector("b");
+                timerInterval = setInterval(() => {
+                    timer.textContent = `${Swal.getTimerLeft()}`;
+                }, 100);
+            },
+            willClose: () => {
+                clearInterval(timerInterval);
+            },
+        }).then((result) => {
+            /* Read more about handling dismissals below */
+            if (result.dismiss === Swal.DismissReason.timer) {
+                window.location.href = "/dashboard";
+            }
+        });
+        window.location.href = "/dashboard";
     }
 });

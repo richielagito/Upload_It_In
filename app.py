@@ -2,20 +2,18 @@
 
 from flask import Flask, request, render_template, jsonify, redirect, url_for, session
 from werkzeug.utils import secure_filename
-from utils.db import register_user, login_user
 import os
 import datetime
 import pandas as pd
 import secrets
 from dotenv import load_dotenv
+import requests
 
 from utils.pdf_reader import extract_text_from_pdf
 from utils.preprocessing import preprocess
 from utils.tfidf_manual import compute_tfidf_matrix
 from utils.lsa_manual import perform_lsa_and_similarity
 from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results
-from psycopg2.extras import RealDictCursor
-from utils.db import get_pg_conn
 
 
 load_dotenv()
@@ -51,6 +49,8 @@ def dashboard():
 
 @app.route('/grade', methods=['POST'])
 def grade():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
     files = request.files
     guru_file = files.get('guru')
     murid_files = request.files.getlist('murid')
@@ -77,7 +77,8 @@ def grade():
         results.append({
             "name": murid_names[i],
             "similarity": round(sim, 4),
-            "grade": get_grade(sim)
+            "grade": get_grade(sim),
+            "user_id": session['user_id']
         })
 
     save_to_csv(results, app.config['CSV_FOLDER'])
@@ -92,48 +93,38 @@ def grade():
 @app.route('/login-register')
 def login_register():
     if 'user_id' in session:
+        print("User already logged in, redirecting to dashboard")
         return redirect(url_for('dashboard'))
     return render_template('login-register.html')
 
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.json
-    email = data.get('email')
-    username = data.get('username')
-    password = data.get('password')
-    if not email or not username or not password:
-        return jsonify({'success': False, 'message': 'Lengkapi semua field!'}), 400
-    success, msg = register_user(email, username, password)
-    if success:
-        return jsonify({'success': True})
-    else:
-        return jsonify({'success': False, 'message': msg}), 400
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
-    success, user_or_msg = login_user(email, password)
-    if success:
-        session['user_id'] = user_or_msg['id']
-        session['username'] = user_or_msg['username']
-        return jsonify({
-            'success': True,
-            'redirect_url': url_for('dashboard')
-        })
-    else:
-        return jsonify({'success': False, 'message': user_or_msg}), 401
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('homescreen'))
-
 @app.route('/api/results', methods=['GET'])
 def api_results():
-    results = fetch_all_results()
+    if 'user_id' not in session:
+        return jsonify([]), 401
+    results = fetch_all_results(session['user_id'])
     return jsonify(results)
+
+@app.route('/set_session', methods=['POST'])
+def set_session():
+    data = request.json
+    access_token = data.get('access_token')
+    if not access_token:
+        return jsonify({"error": "No token"}), 400
+
+    # Verifikasi token ke Supabase
+    headers = {"apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJleGt5bHF1cG9waXVzb3JnZG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4NDAyNTAsImV4cCI6MjA2MzQxNjI1MH0.A0ha39mt_dkSSkBAQHehVXQwpzhb6JoxhymF2mxtczA", "Authorization": f"Bearer {access_token}"}
+    resp = requests.get("https://rexkylqupopiusorgdni.supabase.co/auth/v1/user", headers=headers)
+    if resp.status_code != 200:
+        return jsonify({"error": "Invalid token"}), 401
+    user = resp.json()
+    session['user_id'] = user['id']
+    session['username'] = user['user_metadata'].get('username', user['email'])
+    return jsonify({"success": True})
+
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    session.clear()
+    return redirect(url_for('login_register'))
 
 if __name__ == '__main__':
     app.run(debug=True)

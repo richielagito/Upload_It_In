@@ -1,88 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login and Registration</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='login-register.css') }}"
-    />
-  </head>
-  <body>
-    <div class="container">
-      <img
-        src="/static/watercolour.jpg"
-        alt="watercolour"
-        class="watercolour-img"
-      />
-      <!-- Register Screen -->
-      <div id="register-screen" class="screen active">
-        <div class="card">
-          <div class="header">
-            <h1>Create an Account</h1>
-          </div>
-          <form id="register-form">
-            <div class="form-group">
-              <label for="reg-email">Email address</label>
-              <input type="email" id="reg-email" placeholder="Email address" />
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login and Registration</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='login-register.css') }}" />
+    </head>
+    <body>
+        <div class="container">
+            <img src="/static/watercolour.jpg" alt="watercolour" class="watercolour-img" />
+            <!-- Register Screen -->
+            <div id="register-screen" class="screen active">
+                <div class="card">
+                    <div class="header">
+                        <h1>Create an Account</h1>
+                    </div>
+                    <form id="register-form">
+                        <div class="form-group">
+                            <label for="reg-email">Email address</label>
+                            <input type="email" id="reg-email" placeholder="Email address" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" placeholder="Username" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-password">Password</label>
+                            <input type="password" id="reg-password" placeholder="••••••" required />
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="terms" />
+                            <label for="terms">I accept terms and conditions</label>
+                        </div>
+                        <button type="submit" class="btn">Sign Up</button>
+                    </form>
+                    <div class="footer">Already have an account? <a href="#" id="go-to-login">Login</a></div>
+                </div>
             </div>
-            <div class="form-group">
-              <label for="username">Username</label>
-              <input type="text" id="username" placeholder="Username" />
-            </div>
-            <div class="form-group">
-              <label for="reg-password">Password</label>
-              <input type="password" id="reg-password" placeholder="••••••" />
-            </div>
-            <div class="checkbox-group">
-              <input type="checkbox" id="terms" />
-              <label for="terms">I accept terms and conditions</label>
-            </div>
-            <button type="submit" class="btn">Sign Up</button>
-          </form>
-          <div class="footer">
-            Already have an account? <a href="#" id="go-to-login">Login</a>
-          </div>
-        </div>
-      </div>
 
-      <!-- Login Screen -->
-      <div id="login-screen" class="screen">
-        <div class="card">
-          <div class="header">
-            <h1>Login to Account</h1>
-          </div>
-          <form id="login-form">
-            <div class="form-group">
-              <label for="login-email">Email address</label>
-              <input
-                type="email"
-                id="login-email"
-                placeholder="Email address"
-              />
+            <!-- Login Screen -->
+            <div id="login-screen" class="screen">
+                <div class="card">
+                    <div class="header">
+                        <h1>Login to Account</h1>
+                    </div>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="login-email">Email address</label>
+                            <input type="email" id="login-email" placeholder="Email address" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" placeholder="••••••" required />
+                            <div class="forgot">
+                                <a href="#" id="forgot-password-link2">Forgot Password?</a>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">Sign In</button>
+                    </form>
+                    <div class="footer">
+                        Don't have an account?
+                        <a href="#" id="go-to-register">Create Account</a>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-              <label for="login-password">Password</label>
-              <input type="password" id="login-password" placeholder="••••••" />
-              <div class="forgot">
-                <a href="#" id="forgot-password-link2">Forgot Password?</a>
-              </div>
-            </div>
-            <button type="submit" class="btn">Sign In</button>
-          </form>
-          <div class="footer">
-            Don't have an account?
-            <a href="#" id="go-to-register">Create Account</a>
-          </div>
         </div>
-      </div>
-    </div>
-  </body>
-  <script src="{{ url_for('static', filename='env.js') }}"></script>
-  <script
-    type="module"
-    src="{{ url_for('static', filename='db.js') }}"
-  ></script>
-  <script src="{{ url_for('static', filename='login-register.js') }}"></script>
+    </body>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module" src="{{ url_for('static', filename='db.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='login-register.js') }}"></script>
 </html>
