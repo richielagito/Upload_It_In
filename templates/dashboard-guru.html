@@ -4,7 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>UploadItIn</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='dashboard-guru.css') }}" />
     </head>
     <body>
         <!-- Navbar -->
@@ -32,7 +32,7 @@
                 </div>
                 <div class="user-info">
                     <div class="user-name">{{ session['username'] }}</div>
-                    <div class="user-role">Admin</div>
+                    <div class="user-role">{{ session['role'] }}</div>
                 </div>
                 <div class="user-avatar">
                     <img src="https://i.pinimg.com/736x/69/78/19/69781905dd57ba144ab71ca4271ab294.jpg" alt="User Avatar" />
@@ -142,5 +142,5 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script type="module" src="{{ url_for('static', filename='db.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='index.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='dashboard-guru.js') }}"></script>
 </html>

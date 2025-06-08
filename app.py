@@ -45,7 +45,12 @@ def homescreen():
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login_register'))
-    return render_template('index.html')
+    
+    if session.get('role') == 'Student':
+        return render_template('dashboard-murid.html')
+    elif session.get('role') == 'Teacher':
+        return render_template('dashboard-guru.html')
+    return render_template('homescreen.html')
 
 @app.route('/grade', methods=['POST'])
 def grade():
@@ -119,6 +124,7 @@ def set_session():
     user = resp.json()
     session['user_id'] = user['id']
     session['username'] = user['user_metadata'].get('username', user['email'])
+    session['role'] = user['user_metadata'].get('role', user['email'])
     return jsonify({"success": True})
 
 @app.route('/logout', methods=['GET', 'POST'])

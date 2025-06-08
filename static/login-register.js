@@ -27,12 +27,13 @@ registerForm.addEventListener("submit", async function (e) {
     const email = document.getElementById("reg-email").value.trim();
     const password = document.getElementById("reg-password").value.trim();
     const username = document.getElementById("username").value.trim();
-    if (!email || !password) {
-        alert("Email dan password harus diisi!");
+    const role = document.getElementById("reg-role").value;
+
+    if (!email || !password || !username || !role) {
+        alert("Semua field harus diisi!");
         return;
     }
 
-    // Tampilkan loader sebelum proses sign up
     Swal.fire({
         title: "Processing...",
         text: "Please wait while we create your account.",
@@ -43,18 +44,18 @@ registerForm.addEventListener("submit", async function (e) {
         },
     });
 
-    // Proses sign up ke Supabase
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+            emailRedirectTo: "http://127.0.0.1:5000/login-register",
             data: {
                 username: username,
+                role: role,
             },
         },
     });
 
-    // Tutup loader setelah proses selesai
     Swal.close();
 
     if (error) {
@@ -106,8 +107,8 @@ loginForm.addEventListener("submit", async function (e) {
             html: "Login success! Redirecting you...",
             timer: 2000,
             timerProgressBar: true,
+            showConfirmButton: false,
             didOpen: () => {
-                Swal.showLoading();
                 const timer = Swal.getPopup().querySelector("b");
                 timerInterval = setInterval(() => {
                     timer.textContent = `${Swal.getTimerLeft()}`;

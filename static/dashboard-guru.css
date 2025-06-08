@@ -120,10 +120,9 @@ body {
 
 .logo {
     text-align: center;
-    font-size: 20px;
+    font-size: 1.5rem;
     color: var(--color-primary);
     font-weight: bold;
-    padding: 0 20px;
 }
 
 .text-it-in {
@@ -222,7 +221,7 @@ body {
 }
 
 .page-title {
-    font-size: 24px;
+    font-size: 2rem;
     color: #333;
     font-weight: 600;
 }

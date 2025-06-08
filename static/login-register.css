@@ -78,13 +78,32 @@ body {
     color: #333;
 }
 
-.form-group input {
+.form-group input,
+select {
     width: 100%;
     padding: 12px 15px;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 0.9rem;
     background-color: #f7f9fc;
+}
+
+.role-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    justify-content: center;
+
+    .role-text {
+        font-size: 1rem;
+        color: #333;
+        width: fit-content;
+        margin-right: 10px;
+        margin-bottom: 5px;
+    }
+    select {
+        flex: 1;
+    }
 }
 
 .form-group .forgot {
