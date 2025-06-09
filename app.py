@@ -9,7 +9,7 @@ import secrets
 from dotenv import load_dotenv
 import requests
 
-from utils.pdf_reader import extract_text_from_pdf
+from utils.file_reader import extract_text_from_any
 from utils.preprocessing import preprocess
 from utils.tfidf_manual import compute_tfidf_matrix
 from utils.lsa_manual import perform_lsa_and_similarity
@@ -62,14 +62,17 @@ def grade():
 
     guru_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(guru_file.filename))
     guru_file.save(guru_path)
-    guru_text = extract_text_from_pdf(guru_path)
+    guru_text = extract_text_from_any(guru_path)
 
     murid_texts = []
     murid_names = []
     for f in murid_files:
-        murid_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename))
+        original_name = secure_filename(f.filename)
+        name, ext = os.path.splitext(original_name)
+        short_name = (name[:50] + ext) if len(name) > 50 else original_name
+        murid_path = os.path.join(app.config['UPLOAD_FOLDER'], short_name)
         f.save(murid_path)
-        murid_texts.append(extract_text_from_pdf(murid_path))
+        murid_texts.append(extract_text_from_any(murid_path))
         murid_names.append(f.filename.replace(".pdf", ""))
 
     all_texts = [guru_text] + murid_texts
