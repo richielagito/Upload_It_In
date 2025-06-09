@@ -45,7 +45,7 @@
                     <i class="icon-join fa-solid fa-right-to-bracket"></i>
                     Join Class
                 </button>
-                <div class="supports">Supports .DOCX, .PDF, .TXT files</div>
+                <div class="supports">Ask your teacher for the class codes.</div>
 
                 <div class="menu-section">
                     <div class="section-title">OTHER</div>
@@ -83,6 +83,24 @@
             <!-- Main Content -->
             <div class="main-content">
                 <div class="header">
+                    <h1 class="page-title">Classes</h1>
+                </div>
+                <div id="class-list">
+                    <div class="class-card">
+                        <div class="class-card-content">
+                            <h3 class="class-card-title">123</h3>
+                            <p class="class-card-desc">You have joined this class.</p>
+                        </div>
+                    </div>
+                    <div class="class-card">
+                        <div class="class-card-content">
+                            <h3 class="class-card-title">123</h3>
+                            <p class="class-card-desc">You have joined this class.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="header">
                     <h1 class="page-title">Dashboard</h1>
                 </div>
 
@@ -107,26 +125,22 @@
                     </table>
                 </div>
             </div>
-            <!-- Modal Upload Form -->
+            <!-- Modal Join Class Form -->
             <div class="modal-overlay" id="uploadModal">
                 <div class="modal">
                     <div class="modal-header">
-                        <h3 class="modal-title">Upload Files</h3>
+                        <h3 class="modal-title">Join Class</h3>
                         <button class="modal-close" id="closeModal">&times;</button>
                     </div>
                     <div class="modal-body">
                         <form class="upload-form" action="/grade" method="post" enctype="multipart/form-data">
                             <div class="form-group">
-                                <label class="form-label" for="guruFile">File Jawaban (DOCX, PDF, TXT):</label>
-                                <input class="form-input" type="file" id="guruFile" name="guru" accept=".docx, .pdf, .txt" required />
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="muridFile">File Murid (DOCX, PDF, TXT) (Multiple):</label>
-                                <input class="form-input" type="file" id="muridFile" name="murid" accept=".docx, .pdf, .txt" multiple required />
+                                <label class="form-label" for="classCode">Input Class Code</label>
+                                <input class="form-input" type="text" id="classCode" name="classCode" required />
                             </div>
                             <button class="form-submit" type="submit">
                                 <div class="loading"></div>
-                                <div class="form-upload-btn active">Upload</div>
+                                <div class="form-upload-btn active">Join Class</div>
                             </button>
                         </form>
                     </div>

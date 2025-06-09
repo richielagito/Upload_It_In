@@ -126,7 +126,7 @@ function updateDashboardTable(results, replace = false) {
         }
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${nama}</td>
+            <td class="ellipsis">${nama}</td>
             <td>${new Date().toLocaleDateString()}</td>
             <td>${new Date().toLocaleTimeString("id-ID", {
                 hour: "2-digit",

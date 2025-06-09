@@ -50,41 +50,41 @@ document.addEventListener("click", (e) => {
 });
 
 // Upload Function
-document.querySelector(".upload-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
+// document.querySelector(".upload-form").addEventListener("submit", async function (e) {
+//     e.preventDefault();
+//     const form = e.target;
+//     const formData = new FormData(form);
 
-    isLoading = true;
-    if (loading) {
-        loading.classList.add("active");
-    }
-    if (uploadBtnForm) {
-        uploadBtnForm.classList.remove("active");
-    }
-    formSubmitBtn.setAttribute("disabled", "true");
+//     isLoading = true;
+//     if (loading) {
+//         loading.classList.add("active");
+//     }
+//     if (uploadBtnForm) {
+//         uploadBtnForm.classList.remove("active");
+//     }
+//     formSubmitBtn.setAttribute("disabled", "true");
 
-    const response = await fetch("/grade", {
-        method: "POST",
-        body: formData,
-    });
+//     const response = await fetch("/grade", {
+//         method: "POST",
+//         body: formData,
+//     });
 
-    if (response.ok) {
-        await loadDashboardData();
-        isLoading = false;
-        if (loading) {
-            loading.classList.remove("active");
-        }
-        if (uploadBtnForm) {
-            uploadBtnForm.classList.add("active");
-        }
-        formSubmitBtn.removeAttribute("disabled");
-        uploadModal.classList.remove("active");
-        form.reset();
-    } else {
-        alert("Gagal upload!");
-    }
-});
+//     if (response.ok) {
+//         await loadDashboardData();
+//         isLoading = false;
+//         if (loading) {
+//             loading.classList.remove("active");
+//         }
+//         if (uploadBtnForm) {
+//             uploadBtnForm.classList.add("active");
+//         }
+//         formSubmitBtn.removeAttribute("disabled");
+//         uploadModal.classList.remove("active");
+//         form.reset();
+//     } else {
+//         alert("Gagal upload!");
+//     }
+// });
 
 async function loadDashboardData() {
     const response = await fetch("/api/results");
@@ -186,4 +186,31 @@ document.addEventListener("DOMContentLoaded", function () {
             handleLogout();
         });
     });
+});
+
+// Fungsi untuk membuat card class baru
+function createClassCard(className) {
+    const classList = document.getElementById("class-list");
+    const card = document.createElement("div");
+    card.className = "class-card";
+    card.innerHTML = `
+        <div class="class-card-content">
+            <h3 class="class-card-title">${className}</h3>
+            <p class="class-card-desc">You have joined this class.</p>
+        </div>
+    `;
+    classList.appendChild(card);
+}
+
+// Tangani submit form join class (modal)
+document.querySelector(".upload-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    const classCodeInput = document.getElementById("classCode");
+    const className = classCodeInput.value.trim();
+    if (className) {
+        createClassCard(className);
+        // Reset form dan tutup modal
+        classCodeInput.value = "";
+        document.getElementById("uploadModal").classList.remove("active");
+    }
 });

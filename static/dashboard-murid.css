@@ -221,7 +221,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .page-title {
@@ -294,7 +294,7 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     padding: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
 .card-header {
@@ -314,6 +314,39 @@ body {
 
 .details-text {
     color: #333;
+}
+
+/* Class Card Styles */
+#class-list {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+.class-card {
+    width: fit-content;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 16px 24px;
+    margin-bottom: 16px;
+    margin-top: 10px;
+}
+
+.class-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.class-card-desc {
+    font-size: 0.95rem;
+    color: #666;
+}
+
+.ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Table Styles */
@@ -512,7 +545,6 @@ td {
     }
     .sidebar {
         display: flex;
-        width: 23vw;
         max-width: 220px;
         flex-direction: column;
         padding: 20px 0;
