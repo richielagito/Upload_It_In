@@ -4,6 +4,7 @@ import csv
 import datetime
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+import psycopg2
 
 load_dotenv()
 
@@ -55,3 +56,13 @@ def fetch_all_results(user_id):
     except Exception as e:
         print("Gagal fetch data dari PostgreSQL:", e)
         return []
+    
+def get_postgres_conn():
+    return psycopg2.connect(
+        dbname=DBNAME,
+        user=USER,
+        password=PASSWORD,
+        host=HOST,
+        port=PORT,
+        sslmode="require"
+    )   

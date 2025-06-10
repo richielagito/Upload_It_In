@@ -8,7 +8,11 @@ import pandas as pd
 import secrets
 from dotenv import load_dotenv
 import requests
+import random
+import string
+import datetime
 
+from utils.db import get_postgres_conn
 from utils.file_reader import extract_text_from_any
 from utils.preprocessing import preprocess
 from utils.tfidf_manual import compute_tfidf_matrix
@@ -36,6 +40,18 @@ def get_grade(sim):
         return 'D'
     else:
         return 'E'
+    
+def generate_unique_class_code(length=6):
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    while True:
+        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+        cur.execute("SELECT 1 FROM classes WHERE kode_kelas = %s", (code,))
+        if not cur.fetchone():
+            break
+    cur.close()
+    conn.close()
+    return code
 
 @app.route('/')
 def homescreen():
@@ -51,6 +67,50 @@ def dashboard():
     elif session.get('role') == 'Teacher':
         return render_template('dashboard-guru.html')
     return render_template('homescreen.html')
+
+@app.route('/create-class', methods=['POST'])
+def create_class():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    nama_kelas = request.form.get('class_name')
+    user_id = session['user_id']
+    kode_kelas = generate_unique_class_code()
+    created_at = datetime.datetime.now()
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO classes (nama_kelas, kode_kelas, user_id, created_at) VALUES (%s, %s, %s, %s) RETURNING id",
+        (nama_kelas, kode_kelas, user_id, created_at)
+    )
+    kelas_id = cur.fetchone()[0]
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"class_code": kode_kelas, "kelas_id": kelas_id})
+
+from flask import jsonify
+
+@app.route('/api/classes', methods=['GET'])
+def api_classes():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    user_id = session['user_id']
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT id, nama_kelas, kode_kelas, created_at FROM classes WHERE user_id = %s ORDER BY created_at DESC", (user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    kelas = [
+        {
+            "id": row[0],
+            "nama_kelas": row[1],
+            "kode_kelas": row[2],
+            "created_at": row[3].strftime("%Y-%m-%d %H:%M")
+        }
+        for row in rows
+    ]
+    return jsonify(kelas)
 
 @app.route('/grade', methods=['POST'])
 def grade():
