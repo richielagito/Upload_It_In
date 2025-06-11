@@ -243,6 +243,31 @@ def kelas_details_page(kode_kelas):
         return "Class not found or not owned by you", 404
     return render_template('kelas-details.html')
 
+@app.route('/kelas-murid/<kode_kelas>')
+def kelas_murid_details_page(kode_kelas):
+    if 'user_id' not in session or session.get('role') != 'Student':
+        return redirect(url_for('login_register'))
+
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    try:
+        # Periksa apakah kelas ada dan murid telah bergabung
+        cur.execute(
+            "SELECT c.id, c.nama_kelas FROM classes c JOIN murid_kelas mk ON c.id = mk.kelas_id WHERE c.kode_kelas = %s AND mk.user_id = %s",
+            (kode_kelas, session['user_id'])
+        )
+        kelas_info = cur.fetchone()
+        if not kelas_info:
+            return "Class not found or you have not joined this class", 404
+        kelas_id, nama_kelas = kelas_info # Extract id and nama_kelas
+        return render_template('kelas-murid.html', kode_kelas=kode_kelas, nama_kelas=nama_kelas)
+    except Exception as e:
+        print(f"Error fetching student class details: {e}")
+        return "An error occurred", 500
+    finally:
+        cur.close()
+        conn.close()
+
 @app.route('/api/class/update', methods=['POST'])
 def api_update_class():
     if 'user_id' not in session:
@@ -422,14 +447,25 @@ def api_add_assignment():
         print(f"Error adding assignment: {e}")
         return jsonify({"error": "Terjadi kesalahan saat menambahkan assignment"}), 500
 
-@app.route('/api/assignments/<int:kelas_id>', methods=['GET'])
-def api_get_assignments(kelas_id):
+@app.route('/api/assignments/<kode_kelas>', methods=['GET'])
+def api_get_assignments_by_kode_kelas(kode_kelas):
     if 'user_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
         
     try:
         conn = get_postgres_conn()
         cur = conn.cursor()
+        
+        # Dapatkan kelas_id dari kode_kelas
+        cur.execute("SELECT id FROM classes WHERE kode_kelas = %s", (kode_kelas,))
+        kelas_info = cur.fetchone()
+        if not kelas_info:
+            cur.close()
+            conn.close()
+            return jsonify({"error": "Class not found"}), 404
+        
+        kelas_id = kelas_info[0]
+        
         cur.execute(
             """
             SELECT id, judul, deskripsi, deadline, file_path, jawaban_path, created_at

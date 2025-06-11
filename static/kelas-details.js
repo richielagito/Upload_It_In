@@ -217,13 +217,7 @@ async function fetchKelasIdByKode(kodeKelas) {
 // Fungsi untuk memuat daftar assignment
 async function loadAssignments() {
   try {
-    const kelasId = await fetchKelasIdByKode(kodeKelasGlobal);
-    if (!kelasId) {
-      console.error('Gagal mendapatkan ID kelas');
-      return;
-    }
-
-    const response = await fetch(`/api/assignments/${kelasId}`);
+    const response = await fetch(`/api/assignments/${kodeKelasGlobal}`);
     if (response.ok) {
       const assignments = await response.json();
       const assignmentsList = document.getElementById('assignmentsList');
