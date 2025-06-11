@@ -192,6 +192,7 @@ def api_results_by_kode_kelas(kode_kelas):
     results = fetch_results_by_kode_kelas(kode_kelas, session['user_id'])
     return jsonify(results)
 
+
 @app.route('/set_session', methods=['POST'])
 def set_session():
     data = request.json
