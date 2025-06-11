@@ -22,12 +22,16 @@ async function renderAssignments(kodeKelas) {
                         <b>File:</b>
                         ${ass.file_path ? `<a href="${ass.file_path}" target="_blank" download>Download Assignment</a>` : "No file"}
                     </p>
-                    <form class="upload-jawaban-form" data-id="${ass.id}">
-                        <label>Upload your answer:</label>
-                        <input type="file" name="file" required />
-                        <button type="submit" class="upload-btn" style="margin:10px 0 0 0;">Upload It In</button>
-                        <span class="jawaban-status"></span>
-                    </form>
+                    ${ass.is_submitted ? `
+                        <p style="color: green; font-weight: bold;">Sudah Selesai</p>
+                    ` : `
+                        <form class="upload-jawaban-form" data-id="${ass.id}">
+                            <label>Upload your answer:</label>
+                            <input type="file" name="file" required />
+                            <button type="submit" class="upload-btn" style="margin:10px 0 0 0;">Upload It In</button>
+                            <span class="jawaban-status"></span>
+                        </form>
+                    `}
                 </div>
             `;
             assignmentList.appendChild(card);
