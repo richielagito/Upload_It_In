@@ -17,7 +17,7 @@ from utils.file_reader import extract_text_from_any
 from utils.preprocessing import preprocess
 from utils.tfidf_manual import compute_tfidf_matrix
 from utils.lsa_manual import perform_lsa_and_similarity
-from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results
+from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results, fetch_results_by_kelas, fetch_results_by_kode_kelas
 
 
 load_dotenv()
@@ -120,6 +120,11 @@ def grade():
     guru_file = files.get('guru')
     murid_files = request.files.getlist('murid')
 
+    # Ambil kelas_id dari form
+    kelas_id = request.form.get('kelas_id')
+    if not kelas_id:
+        return jsonify({"error": "Kelas harus dipilih"}), 400
+
     guru_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(guru_file.filename))
     guru_file.save(guru_path)
     guru_text = extract_text_from_any(guru_path)
@@ -146,7 +151,8 @@ def grade():
             "name": murid_names[i],
             "similarity": round(sim, 4),
             "grade": get_grade(sim),
-            "user_id": session['user_id']
+            "user_id": session['user_id'],
+            "kelas_id": int(kelas_id)
         })
 
     save_to_csv(results, app.config['CSV_FOLDER'])
@@ -172,6 +178,20 @@ def api_results():
     results = fetch_all_results(session['user_id'])
     return jsonify(results)
 
+@app.route('/api/results/kelas/<int:kelas_id>', methods=['GET'])
+def api_results_by_kelas(kelas_id):
+    if 'user_id' not in session:
+        return jsonify([]), 401
+    results = fetch_results_by_kelas(kelas_id)
+    return jsonify(results)
+
+@app.route('/api/results/kelas-kode/<kode_kelas>', methods=['GET'])
+def api_results_by_kode_kelas(kode_kelas):
+    if 'user_id' not in session:
+        return jsonify([]), 401
+    results = fetch_results_by_kode_kelas(kode_kelas, session['user_id'])
+    return jsonify(results)
+
 @app.route('/set_session', methods=['POST'])
 def set_session():
     data = request.json
@@ -194,6 +214,87 @@ def set_session():
 def logout():
     session.clear()
     return redirect(url_for('login_register'))
+
+@app.route('/kelas/<kode_kelas>')
+def kelas_details_page(kode_kelas):
+    if 'user_id' not in session or session.get('role') != 'Teacher':
+        return redirect(url_for('login_register'))
+    # Cek apakah kelas dengan kode_kelas ini milik user
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM classes WHERE kode_kelas = %s AND user_id = %s", (kode_kelas, session['user_id']))
+    kelas = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not kelas:
+        return "Kelas tidak ditemukan atau bukan milik Anda", 404
+    return render_template('kelas-details.html')
+
+@app.route('/api/class/update', methods=['POST'])
+def api_update_class():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.get_json()
+    kode_kelas = data.get('kode_kelas')
+    nama_kelas = data.get('nama_kelas')
+    if not kode_kelas or not nama_kelas:
+        return jsonify({'error': 'Invalid data'}), 400
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    cur.execute("UPDATE classes SET nama_kelas = %s WHERE kode_kelas = %s AND user_id = %s", (nama_kelas, kode_kelas, session['user_id']))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/class/delete', methods=['POST'])
+def api_delete_class():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.get_json()
+    kode_kelas = data.get('kode_kelas')
+    if not kode_kelas:
+        return jsonify({'error': 'Invalid data'}), 400
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    # Dapatkan id kelas
+    cur.execute("SELECT id FROM classes WHERE kode_kelas = %s AND user_id = %s", (kode_kelas, session['user_id']))
+    row = cur.fetchone()
+    if not row:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Class not found'}), 404
+    kelas_id = row[0]
+    # Hapus semua upload di kelas ini
+    cur.execute("DELETE FROM hasil_penilaian WHERE kelas_id = %s", (kelas_id,))
+    # Hapus kelas
+    cur.execute("DELETE FROM classes WHERE id = %s", (kelas_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/upload/delete', methods=['POST'])
+def api_delete_upload():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.get_json()
+    upload_id = data.get('id')
+    if not upload_id:
+        return jsonify({'error': 'Invalid data'}), 400
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    # Pastikan upload milik user
+    cur.execute("SELECT id FROM hasil_penilaian WHERE id = %s AND user_id = %s", (upload_id, session['user_id']))
+    if not cur.fetchone():
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Not found'}), 404
+    cur.execute("DELETE FROM hasil_penilaian WHERE id = %s", (upload_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     app.run(debug=True)

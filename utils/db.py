@@ -22,8 +22,8 @@ def simpan_ke_postgres(results):
         with engine.begin() as conn:
             for r in results:
                 conn.execute(
-                    text("INSERT INTO hasil_penilaian (nama_murid, similarity, nilai, user_id) VALUES (:name, :similarity, :grade, :user_id)"),
-                    {"name": r["name"], "similarity": float(r["similarity"]), "grade": r["grade"], "user_id": r["user_id"]}
+                    text("INSERT INTO hasil_penilaian (nama_murid, similarity, nilai, user_id, kelas_id) VALUES (:name, :similarity, :grade, :user_id, :kelas_id)"),
+                    {"name": r["name"], "similarity": float(r["similarity"]), "grade": r["grade"], "user_id": r["user_id"], "kelas_id": r["kelas_id"]}
                 )
     except Exception as e:
         print("Gagal menyimpan ke PostgreSQL:", e)
@@ -65,4 +65,43 @@ def get_postgres_conn():
         host=HOST,
         port=PORT,
         sslmode="require"
-    )   
+    )
+
+def fetch_results_by_kelas(kelas_id):
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(
+                text("SELECT * FROM public.hasil_penilaian WHERE kelas_id = :kelas_id ORDER BY nama_murid"),
+                {"kelas_id": kelas_id}
+            )
+            results = [dict(row) for row in result.mappings()]
+            for r in results:
+                r['similarity'] = float(r['similarity'])
+            return results
+    except Exception as e:
+        print("Gagal fetch data dari PostgreSQL (by kelas):", e)
+        return []
+
+def fetch_results_by_kode_kelas(kode_kelas, user_id):
+    try:
+        with engine.connect() as conn:
+            # Dapatkan kelas_id dari kode_kelas dan user_id
+            kelas_result = conn.execute(
+                text("SELECT id FROM classes WHERE kode_kelas = :kode_kelas AND user_id = :user_id"),
+                {"kode_kelas": kode_kelas, "user_id": user_id}
+            )
+            kelas_row = kelas_result.fetchone()
+            if not kelas_row:
+                return []
+            kelas_id = kelas_row[0]
+            result = conn.execute(
+                text("SELECT * FROM public.hasil_penilaian WHERE kelas_id = :kelas_id ORDER BY nama_murid"),
+                {"kelas_id": kelas_id}
+            )
+            results = [dict(row) for row in result.mappings()]
+            for r in results:
+                r['similarity'] = float(r['similarity'])
+            return results
+    except Exception as e:
+        print("Gagal fetch data dari PostgreSQL (by kode_kelas):", e)
+        return []   
