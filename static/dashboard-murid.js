@@ -91,6 +91,13 @@ async function loadDashboardData() {
     if (response.ok) {
         const results = await response.json();
         updateDashboardTable(results, true);
+    } else {
+        console.error("Failed to load results:", response.statusText);
+        Swal.fire({
+            title: "Error",
+            text: "Failed to load results. Please try again later.",
+            icon: "error",
+        });
     }
 }
 
@@ -203,14 +210,53 @@ function createClassCard(className) {
 }
 
 // Tangani submit form join class (modal)
-document.querySelector(".upload-form").addEventListener("submit", function (e) {
+document.querySelector(".upload-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     const classCodeInput = document.getElementById("classCode");
-    const className = classCodeInput.value.trim();
-    if (className) {
-        createClassCard(className);
-        // Reset form dan tutup modal
+    const kodeKelas = classCodeInput.value.trim();
+    if (!kodeKelas) return;
+
+    // Kirim kode kelas ke backend
+    const response = await fetch("/api/join-class", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kode_kelas: kodeKelas }),
+    });
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+        createClassCard(data.nama_kelas);
         classCodeInput.value = "";
         document.getElementById("uploadModal").classList.remove("active");
+        Swal.fire({
+            icon: "success",
+            title: "Success",
+            text: `You have joined class ${data.nama_kelas}`,
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    } else {
+        Swal.fire({
+            icon: "error",
+            title: "Failed to Join Class",
+            text: data.error || "An error occurred.",
+        });
     }
 });
+
+async function loadJoinedClasses() {
+    const classList = document.getElementById("class-list");
+    classList.innerHTML = ""; // Bersihkan dulu
+    const response = await fetch("/api/joined-classes");
+    if (response.ok) {
+        const kelas = await response.json();
+        kelas.forEach((kls) => {
+            createClassCard(`${kls.nama_kelas}`);
+        });
+    } else {
+        classList.innerHTML = "<div style='color:red'>Error loading joined classes. Please try again.</div>";
+    }
+}
+
+// Panggil saat halaman selesai dimuat
+window.addEventListener("DOMContentLoaded", loadJoinedClasses);

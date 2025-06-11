@@ -227,7 +227,7 @@ def kelas_details_page(kode_kelas):
     cur.close()
     conn.close()
     if not kelas:
-        return "Kelas tidak ditemukan atau bukan milik Anda", 404
+        return "Class not found or not owned by you", 404
     return render_template('kelas-details.html')
 
 @app.route('/api/class/update', methods=['POST'])
@@ -295,6 +295,59 @@ def api_delete_upload():
     cur.close()
     conn.close()
     return jsonify({'success': True})
+
+@app.route('/api/join-class', methods=['POST'])
+def join_class():
+    if 'user_id' not in session or session.get('role') != 'Student':
+        return jsonify({'error': 'Unauthorized'}), 401
+    data = request.get_json()
+    kode_kelas = data.get('kode_kelas')
+    if not kode_kelas:
+        return jsonify({'error': 'Kode kelas harus diisi'}), 400
+
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    # Cari kelas berdasarkan kode_kelas
+    cur.execute("SELECT id, nama_kelas FROM classes WHERE kode_kelas = %s", (kode_kelas,))
+    kelas = cur.fetchone()
+    if not kelas:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Kode kelas tidak ditemukan'}), 404
+    kelas_id, nama_kelas = kelas
+
+    # Cek apakah murid sudah join kelas ini
+    cur.execute("SELECT 1 FROM murid_kelas WHERE user_id = %s AND kelas_id = %s", (session['user_id'], kelas_id))
+    if cur.fetchone():
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Kamu sudah join kelas ini'}), 400
+
+    # Simpan relasi murid-kelas
+    cur.execute("INSERT INTO murid_kelas (user_id, kelas_id) VALUES (%s, %s)", (session['user_id'], kelas_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'success': True, 'nama_kelas': nama_kelas, 'kode_kelas': kode_kelas})
+
+@app.route('/api/joined-classes', methods=['GET'])
+def api_joined_classes():
+    if 'user_id' not in session or session.get('role') != 'Student':
+        return jsonify({'error': 'Unauthorized'}), 401
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT c.nama_kelas, c.kode_kelas
+        FROM murid_kelas mk
+        JOIN classes c ON mk.kelas_id = c.id
+        WHERE mk.user_id = %s
+        ORDER BY mk.joined_at DESC
+    """, (session['user_id'],))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    kelas = [{"nama_kelas": row[0], "kode_kelas": row[1]} for row in rows]
+    return jsonify(kelas)
 
 if __name__ == '__main__':
     app.run(debug=True)

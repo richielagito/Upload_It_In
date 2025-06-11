@@ -85,20 +85,7 @@
                 <div class="header">
                     <h1 class="page-title">Classes</h1>
                 </div>
-                <div id="class-list">
-                    <div class="class-card">
-                        <div class="class-card-content">
-                            <h3 class="class-card-title">123</h3>
-                            <p class="class-card-desc">You have joined this class.</p>
-                        </div>
-                    </div>
-                    <div class="class-card">
-                        <div class="class-card-content">
-                            <h3 class="class-card-title">123</h3>
-                            <p class="class-card-desc">You have joined this class.</p>
-                        </div>
-                    </div>
-                </div>
+                <div id="class-list"></div>
 
                 <div class="header">
                     <h1 class="page-title">Dashboard</h1>
@@ -136,7 +123,7 @@
                         <form class="upload-form" action="/grade" method="post" enctype="multipart/form-data">
                             <div class="form-group">
                                 <label class="form-label" for="classCode">Input Class Code</label>
-                                <input class="form-input" type="text" id="classCode" name="classCode" required />
+                                <input class="form-input" type="text" id="classCode" name="classCode" placeholder="Class Code" required />
                             </div>
                             <button class="form-submit" type="submit">
                                 <div class="loading"></div>
