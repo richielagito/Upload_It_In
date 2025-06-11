@@ -17,7 +17,7 @@ from utils.file_reader import extract_text_from_any
 from utils.preprocessing import preprocess
 from utils.tfidf_manual import compute_tfidf_matrix
 from utils.lsa_manual import perform_lsa_and_similarity
-from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results, fetch_results_by_kelas, fetch_results_by_kode_kelas
+from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results, fetch_results_by_kelas, fetch_results_by_kode_kelas, fetch_results_by_assignment_id
 
 
 load_dotenv()
@@ -94,23 +94,30 @@ from flask import jsonify
 def api_classes():
     if 'user_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-    user_id = session['user_id']
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT id, nama_kelas, kode_kelas, created_at FROM classes WHERE user_id = %s ORDER BY created_at DESC", (user_id,))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    kelas = [
-        {
-            "id": row[0],
-            "nama_kelas": row[1],
-            "kode_kelas": row[2],
-            "created_at": row[3].strftime("%Y-%m-%d %H:%M")
-        }
-        for row in rows
-    ]
-    return jsonify(kelas)
+        
+    try:
+        user_id = session['user_id']
+        conn = get_postgres_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT id, nama_kelas, kode_kelas, created_at FROM classes WHERE user_id = %s ORDER BY created_at DESC", (user_id,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        kelas = [
+            {
+                "id": row[0],
+                "nama_kelas": row[1],
+                "kode_kelas": row[2],
+                "created_at": row[3].strftime("%Y-%m-%d %H:%M")
+            }
+            for row in rows
+        ]
+        return jsonify(kelas)
+        
+    except Exception as e:
+        print(f"Error getting classes: {e}")
+        return jsonify({"error": "Terjadi kesalahan saat mengambil daftar kelas"}), 500
 
 @app.route('/grade', methods=['POST'])
 def grade():
@@ -120,10 +127,14 @@ def grade():
     guru_file = files.get('guru')
     murid_files = request.files.getlist('murid')
 
-    # Ambil kelas_id dari form
+    # Ambil kelas_id dan assignment_id dari form
     kelas_id = request.form.get('kelas_id')
+    assignment_id = request.form.get('assignment_id') # Ambil assignment_id
+    
     if not kelas_id:
         return jsonify({"error": "Kelas harus dipilih"}), 400
+    if not assignment_id:
+        return jsonify({"error": "Assignment harus dipilih"}), 400 # Tambahkan validasi untuk assignment_id
 
     guru_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(guru_file.filename))
     guru_file.save(guru_path)
@@ -152,7 +163,8 @@ def grade():
             "similarity": round(sim, 4),
             "grade": get_grade(sim),
             "user_id": session['user_id'],
-            "kelas_id": int(kelas_id)
+            "kelas_id": int(kelas_id),
+            "assignment_id": int(assignment_id) # Tambahkan assignment_id ke hasil
         })
 
     save_to_csv(results, app.config['CSV_FOLDER'])
@@ -349,6 +361,148 @@ def api_joined_classes():
     conn.close()
     kelas = [{"nama_kelas": row[0], "kode_kelas": row[1]} for row in rows]
     return jsonify(kelas)
+
+@app.route('/api/assignments', methods=['POST'])
+def api_add_assignment():
+    if 'user_id' not in session or session.get('role') != 'Teacher':
+        print("Unauthorized: user not logged in or not a teacher")
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        judul = request.form.get('judulAssignment')
+        deskripsi = request.form.get('deskripsiAssignment')
+        deadline = request.form.get('deadlineAssignment')
+        kelas_id = request.form.get('kelas_id')
+        file_assignment = request.files.get('fileAssignment')
+        file_jawaban = request.files.get('jawabanGuru')
+        
+        print(f"Received assignment data: judul={judul}, deskripsi={deskripsi}, deadline={deadline}, kelas_id={kelas_id}")
+        print(f"Files received: assignment={file_assignment is not None}, jawaban={file_jawaban is not None}")
+        
+        if not all([judul, deskripsi, deadline, kelas_id, file_assignment, file_jawaban]):
+            print("Missing required fields")
+            return jsonify({"error": "Semua field harus diisi"}), 400
+            
+        # Simpan file assignment
+        assignment_filename = secure_filename(file_assignment.filename)
+        assignment_path = os.path.join(app.config['UPLOAD_FOLDER'], assignment_filename)
+        file_assignment.save(assignment_path)
+        print(f"Assignment file saved to: {assignment_path}")
+        
+        # Simpan file jawaban
+        jawaban_filename = secure_filename(file_jawaban.filename)
+        jawaban_path = os.path.join(app.config['UPLOAD_FOLDER'], jawaban_filename)
+        file_jawaban.save(jawaban_path)
+        print(f"Answer file saved to: {jawaban_path}")
+        
+        # Simpan ke database
+        conn = get_postgres_conn()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO assignments (judul, deskripsi, deadline, file_path, jawaban_path, kelas_id, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (judul, deskripsi, deadline, assignment_path, jawaban_path, kelas_id, datetime.datetime.now())
+        )
+        assignment_id_from_db = cur.fetchone()[0] # Dapatkan ID assignment yang baru dibuat
+        conn.commit()
+        cur.close()
+        conn.close()
+        print(f"Assignment saved to database with ID: {assignment_id_from_db}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Assignment berhasil ditambahkan",
+            "assignment_id": assignment_id_from_db
+        })
+        
+    except Exception as e:
+        print(f"Error adding assignment: {e}")
+        return jsonify({"error": "Terjadi kesalahan saat menambahkan assignment"}), 500
+
+@app.route('/api/assignments/<int:kelas_id>', methods=['GET'])
+def api_get_assignments(kelas_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    try:
+        conn = get_postgres_conn()
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, judul, deskripsi, deadline, file_path, jawaban_path, created_at
+            FROM assignments
+            WHERE kelas_id = %s
+            ORDER BY created_at DESC
+            """,
+            (kelas_id,)
+        )
+        assignments = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return jsonify([{
+            "id": a[0],
+            "judul": a[1],
+            "deskripsi": a[2],
+            "deadline": a[3].strftime("%Y-%m-%d %H:%M") if a[3] else None,
+            "file_path": a[4],
+            "jawaban_path": a[5],
+            "created_at": a[6].strftime("%Y-%m-%d %H:%M")
+        } for a in assignments])
+        
+    except Exception as e:
+        print(f"Error fetching assignments: {e}")
+        return jsonify({"error": "Terjadi kesalahan saat mengambil data assignment"}), 500
+
+@app.route('/api/assignments/<int:assignment_id>', methods=['DELETE'])
+def api_delete_assignment(assignment_id):
+    if 'user_id' not in session or session.get('role') != 'Teacher':
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    try:
+        conn = get_postgres_conn()
+        cur = conn.cursor()
+        
+        # Ambil file_path sebelum menghapus
+        cur.execute("SELECT file_path, jawaban_path FROM assignments WHERE id = %s", (assignment_id,))
+        result = cur.fetchone()
+        if not result:
+            return jsonify({"error": "Assignment tidak ditemukan"}), 404
+            
+        file_path, jawaban_path = result
+        
+        # Hapus dari database
+        cur.execute("DELETE FROM assignments WHERE id = %s", (assignment_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        # Hapus file fisik jika ada
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        if os.path.exists(jawaban_path):
+            os.remove(jawaban_path)
+            
+        return jsonify({"success": True, "message": "Assignment berhasil dihapus"})
+        
+    except Exception as e:
+        print(f"Error deleting assignment: {e}")
+        return jsonify({"error": "Terjadi kesalahan saat menghapus assignment"}), 500
+
+@app.route('/api/results/assignment/<int:assignment_id>', methods=['GET'])
+def api_results_by_assignment(assignment_id):
+    if 'user_id' not in session:
+        return jsonify([]), 401
+        
+    try:
+        results = fetch_results_by_assignment_id(assignment_id)
+        return jsonify(results)
+    except Exception as e:
+        print(f"Error fetching results by assignment ID: {e}")
+        return jsonify({"error": "Terjadi kesalahan saat mengambil hasil upload"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

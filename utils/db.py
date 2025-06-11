@@ -21,9 +21,17 @@ def simpan_ke_postgres(results):
     try:
         with engine.begin() as conn:
             for r in results:
+                assignment_id = r.get("assignment_id")
                 conn.execute(
-                    text("INSERT INTO hasil_penilaian (nama_murid, similarity, nilai, user_id, kelas_id) VALUES (:name, :similarity, :grade, :user_id, :kelas_id)"),
-                    {"name": r["name"], "similarity": float(r["similarity"]), "grade": r["grade"], "user_id": r["user_id"], "kelas_id": r["kelas_id"]}
+                    text("INSERT INTO hasil_penilaian (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id) VALUES (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id)"),
+                    {
+                        "name": r["name"],
+                        "similarity": float(r["similarity"]),
+                        "grade": r["grade"],
+                        "user_id": r["user_id"],
+                        "kelas_id": r["kelas_id"],
+                        "assignment_id": assignment_id
+                    }
                 )
     except Exception as e:
         print("Gagal menyimpan ke PostgreSQL:", e)
@@ -104,4 +112,19 @@ def fetch_results_by_kode_kelas(kode_kelas, user_id):
             return results
     except Exception as e:
         print("Gagal fetch data dari PostgreSQL (by kode_kelas):", e)
+        return []
+
+def fetch_results_by_assignment_id(assignment_id):
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(
+                text("SELECT id, nama_murid, similarity, nilai, created_at FROM public.hasil_penilaian WHERE assignment_id = :assignment_id ORDER BY created_at DESC"),
+                {"assignment_id": assignment_id}
+            )
+            results = [dict(row) for row in result.mappings()]
+            for r in results:
+                r['similarity'] = float(r['similarity'])
+            return results
+    except Exception as e:
+        print(f"Gagal fetch data dari PostgreSQL (by assignment_id): {e}")
         return []   

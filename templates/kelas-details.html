@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='kelas-details.css') }}" />
 </head>
 <body>
+  <script>
+    window.userRole = "{{ session['role'] }}";
+  </script>
   <!-- Navbar -->
   <div class="navbar">
     <div class="logo">Upload<span class="text-it-in">ItIn</span></div>
@@ -42,12 +45,12 @@
   <div class="main-container">
     <!-- Sidebar -->
     <div class="sidebar">
-      <button class="upload-btn" id="openUploadModalBtn">
+      <button class="upload-btn" id="openTambahAssignmentModalBtn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
           <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
           <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
         </svg>
-        Upload
+        Tambah Assignment
       </button>
       <div class="supports">Supports .DOCX, .PDF, .TXT files</div>
       <div class="menu-section">
@@ -78,16 +81,25 @@
     <!-- Main Content -->
     <div class="main-content">
       <div class="header">
-        <h1 class="page-title">Upload Details Kelas</h1>
+        <h1 class="page-title" id="mainPageTitle"></h1>
       </div>
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">Kelas: <span id="namaKelasDetail"></span></h2>
+          <h2 class="card-title">Assignment:</h2>
           <div>
             <button id="editKelasBtn" class="btn-edit">Edit Kelas</button>
             <button id="hapusKelasBtn" class="btn-delete">Hapus Kelas</button>
           </div>
         </div>
+        
+        <!-- Daftar Assignment -->
+        <div class="assignments-section">
+          
+          <div class="assignments-list" id="assignmentsList">
+            <!-- Assignment items will be added here dynamically -->
+          </div>
+        </div>
+
         <table>
           <thead>
             <tr>
@@ -164,12 +176,48 @@
               <input class="form-input" type="file" id="muridFile" name="murid" accept=".docx, .pdf, .txt" multiple required />
             </div>
             <input type="hidden" name="kelas_id" id="kelasIdInput" />
+            <input type="hidden" name="assignment_id" id="assignmentIdInput" />
             <button class="form-submit" type="submit">Upload</button>
           </form>
         </div>
       </div>
     </div>
+    <!-- Modal Tambah Assignment -->
+    <div class="modal-overlay" id="tambahAssignmentModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Tambah Assignment Baru</h3>
+          <button class="modal-close" id="closeTambahAssignmentModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="tambahAssignmentForm" action="/api/assignments" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+              <label class="form-label" for="judulAssignment">Judul Assignment:</label>
+              <input class="form-input" type="text" id="judulAssignment" name="judulAssignment" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="deskripsiAssignment">Deskripsi:</label>
+              <textarea class="form-input" id="deskripsiAssignment" name="deskripsiAssignment" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="deadlineAssignment">Deadline:</label>
+              <input class="form-input" type="datetime-local" id="deadlineAssignment" name="deadlineAssignment" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fileAssignment">File Assignment (DOCX, PDF, TXT):</label>
+              <input class="form-input" type="file" id="fileAssignment" name="fileAssignment" accept=".docx, .pdf, .txt" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="jawabanGuru">Jawaban Guru (DOCX, PDF, TXT):</label>
+              <input class="form-input" type="file" id="jawabanGuru" name="jawabanGuru" accept=".docx, .pdf, .txt" required />
+            </div>
+            <input type="hidden" name="kelas_id" id="kelasIdAssignmentInput" />
+            <button class="form-submit" type="submit">Tambah Assignment</button>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
-  <script type="module" src="{{ url_for('static', filename='kelas-details.js') }}"></script>
+  <script src="{{ url_for('static', filename='kelas-details.js') }}"></script>
 </body>
 </html> 
