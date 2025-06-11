@@ -232,6 +232,10 @@ body {
     font-weight: 600;
 }
 
+.title-class {
+    margin-bottom: 20px;
+}
+
 .user-profile {
     display: flex;
     align-items: center;
@@ -346,10 +350,20 @@ body {
     font-weight: 600;
     margin-bottom: 4px;
 }
+.class-card-subtitle {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-light);
+    margin-bottom: 4px;
+}
 
 .class-card-desc {
     font-size: 0.95rem;
     color: #666;
+}
+
+.class-card-content {
+    min-height: 80px;
 }
 
 .ellipsis {
@@ -577,4 +591,27 @@ td {
     .mobile-menu-toggle {
         display: none;
     }
+}
+
+/* Style tombol Enter Class agar identik dengan dashboard */
+.enter-class-btn {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    width: 100%;
+    font-size: 0.9rem;
+    height: 35px;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.enter-class-btn:hover {
+    background-color: #3a6be0;
 }

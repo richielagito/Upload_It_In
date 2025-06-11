@@ -108,20 +108,6 @@ loginForm.addEventListener("submit", async function (e) {
             timer: 2000,
             timerProgressBar: true,
             showConfirmButton: false,
-            didOpen: () => {
-                const timer = Swal.getPopup().querySelector("b");
-                timerInterval = setInterval(() => {
-                    timer.textContent = `${Swal.getTimerLeft()}`;
-                }, 100);
-            },
-            willClose: () => {
-                clearInterval(timerInterval);
-            },
-        }).then((result) => {
-            /* Read more about handling dismissals below */
-            if (result.dismiss === Swal.DismissReason.timer) {
-                window.location.href = "/dashboard";
-            }
         });
         window.location.href = "/dashboard";
     }
