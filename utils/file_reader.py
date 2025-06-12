@@ -1,6 +1,7 @@
 import fitz  # PyMuPDF untuk PDF
 from docx import Document  # python-docx untuk DOCX
 import os
+import re
 
 def extract_text_from_pdf(path):
     try:
@@ -37,3 +38,8 @@ def extract_text_from_any(path):
     else:
         print(f"Format tidak didukung: {ext}")
         return ""
+    
+def extract_answers(text):
+    pattern = r"jawaban\s*(\d+)\s*=\s*((?:.|\n)?)(?=jawaban\s\d+\s*=|\Z)"
+    matches = re.findall(pattern, text, flags=re.IGNORECASE)
+    return {num.strip(): ans.strip() for num,ans in matches}

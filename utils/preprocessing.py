@@ -8,7 +8,7 @@ stopwords = set(StopWordRemoverFactory().get_stop_words())
 
 def preprocess(text):
     if not text or not isinstance(text, str):
-        return ""
+        return []
     
     # Lowercase
     text = text.lower()
@@ -26,4 +26,5 @@ def preprocess(text):
     # Stemming
     stemmed_words = [stemmer.stem(w) for w in words]
     
-    return " ".join(stemmed_words)
+    # return list of tokens
+    return stemmed_words

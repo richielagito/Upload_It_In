@@ -1,17 +1,17 @@
 // --- Fungsi untuk render assignment ---
 async function renderAssignments(kodeKelas) {
-    const assignmentList = document.getElementById("assignment-list");
-    assignmentList.innerHTML = "<div>Loading assignments...</div>";
-    const assignmentRes = await fetch(`/api/assignments/${kodeKelas}`);
-    const assignments = await assignmentRes.json();
-    assignmentList.innerHTML = "";
-    if (!assignments.length) {
-        assignmentList.innerHTML = "<div>No assignments yet.</div>";
-    } else {
-        assignments.forEach((ass) => {
-            const card = document.createElement("div");
-            card.className = "card";
-            card.innerHTML = `
+  const assignmentList = document.getElementById("assignment-list");
+  assignmentList.innerHTML = "<div>Loading assignments...</div>";
+  const assignmentRes = await fetch(`/api/assignments/${kodeKelas}`);
+  const assignments = await assignmentRes.json();
+  assignmentList.innerHTML = "";
+  if (!assignments.length) {
+    assignmentList.innerHTML = "<div>No assignments yet.</div>";
+  } else {
+    assignments.forEach((ass) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
                 <div class="card-header">
                     <h2 class="card-title">${ass.judul}</h2>
                 </div>
@@ -20,110 +20,116 @@ async function renderAssignments(kodeKelas) {
                     <p><b>Deadline:</b> ${ass.deadline}</p>
                     <p>
                         <b>File:</b>
-                        ${ass.file_path ? `<a href="${ass.file_path}" target="_blank" download>Download Assignment</a>` : "No file"}
+                        ${
+                          ass.file_path
+                            ? `<a href="${ass.file_path}" target="_blank" download>Download Assignment</a>`
+                            : "No file"
+                        }
                     </p>
-                    ${ass.is_submitted ? `
+                    ${
+                      ass.is_submitted
+                        ? `
                         <p style="color: green; font-weight: bold;">Sudah Selesai</p>
-                    ` : `
+                    `
+                        : `
                         <form class="upload-jawaban-form" data-id="${ass.id}">
                             <label>Upload your answer:</label>
                             <input type="file" name="file" required />
-                            <button type="submit" class="upload-btn" style="margin:10px 0 0 0;">Upload It In</button>
+                            <button type="submit" class="upload-btn upload-it-in-btn" style="margin:10px 0 0 0;">Upload It In</button>
                             <span class="jawaban-status"></span>
                         </form>
-                    `}
+                    `
+                    }
                 </div>
             `;
-            assignmentList.appendChild(card);
-        });
-        handleUploadJawaban();
-    }
+      assignmentList.appendChild(card);
+    });
+    handleUploadJawaban();
+  }
 }
 
 // --- Fungsi untuk handle upload jawaban ---
 function handleUploadJawaban() {
-    document.querySelectorAll(".upload-jawaban-form").forEach((form) => {
-        form.addEventListener("submit", async function (e) {
-            e.preventDefault();
-            const assignmentId = this.getAttribute("data-id");
-            const fileInput = this.querySelector('input[type="file"]');
-            const statusSpan = this.querySelector(".jawaban-status");
-            if (!fileInput.files.length) return;
-            const formData = new FormData();
-            formData.append("file", fileInput.files[0]);
-            statusSpan.textContent = "Uploading...";
-            const res = await fetch(`/api/assignments/upload/${assignmentId}`, {
-                method: "POST",
-                body: formData,
-            });
-            const data = await res.json();
-            if (data.success) {
-                statusSpan.textContent = "Uploaded!";
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                statusSpan.textContent = data.error || "Failed to upload.";
-            }
-        });
+  document.querySelectorAll(".upload-jawaban-form").forEach((form) => {
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const assignmentId = this.getAttribute("data-id");
+      const fileInput = this.querySelector('input[type="file"]');
+      const statusSpan = this.querySelector(".jawaban-status");
+      if (!fileInput.files.length) return;
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+      document.querySelectorAll(".upload-it-in-btn").innerHTML = "Uploading...";
+      const res = await fetch(`/api/assignments/upload/${assignmentId}`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        statusSpan.textContent = "Uploaded!";
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        statusSpan.textContent = data.error || "Failed to upload.";
+      }
     });
+  });
 }
 
 // --- Main ---
 document.addEventListener("DOMContentLoaded", async function () {
-    const kodeKelas = document.getElementById("kodeKelasHidden").value;
-    // Fetch hasil upload kelas
-    const tbody = document.getElementById("uploadDetailsKelasTbody");
-    tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
-    const res = await fetch(`/api/results/kelas-kode/${kodeKelas}`);
-    const data = await res.json();
-    if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="4">No upload yet</td></tr>';
-    } else {
-        tbody.innerHTML = "";
-        data.forEach((item) => {
-            let status = "";
-            let statusColor = "";
-            switch (item.nilai || item.grade) {
-                case "A":
-                    status = "Very Good";
-                    statusColor = "status-very-good";
-                    break;
-                case "B":
-                    status = "Good";
-                    statusColor = "status-good";
-                    break;
-                case "C":
-                    status = "Average";
-                    statusColor = "status-average";
-                    break;
-                case "D":
-                    status = "Bad";
-                    statusColor = "status-bad";
-                    break;
-                default:
-                    status = "Bad";
-                    statusColor = "status-bad";
-            }
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td class="ellipsis">${item.nama_murid || item.name || "-"}</td>
-              <td>${item.nilai || item.grade || "-"}</td>
-              <td>${item.similarity ?? "-"}</td>
-              <td><span class="status-pill ${statusColor}">${status}</span></td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
+  const kodeKelas = document.getElementById("kodeKelasHidden").value;
+  // Fetch hasil upload kelas
+  const tbody = document.getElementById("uploadDetailsKelasTbody");
+  tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+  const res = await fetch(`/api/results/kelas-kode/${kodeKelas}`);
+  const data = await res.json();
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="4">No upload yet</td></tr>';
+  } else {
+    tbody.innerHTML = "";
+    data.forEach((item) => {
+      let status = "";
+      let statusColor = "";
+      const nilai = parseFloat(item.nilai || item.grade || 0);
 
-    // Render assignments (panggil fungsi terpisah)
-    renderAssignments(kodeKelas);
+      if (nilai >= 90) {
+        status = "A";
+        statusColor = "status-very-good";
+      } else if (nilai >= 80) {
+        status = "B";
+        statusColor = "status-good";
+      } else if (nilai >= 70) {
+        status = "C";
+        statusColor = "status-average";
+      } else if (nilai >= 60) {
+        status = "D";
+        statusColor = "status-bad";
+      } else {
+        status = "E";
+        statusColor = "status-bad";
+      }
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+    <td class="ellipsis">${item.nama_murid || item.name || "-"}</td>
+    <td>${item.nilai || item.grade || "-"}</td>
+    <td>${item.similarity ?? "-"}</td>
+    <td><span class="status-pill ${statusColor}">${status}</span></td>
+  `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Render assignments (panggil fungsi terpisah)
+  renderAssignments(kodeKelas);
 });
 
 // --- Dropdown Menu (jika ada) ---
 const toggle = document.getElementById("dropdownToggle");
 const menu = document.getElementById("dropdownContent");
 if (toggle && menu) {
-    toggle.addEventListener("click", (e) => {
-        e.stopPropagation();
-        menu.classList.toggle("show");
-    });
+  toggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    menu.classList.toggle("show");
+  });
 }
