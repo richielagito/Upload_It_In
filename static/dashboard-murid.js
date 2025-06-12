@@ -90,15 +90,25 @@ async function loadDashboardData() {
     const response = await fetch("/api/results");
     if (response.ok) {
         const results = await response.json();
-        updateDashboardTable(results, true);
+        updateDashboardTable(results);
+    } else {
+        console.error("Failed to load results:", response.statusText);
+        Swal.fire({
+            title: "Error",
+            text: "Failed to load results. Please try again later.",
+            icon: "error",
+        });
     }
 }
 
-function updateDashboardTable(results, replace = false) {
+function updateDashboardTable(results) {
     const tbody = document.querySelector(".main-content table tbody");
     let status = "";
     let statusColor = "";
-    if (replace) tbody.innerHTML = ""; // kosongkan jika replace
+    if (!results.length) {
+        tbody.innerHTML = '<tr><td colspan="5">No upload yet</td></tr>';
+        return;
+    }
     results.forEach((item, idx) => {
         const nama = item.nama_murid || item.name || "-";
         const nilai = item.nilai || item.grade || "-";
@@ -189,28 +199,72 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Fungsi untuk membuat card class baru
-function createClassCard(className) {
+function createClassCard(className, kodeKelas) {
     const classList = document.getElementById("class-list");
     const card = document.createElement("div");
     card.className = "class-card";
     card.innerHTML = `
         <div class="class-card-content">
             <h3 class="class-card-title">${className}</h3>
-            <p class="class-card-desc">You have joined this class.</p>
+            <p class="class-card-subtitle">${kodeKelas}</p>
         </div>
+            <button class="enter-class-btn" data-kode="${kodeKelas}">Enter Class</button>
     `;
     classList.appendChild(card);
+
+    card.querySelector(".enter-class-btn").addEventListener("click", function () {
+        window.location.href = `/kelas-murid/${kodeKelas}`;
+    });
 }
 
 // Tangani submit form join class (modal)
-document.querySelector(".upload-form").addEventListener("submit", function (e) {
+document.querySelector(".upload-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     const classCodeInput = document.getElementById("classCode");
-    const className = classCodeInput.value.trim();
-    if (className) {
-        createClassCard(className);
-        // Reset form dan tutup modal
+    const kodeKelas = classCodeInput.value.trim();
+    if (!kodeKelas) return;
+
+    // Kirim kode kelas ke backend
+    const response = await fetch("/api/join-class", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kode_kelas: kodeKelas }),
+    });
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+        createClassCard(data.nama_kelas, data.kode_kelas);
         classCodeInput.value = "";
         document.getElementById("uploadModal").classList.remove("active");
+        Swal.fire({
+            icon: "success",
+            title: "Success",
+            text: `You have joined class ${data.nama_kelas}`,
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    } else {
+        Swal.fire({
+            icon: "error",
+            title: "Failed to Join Class",
+            text: data.error || "An error occurred.",
+        });
     }
 });
+
+async function loadJoinedClasses() {
+    const classList = document.getElementById("class-list");
+    classList.innerHTML = "";
+    const response = await fetch("/api/joined-classes");
+    if (response.ok) {
+        const kelas = await response.json();
+        kelas.forEach((kls) => {
+            createClassCard(kls.nama_kelas, kls.kode_kelas);
+        });
+    } else {
+        classList.innerHTML = "<div style='color:red'>Error loading joined classes. Please try again.</div>";
+    }
+}
+
+// Panggil saat halaman selesai dimuat
+window.addEventListener("DOMContentLoaded", loadJoinedClasses);

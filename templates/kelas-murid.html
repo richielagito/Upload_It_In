@@ -3,19 +3,15 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>UploadItIn</title>
-        <link rel="stylesheet" href="{{ url_for('static', filename='dashboard-murid.css') }}" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+        <title>Class Details</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='kelas-murid.css') }}" />
     </head>
     <body>
         <!-- Navbar -->
         <div class="navbar">
             <div class="logo">Upload<span class="text-it-in">ItIn</span></div>
             <div class="user-profile">
-                <button class="upload-btn-navbar">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    Join Class
-                </button>
+                <a href="/dashboard" class="upload-btn-navbar">Dashboard</a>
                 <div class="dropdown-wrapper">
                     <button class="dropdown-menu" id="dropdownToggle">
                         <img src="{{ url_for('static', filename='chevron-down.svg') }}" alt="chevron" />
@@ -37,15 +33,10 @@
                 </div>
             </div>
         </div>
-
         <div class="main-container">
-            <!-- Sidebar -->
             <div class="sidebar">
-                <button class="upload-btn">
-                    <i class="icon-join fa-solid fa-right-to-bracket"></i>
-                    Join Class
-                </button>
-                <div class="supports">Ask your teacher for the class codes.</div>
+                <a href="/dashboard" class="upload-btn">Back to Dashboard</a>
+                <div class="supports">Go back to your dashboard</div>
 
                 <div class="menu-section">
                     <div class="section-title">OTHER</div>
@@ -79,39 +70,33 @@
                     </a>
                 </div>
             </div>
-
-            <!-- Main Content -->
             <div class="main-content">
-                <div class="header title-class">
-                    <h1 class="page-title">Classes</h1>
+                <div class="header">
+                    <h1 class="page-title"><span id="namaKelasDetail">{{ nama_kelas }}</span></h1>
                 </div>
-                <div id="class-list"></div>
-            </div>
-            <!-- Modal Join Class Form -->
-            <div class="modal-overlay" id="uploadModal">
-                <div class="modal">
-                    <div class="modal-header">
-                        <h3 class="modal-title">Join Class</h3>
-                        <button class="modal-close" id="closeModal">&times;</button>
+                <div class="header">
+                    <h1 class="page-title title-kecil"><span id="namaKelasDetail">Assignment</span></h1>
+                </div>
+                <div id="assignment-list"></div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><span class="upload-text">Upload</span> Results</h2>
                     </div>
-                    <div class="modal-body">
-                        <form class="upload-form" action="/grade" method="post" enctype="multipart/form-data">
-                            <div class="form-group">
-                                <label class="form-label" for="classCode">Input Class Code</label>
-                                <input class="form-input" type="text" id="classCode" name="classCode" placeholder="Class Code" required />
-                            </div>
-                            <button class="form-submit" type="submit">
-                                <div class="loading"></div>
-                                <div class="form-upload-btn active">Join Class</div>
-                            </button>
-                        </form>
-                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Grade</th>
+                                <th>Similarity</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="uploadDetailsKelasTbody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
+        <input type="hidden" id="kodeKelasHidden" value="{{ kode_kelas }}" />
+        <script src="{{ url_for('static', filename='kelas-murid.js') }}"></script>
     </body>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script type="module" src="{{ url_for('static', filename='db.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='dashboard-murid.js') }}"></script>
 </html>

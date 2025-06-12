@@ -132,7 +132,8 @@ body {
 .upload-btn {
     background-color: var(--color-primary);
     color: var(--color-white);
-    height: 40px;
+    font-size: 1rem;
+    height: 45px;
     border: none;
     border-radius: 5px;
     padding: 8px 12px;
@@ -215,19 +216,24 @@ body {
 .main-content {
     flex-grow: 1;
     padding: 20px 40px;
+    overflow: auto;
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
 .page-title {
     font-size: 2rem;
     color: #333;
     font-weight: 600;
+}
+
+.title-class {
+    margin-bottom: 20px;
 }
 
 .user-profile {
@@ -294,7 +300,7 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
     padding: 20px;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .card-header {
@@ -319,10 +325,17 @@ body {
 /* Class Card Styles */
 #class-list {
     display: flex;
-    flex-direction: row;
-    gap: 10px;
+    gap: 1rem;
+    overflow-x: auto;
 }
+
+#class-list::-webkit-scrollbar {
+    display: none;
+}
+
 .class-card {
+    min-width: 200px;
+    height: 150px;
     width: fit-content;
     background: #fff;
     border-radius: 8px;
@@ -337,10 +350,20 @@ body {
     font-weight: 600;
     margin-bottom: 4px;
 }
+.class-card-subtitle {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-light);
+    margin-bottom: 4px;
+}
 
 .class-card-desc {
     font-size: 0.95rem;
     color: #666;
+}
+
+.class-card-content {
+    min-height: 80px;
 }
 
 .ellipsis {
@@ -446,7 +469,7 @@ td {
 }
 
 .modal-title {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 500;
     color: var(--color-text-dark);
 }
@@ -478,12 +501,12 @@ td {
 .form-label {
     font-size: 14px;
     font-weight: 500;
-    color: var(--color-text-dark);
+    color: var(--color-text-medium);
 }
 
 .form-input {
     padding: 10px;
-    border: 1px solid var(--color-border);
+    border: 2px solid #3333332a;
     border-radius: 4px;
     font-size: 14px;
 }
@@ -568,4 +591,27 @@ td {
     .mobile-menu-toggle {
         display: none;
     }
+}
+
+/* Style tombol Enter Class agar identik dengan dashboard */
+.enter-class-btn {
+    background-color: var(--color-primary);
+    color: var(--color-white);
+    width: 100%;
+    font-size: 0.9rem;
+    height: 35px;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.enter-class-btn:hover {
+    background-color: #3a6be0;
 }

@@ -685,7 +685,7 @@ body {
 }
 
 .hero-text {
-    color: #fff;
+    color: #ffffff;
     animation: slideUp 0.8s ease-out;
 }
 
@@ -693,7 +693,7 @@ body {
     font-size: 3rem;
     font-weight: 700;
     margin: 0;
-    background: linear-gradient(45deg, #fff, #e3eeff);
+    background: linear-gradient(180deg, #fff 75%, #3a6adf 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;

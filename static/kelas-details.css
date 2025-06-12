@@ -668,4 +668,144 @@ td {
 #hapusKelasModal .form-submit:hover,
 #hapusUploadModal .form-submit:hover {
   background: #d12a1c;
+}
+
+.btn-primary {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.btn-primary:hover {
+  background-color: #45a049;
+}
+
+.assignments-section {
+  margin: 20px 0;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+.assignments-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.assignment-item {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 16px;
+  border: 1px solid #e9ecef;
+}
+
+.assignment-item h4 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+.assignment-item p {
+  margin: 0 0 12px 0;
+  color: #6c757d;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.assignment-item .deadline {
+  color: #dc3545;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.assignment-item .actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.assignment-item .actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.assignment-item .actions .btn-download {
+  background-color: #007bff;
+  color: white;
+}
+
+.assignment-item .actions .btn-download:hover {
+  background-color: #0056b3;
+}
+
+.assignment-item .actions .btn-delete {
+  background-color: #dc3545;
+  color: white;
+}
+
+.assignment-item .actions .btn-delete:hover {
+  background-color: #c82333;
+}
+
+#tambahAssignmentForm .form-group {
+  margin-bottom: 16px;
+}
+
+#tambahAssignmentForm .form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+#tambahAssignmentForm .form-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+#tambahAssignmentForm textarea.form-input {
+  resize: vertical;
+  min-height: 100px;
+}
+
+#tambahAssignmentForm .form-submit {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  width: 100%;
+}
+
+#tambahAssignmentForm .form-submit:hover {
+  background-color: #45a049;
+}
+
+.no-assignments {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
 } 
