@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Landing Page - Admin Panel</title>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      padding: 2rem;
+    }
+    h1 {
+      color: #1e293b;
+    }
+    section {
+      margin-bottom: 2rem;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+    }
+    button {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .back-button {
+      margin-bottom: 1rem;
+      display: inline-block;
+      background: #64748b;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Edit Landing Page</h1>
+  <a href="/admin" class="back-button">&larr; Back to Dashboard</a>
+
+  <form id="landingForm">
+    <section>
+      <h2>Hero Section</h2>
+      <label for="hero_title">Title</label>
+      <input id="hero_title" type="text" />
+
+      <label for="hero_subtitle">Subtitle</label>
+      <input id="hero_subtitle" type="text" />
+
+      <label for="hero_description">Description</label>
+      <textarea id="hero_description" rows="3"></textarea>
+    </section>
+
+    <section>
+      <h2>Testimonials</h2>
+      <div id="testimonials-container"></div>
+      <button type="button" id="add-testimonial-btn">Add Testimonial</button>
+    </section>
+
+    <section>
+      <h2>Contact Info</h2>
+      <label for="contact_email">Email</label>
+      <input id="contact_email" type="email" />
+
+      <label for="contact_phone">Phone</label>
+      <input id="contact_phone" type="text" />
+
+      <label for="contact_address">Address</label>
+      <textarea id="contact_address" rows="2"></textarea>
+    </section>
+
+    <button type="submit">Save Changes</button>
+  </form>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const testimonialsContainer = document.getElementById("testimonials-container");
+      const addTestimonialBtn = document.getElementById("add-testimonial-btn");
+
+        function createTestimonialElement(testimonial = { content: "", name: "", role: "" }) {
+          const div = document.createElement("div");
+          div.classList.add("testimonial-edit");
+          div.style.border = "1px solid #cbd5e1";
+          div.style.padding = "1rem";
+          div.style.marginBottom = "1rem";
+          div.style.borderRadius = "8px";
+          div.style.position = "relative";
+
+          const textLabel = document.createElement("label");
+          textLabel.textContent = "Testimonial Text";
+          const textArea = document.createElement("textarea");
+          textArea.rows = 3;
+          textArea.value = testimonial.content;
+
+          const authorLabel = document.createElement("label");
+          authorLabel.textContent = "Author";
+          const authorInput = document.createElement("input");
+          authorInput.type = "text";
+          authorInput.value = testimonial.name;
+
+          const roleLabel = document.createElement("label");
+          roleLabel.textContent = "Role";
+          const roleInput = document.createElement("input");
+          roleInput.type = "text";
+          roleInput.value = testimonial.role;
+
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.textContent = "Remove";
+          removeBtn.style.position = "absolute";
+          removeBtn.style.top = "10px";
+          removeBtn.style.right = "10px";
+          removeBtn.style.background = "#ef4444";
+          removeBtn.style.color = "white";
+          removeBtn.style.border = "none";
+          removeBtn.style.borderRadius = "4px";
+          removeBtn.style.padding = "0.25rem 0.5rem";
+          removeBtn.style.cursor = "pointer";
+
+          removeBtn.addEventListener("click", () => {
+            testimonialsContainer.removeChild(div);
+          });
+
+          div.appendChild(textLabel);
+          div.appendChild(textArea);
+          div.appendChild(authorLabel);
+          div.appendChild(authorInput);
+          div.appendChild(roleLabel);
+          div.appendChild(roleInput);
+          div.appendChild(removeBtn);
+
+          return div;
+        }
+
+        function loadTestimonials(testimonials) {
+          testimonialsContainer.innerHTML = "";
+          testimonials.forEach(t => {
+            testimonialsContainer.appendChild(createTestimonialElement(t));
+          });
+        }
+
+        addTestimonialBtn.addEventListener("click", () => {
+          testimonialsContainer.appendChild(createTestimonialElement());
+        });
+
+        fetch("/api/admin/landing")
+          .then(res => res.json())
+          .then(data => {
+            console.log("Received data:", data); // Debug log
+            
+            // Handle hero section
+            document.getElementById("hero_title").value = data.hero?.title || "";
+            document.getElementById("hero_subtitle").value = data.hero?.subtitle || "";
+            document.getElementById("hero_description").value = data.hero?.description || "";
+
+            // Handle testimonials - more robust parsing
+            let testimonials = [];
+            try {
+              const testimonialsData = data.testimonials;
+              console.log("Raw testimonials data:", testimonialsData); // Debug log
+              
+              if (typeof testimonialsData === "string") {
+                // If it's a JSON string, parse it
+                testimonials = JSON.parse(testimonialsData);
+              } else if (Array.isArray(testimonialsData)) {
+                // If it's already an array, use it directly
+                testimonials = testimonialsData;
+              } else if (typeof testimonialsData === "object" && testimonialsData !== null) {
+                // If it's an object, check if it has testimonials key
+                if (testimonialsData.testimonials && Array.isArray(testimonialsData.testimonials)) {
+                  testimonials = testimonialsData.testimonials;
+                } else {
+                  testimonials = [];
+                }
+              } else {
+                testimonials = [];
+              }
+              
+              console.log("Parsed testimonials:", testimonials); // Debug log
+            } catch (error) {
+              console.error("Error parsing testimonials:", error);
+              testimonials = [];
+            }
+            loadTestimonials(testimonials);
+
+            // Handle contact section
+            document.getElementById("contact_email").value = data.contact?.email || "";
+            document.getElementById("contact_phone").value = data.contact?.phone || "";
+            document.getElementById("contact_address").value = data.contact?.address || "";
+          })
+          .catch(error => {
+            console.error("Error loading landing page data:", error);
+          });
+
+        document.getElementById("landingForm").addEventListener("submit", e => {
+          e.preventDefault();
+
+          const testimonials = [];
+          testimonialsContainer.querySelectorAll(".testimonial-edit").forEach(div => {
+            const content = div.querySelector("textarea").value;
+            const name = div.querySelectorAll("input")[0].value;
+            const role = div.querySelectorAll("input")[1].value;
+            testimonials.push({ content, name, role });
+          });
+
+          const payload = {
+            hero: {
+              title: document.getElementById("hero_title").value,
+              subtitle: document.getElementById("hero_subtitle").value,
+              description: document.getElementById("hero_description").value
+            },
+            testimonials: JSON.stringify(testimonials),
+            contact: {
+              email: document.getElementById("contact_email").value,
+              phone: document.getElementById("contact_phone").value,
+              address: document.getElementById("contact_address").value
+            }
+          };
+
+          fetch("/api/admin/landing", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          })
+            .then(res => res.json())
+            .then(() => alert("Changes saved successfully!"))
+            .catch(err => alert("Failed to save: " + err.message));
+        });
+      });
+  </script>
+</body>
+</html>

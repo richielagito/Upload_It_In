@@ -1,0 +1,133 @@
+<!-- templates/admin-users.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Users - Admin Panel</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: #f8fafc;
+    }
+    h1 {
+      color: #1e293b;
+      margin-bottom: 1rem;
+    }
+    .back-button {
+      margin-bottom: 1rem;
+      display: inline-block;
+      background: #64748b;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th {
+      background: #e2e8f0;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn.promote { background: #4f46e5; color: white; }
+    .btn.deactivate { background: #f87171; color: white; }
+    .status {
+      font-weight: bold;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      background: #e2e8f0;
+      display: inline-block;
+    }
+    .status.true { background: #10b981; color: white; }
+    .status.false { background: #f59e0b; color: white; }
+  </style>
+</head>
+<body>
+  <h1>Manage Users</h1>
+  <a href="/admin" class="back-button">&larr; Back to Dashboard</a>
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Created At</th>
+        <th>Admin</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="userTable"></tbody>
+  </table>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("/api/admin/users")
+        .then(res => res.json())
+        .then(users => {
+          const table = document.getElementById("userTable");
+          users.forEach(u => {
+            const isAdmin = u.is_admin ? 'true' : 'false';
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${u.email}</td>
+              <td>${u.created_at}</td>
+              <td><span class="status ${isAdmin}">${isAdmin}</span></td>
+              <td>
+                <button class="btn promote" data-id="${u.id}">Promote</button>
+                <button class="btn deactivate" data-id="${u.id}">Deactivate</button>
+              </td>
+            `;
+            table.appendChild(tr);
+          });
+
+          document.querySelectorAll(".btn.promote").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const id = btn.dataset.id;
+              fetch("/api/admin/promote", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: id })
+              }).then(res => res.json())
+                .then(data => location.reload())
+                .catch(err => alert("Error: " + err));
+            });
+          });
+
+          document.querySelectorAll(".btn.deactivate").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const id = btn.dataset.id;
+              fetch("/api/admin/deactivate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: id })
+              }).then(res => res.json())
+                .then(data => location.reload())
+                .catch(err => alert("Error: " + err));
+            });
+          });
+        });
+    });
+  </script>
+</body>
+</html>
