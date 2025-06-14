@@ -16,7 +16,7 @@ from utils.db import get_postgres_conn
 from utils.file_reader import extract_text_from_any
 from utils.preprocessing import preprocess
 from utils.tfidf_manual import compute_tfidf_matrix
-from utils.lsa_manual import perform_lsa_and_similarity
+from utils.lsa_sklearn import lsa_similarity_sklearn
 from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results, fetch_results_by_kelas, fetch_results_by_kode_kelas, fetch_results_by_assignment_id, fetch_student_submissions_for_assignment, save_plagiarism_results
 
 
@@ -30,16 +30,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['CSV_FOLDER'], exist_ok=True)
 
 def get_grade(sim):
-    if sim >= 0.9:
-        return 'A'
-    elif sim >= 0.8:
-        return 'B'
-    elif sim >= 0.7:
-        return 'C'
-    elif sim >= 0.6:
-        return 'D'
-    else:
-        return 'E'
+    return round(sim * 100, 2)
     
 def generate_unique_class_code(length=6):
     conn = get_postgres_conn()
@@ -165,8 +156,8 @@ def grade():
 
     all_texts = [guru_text] + murid_texts
     all_preprocessed = [preprocess(text) for text in all_texts]
-
-    similarities = perform_lsa_and_similarity(all_preprocessed)
+    texts_for_lsa = [" ".join(tokens) for tokens in all_preprocessed]
+    similarities = lsa_similarity_sklearn(texts_for_lsa)
 
     results = []
     # Loop melalui hasil perbandingan dengan guru
@@ -219,7 +210,7 @@ def grade():
                 
                 # Lakukan perbandingan LSA dan similarity
                 # Karena hanya 2 teks, similarities akan berupa array 1 elemen
-                plagiarism_similarities = perform_lsa_and_similarity(preprocessed_texts)
+                plagiarism_similarities = lsa_similarity_sklearn(preprocessed_texts)
                 plagiarism_score = round(plagiarism_similarities[0], 4)
 
                 plagiarism_data_to_save.append({
@@ -382,12 +373,13 @@ def api_delete_upload():
         return jsonify({'error': 'Unauthorized'}), 401
     data = request.get_json()
     upload_id = data.get('id')
+    print(f"Deleting upload with ID: {upload_id}")
     if not upload_id:
         return jsonify({'error': 'Invalid data'}), 400
     conn = get_postgres_conn()
     cur = conn.cursor()
     # Pastikan upload milik user
-    cur.execute("SELECT id FROM hasil_penilaian WHERE id = %s AND user_id = %s", (upload_id, session['user_id']))
+    cur.execute("SELECT id FROM hasil_penilaian WHERE id = %s", (upload_id,))
     if not cur.fetchone():
         cur.close()
         conn.close()
@@ -661,9 +653,8 @@ def api_upload_student_answer(assignment_id):
 
     # Pra-proses teks
     all_preprocessed = [preprocess(guru_text), preprocess(murid_text)]
-
-    # Lakukan perbandingan similarity
-    similarities = perform_lsa_and_similarity(all_preprocessed)
+    texts_for_lsa = [" ".join(tokens) for tokens in all_preprocessed]
+    similarities = lsa_similarity_sklearn(texts_for_lsa)
     sim_score_guru = round(similarities[0], 4) # Similarity siswa dengan guru
     grade = get_grade(sim_score_guru)
 
@@ -705,7 +696,7 @@ def api_upload_student_answer(assignment_id):
 
             preprocessed_texts_plag = [preprocess(text1_plag), preprocess(text2_plag)]
             
-            plagiarism_similarities = perform_lsa_and_similarity(preprocessed_texts_plag)
+            plagiarism_similarities = lsa_similarity_sklearn(preprocessed_texts_plag)
             plagiarism_score = round(plagiarism_similarities[0], 4)
 
             plagiarism_data_to_save.append({
