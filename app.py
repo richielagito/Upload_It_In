@@ -44,20 +44,284 @@ def generate_unique_class_code(length=6):
     conn.close()
     return code
 
+import json
+
 @app.route('/')
 def homescreen():
-    return render_template('homescreen.html')
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT section_name, content FROM landing_page_content")
+    data = {row[0]: row[1] for row in cur.fetchall()}
+    cur.close()
+    conn.close()
+
+    # Parse testimonials JSON string to list
+    testimonials_parsed = []
+    try:
+        testimonials_raw = data.get('testimonials', '[]')
+        print("Raw testimonials from DB:", testimonials_raw)  # Debug log
+        
+        # Handle both string and dict cases
+        if isinstance(testimonials_raw, str):
+            # If it's a JSON string, parse it directly
+            testimonials_parsed = json.loads(testimonials_raw)
+        elif isinstance(testimonials_raw, dict):
+            # If it's already a dict, check if it has testimonials key
+            if "testimonials" in testimonials_raw:
+                testimonials_parsed = testimonials_raw["testimonials"]
+            else:
+                testimonials_parsed = testimonials_raw
+        elif isinstance(testimonials_raw, list):
+            # If it's already a list, use it directly
+            testimonials_parsed = testimonials_raw
+        else:
+            testimonials_parsed = []
+            
+        print("Parsed testimonials:", testimonials_parsed)  # Debug log
+    except Exception as e:
+        print("Error parsing testimonials JSON:", e)
+        testimonials_parsed = []
+
+    data['testimonials_parsed'] = testimonials_parsed
+
+    return render_template('homescreen.html', content=data)
 
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login_register'))
-    
-    if session.get('role') == 'Student':
+
+    role = session.get('role')
+
+    if role == 'Student':
         return render_template('dashboard-murid.html')
-    elif session.get('role') == 'Teacher':
+    elif role == 'Teacher':
         return render_template('dashboard-guru.html')
-    return render_template('homescreen.html')
+    elif role == 'Admin':
+        return redirect(url_for('admin_dashboard'))  
+
+    return render_template('homescreen.html')  
+
+@app.route('/admin')
+def admin_dashboard():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return redirect(url_for('login_register'))
+    return render_template('admin-dashboard.html') 
+
+@app.route('/api/admin/summary')
+def admin_summary():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("SELECT COUNT(*) FROM auth.users")
+        total_users = cur.fetchone()[0]
+
+        cur.execute("SELECT COUNT(*) FROM classes")
+        total_classes = cur.fetchone()[0]
+
+        cur.execute("SELECT COUNT(*) FROM hasil_penilaian")
+        total_uploads = cur.fetchone()[0]
+
+        cur.execute("SELECT COUNT(*) FROM admins WHERE is_active = TRUE")
+        active_admins = cur.fetchone()[0]
+
+    except Exception as e:
+        print("Error fetching admin stats:", e)
+        return jsonify({"error": "Failed to fetch summary"}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify({
+        "total_users": total_users,
+        "total_classes": total_classes,
+        "total_uploads": total_uploads,
+        "active_admins": active_admins
+    })
+
+@app.route('/api/admin/users')
+def admin_get_users():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT 
+            u.id,
+            u.email,
+            u.created_at,
+            CASE WHEN a.id IS NOT NULL AND a.is_active THEN true ELSE false END as is_admin
+        FROM auth.users u
+        LEFT JOIN admins a ON u.id = a.user_id
+        ORDER BY u.created_at DESC
+    """)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    result = [
+        {
+            "id": r[0],  
+            "email": r[1],
+            "created_at": r[2].strftime("%Y-%m-%d %H:%M"),
+            "is_admin": r[3]
+        }
+        for r in rows
+    ]
+    return jsonify(result)
+
+
+@app.route('/api/admin/landing', methods=['GET', 'POST'])
+def api_admin_landing():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+
+    if request.method == 'GET':
+        cur.execute("SELECT section_name, content FROM landing_page_content")
+        rows = cur.fetchall()
+        result = {}
+        
+        for section_name, content in rows:
+            if section_name == 'testimonials':
+                # For testimonials, try to parse as JSON if it's a string
+                try:
+                    if isinstance(content, str):
+                        result[section_name] = json.loads(content)
+                    else:
+                        result[section_name] = content
+                except json.JSONDecodeError:
+                    result[section_name] = []
+            else:
+                # For other sections, parse as JSON if it's a string
+                try:
+                    if isinstance(content, str):
+                        result[section_name] = json.loads(content)
+                    else:
+                        result[section_name] = content
+                except json.JSONDecodeError:
+                    result[section_name] = content
+        
+        cur.close()
+        conn.close()
+        return jsonify(result)
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        print("Received data for saving:", data)  # Debug log
+
+        try:
+            for section in ['hero', 'testimonials', 'contact']:
+                if section in data:
+                    # Convert data to JSON string for storage
+                    if section == 'testimonials':
+                        # testimonials is already a JSON string from the frontend
+                        content_to_store = data[section]
+                    else:
+                        # Convert other sections to JSON string
+                        content_to_store = json.dumps(data[section])
+                    
+                    print(f"Storing {section}: {content_to_store}")  # Debug log
+                    
+                    cur.execute("""
+                        UPDATE landing_page_content
+                        SET content = %s, updated_at = NOW(), updated_by = %s
+                        WHERE section_name = %s
+                    """, (content_to_store, session['user_id'], section))
+                    
+                    # Check if the update affected any rows
+                    if cur.rowcount == 0:
+                        # If no rows were updated, insert a new row
+                        cur.execute("""
+                            INSERT INTO landing_page_content (section_name, content, updated_by)
+                            VALUES (%s, %s, %s)
+                        """, (section, content_to_store, session['user_id']))
+            
+            conn.commit()
+            print("Changes committed successfully")  # Debug log
+            
+        except Exception as e:
+            print(f"Error saving landing page data: {e}")  # Debug log
+            conn.rollback()
+            cur.close()
+            conn.close()
+            return jsonify({"error": str(e)}), 500
+        
+        cur.close()
+        conn.close()
+        return jsonify({"success": True})
+    
+@app.route('/admin/users')
+def admin_users():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return redirect(url_for('login_register'))
+    return render_template('admin-users.html')
+
+@app.route('/admin/landing-page')
+def admin_landing():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return redirect(url_for('login_register'))
+    return render_template('admin-landing.html')
+
+@app.route('/api/admin/promote', methods=['POST'])
+def promote_user():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    target_user_id = data.get('user_id')
+    if not target_user_id:
+        return jsonify({"error": "No user_id provided"}), 400
+
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+
+    
+    cur.execute("SELECT id FROM admins WHERE user_id = %s", (target_user_id,))
+    row = cur.fetchone()
+
+    if row:
+   
+        cur.execute("UPDATE admins SET is_active = TRUE WHERE user_id = %s", (target_user_id,))
+    else:
+    
+        cur.execute("""
+            INSERT INTO admins (user_id, admin_level, is_active, created_by)
+            VALUES (%s, %s, %s, %s)
+        """, (target_user_id, 2, True, session['user_id']))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route('/api/admin/deactivate', methods=['POST'])
+def deactivate_user():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    target_user_id = data.get('user_id')
+    if not target_user_id:
+        return jsonify({"error": "No user_id provided"}), 400
+
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+
+    cur.execute("UPDATE admins SET is_active = false WHERE user_id = %s", (target_user_id,))
+    conn.commit()
+
+    cur.close()
+    conn.close()
+    return jsonify({"success": True})
 
 @app.route('/create-class', methods=['POST'])
 def create_class():
@@ -267,15 +531,32 @@ def set_session():
     if not access_token:
         return jsonify({"error": "No token"}), 400
 
-    # Verifikasi token ke Supabase
     headers = {"apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJleGt5bHF1cG9waXVzb3JnZG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4NDAyNTAsImV4cCI6MjA2MzQxNjI1MH0.A0ha39mt_dkSSkBAQHehVXQwpzhb6JoxhymF2mxtczA", "Authorization": f"Bearer {access_token}"}
     resp = requests.get("https://rexkylqupopiusorgdni.supabase.co/auth/v1/user", headers=headers)
     if resp.status_code != 200:
         return jsonify({"error": "Invalid token"}), 401
     user = resp.json()
+
     session['user_id'] = user['id']
     session['username'] = user['user_metadata'].get('username', user['email'])
-    session['role'] = user['user_metadata'].get('role', user['email'])
+
+    session['role'] = user['user_metadata'].get('role', 'Student')  # fallback ke Student
+
+    try:
+        conn = get_postgres_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT admin_level FROM admins WHERE user_id = %s AND is_active = true", (user['id'],))
+        admin_row = cur.fetchone()
+        if admin_row:
+            session['role'] = 'Admin'
+            session['admin_level'] = admin_row[0]
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print("Error checking admin role:", e)
+
+    print("LOGIN ROLE:", session['role'])
+
     return jsonify({"success": True})
 
 @app.route('/logout', methods=['GET', 'POST'])
