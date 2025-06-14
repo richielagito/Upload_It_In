@@ -4,7 +4,6 @@ from flask import Flask, request, render_template, jsonify, redirect, url_for, s
 from werkzeug.utils import secure_filename
 import os
 import datetime
-import pandas as pd
 import secrets
 from dotenv import load_dotenv
 import requests
@@ -13,11 +12,11 @@ import string
 import datetime
 
 from utils.db import get_postgres_conn
-from utils.file_reader import extract_text_from_any
-from utils.preprocessing import preprocess
-from utils.tfidf_manual import compute_tfidf_matrix
-from utils.lsa_sklearn import lsa_similarity_sklearn
-from utils.db import save_to_csv, simpan_ke_postgres, fetch_all_results, fetch_results_by_kelas, fetch_results_by_kode_kelas, fetch_results_by_assignment_id, fetch_student_submissions_for_assignment, save_plagiarism_results
+from utils.LSA import (
+    extract_text_from_any,
+    lsa_similarity,
+)
+from utils.db import simpan_ke_postgres, fetch_all_results, fetch_results_by_kelas, fetch_results_by_kode_kelas, fetch_results_by_assignment_id
 
 
 load_dotenv()
@@ -28,9 +27,6 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['CSV_FOLDER'] = 'data'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['CSV_FOLDER'], exist_ok=True)
-
-def get_grade(sim):
-    return round(sim * 100, 2)
     
 def generate_unique_class_code(length=6):
     conn = get_postgres_conn()
@@ -374,127 +370,6 @@ def api_classes():
         print(f"Error getting classes: {e}")
         return jsonify({"error": "Terjadi kesalahan saat mengambil daftar kelas"}), 500
 
-@app.route('/grade', methods=['POST'])
-def grade():
-    if 'user_id' not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-    files = request.files
-    murid_files = files.getlist('murid')
-
-    # Ambil kelas_id dan assignment_id dari form
-    kelas_id = request.form.get('kelas_id')
-    assignment_id = request.form.get('assignment_id') # Ambil assignment_id
-    
-    if not kelas_id:
-        return jsonify({"error": "Kelas harus dipilih"}), 400
-    if not assignment_id:
-        return jsonify({"error": "Assignment harus dipilih"}), 400
-
-    # Ambil jalur file jawaban guru dari database
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-    try:
-        cur.execute("SELECT jawaban_path FROM assignments WHERE id = %s", (assignment_id,))
-        guru_jawaban_path = cur.fetchone()
-        if not guru_jawaban_path:
-            return jsonify({"error": "Jalur file jawaban guru tidak ditemukan untuk assignment ini."}), 404
-        guru_jawaban_path = guru_jawaban_path[0]
-    finally:
-        cur.close()
-        conn.close()
-
-    guru_text = extract_text_from_any(guru_jawaban_path)
-
-    murid_texts = []
-    murid_names = []
-    murid_paths_for_db = [] # Tambahkan list untuk menyimpan jalur file siswa
-    for f in murid_files:
-        original_name = secure_filename(f.filename)
-        name, ext = os.path.splitext(original_name)
-        short_name = (name[:50] + ext) if len(name) > 50 else original_name
-        murid_path = os.path.join(app.config['UPLOAD_FOLDER'], short_name)
-        f.save(murid_path)
-        murid_texts.append(extract_text_from_any(murid_path))
-        murid_names.append(f.filename.replace(".pdf", ""))
-        murid_paths_for_db.append(murid_path) # Simpan jalur file untuk database
-
-    all_texts = [guru_text] + murid_texts
-    all_preprocessed = [preprocess(text) for text in all_texts]
-    texts_for_lsa = [" ".join(tokens) for tokens in all_preprocessed]
-    similarities = lsa_similarity_sklearn(texts_for_lsa)
-
-    results = []
-    # Loop melalui hasil perbandingan dengan guru
-    for i, sim in enumerate(similarities):
-        # Hanya simpan hasil untuk siswa (lewatkan hasil guru jika ada)
-        if i == 0: # Ini adalah perbandingan guru dengan guru, abaikan
-            continue
-
-        results.append({
-            "name": murid_names[i-1], # Sesuaikan indeks karena guru_text ada di awal
-            "similarity": round(sim, 4),
-            "grade": get_grade(sim),
-            "user_id": session['user_id'],
-            "kelas_id": int(kelas_id),
-            "assignment_id": int(assignment_id),
-            "file_path": murid_paths_for_db[i-1] # Tambahkan jalur file siswa di sini
-        })
-
-    save_to_csv(results, app.config['CSV_FOLDER'])
-
-    try:
-        simpan_ke_postgres(results)
-    except Exception as e:
-        print(f"Error uploading results to PostgreSQL: {e}")
-
-    # --- Bagian baru: Perbandingan Plagiarisme Antar Siswa ---
-    try:
-        # Ambil semua unggahan siswa lain untuk assignment ini
-        existing_submissions = fetch_student_submissions_for_assignment(int(assignment_id), session['user_id'])
-        
-        plagiarism_data_to_save = []
-
-        # Bandingkan unggahan baru dengan setiap unggahan yang sudah ada
-        for new_submission_info in results: # results di sini hanya berisi 1 submission murid yang baru diupload
-            new_student_file_path = new_submission_info['file_path']
-            new_student_user_id = new_submission_info['user_id']
-            new_student_name = new_submission_info['name']
-
-            for existing_submission in existing_submissions:
-                existing_student_file_path = existing_submission['file_path']
-                existing_student_user_id = existing_submission['user_id']
-                existing_student_name = existing_submission['nama_murid']
-
-                # Ekstrak teks dari kedua file
-                text1 = extract_text_from_any(new_student_file_path)
-                text2 = extract_text_from_any(existing_student_file_path)
-
-                # Pra-proses teks
-                preprocessed_texts = [preprocess(text1), preprocess(text2)]
-                
-                # Lakukan perbandingan LSA dan similarity
-                # Karena hanya 2 teks, similarities akan berupa array 1 elemen
-                plagiarism_similarities = lsa_similarity_sklearn(preprocessed_texts)
-                plagiarism_score = round(plagiarism_similarities[0], 4)
-
-                plagiarism_data_to_save.append({
-                    "assignment_id": int(assignment_id),
-                    "student1_user_id": new_student_user_id,
-                    "student2_user_id": existing_student_user_id,
-                    "student1_file_path": new_student_file_path,
-                    "student2_file_path": existing_student_file_path,
-                    "similarity_score": plagiarism_score
-                })
-
-        if plagiarism_data_to_save:
-            save_plagiarism_results(plagiarism_data_to_save)
-            print(f"Plagiarism results saved for {len(plagiarism_data_to_save)} pairs.")
-
-    except Exception as e:
-        print(f"Error performing or saving plagiarism comparison: {e}")
-
-    return jsonify(results)
-
 @app.route('/login-register')
 def login_register():
     if 'user_id' in session:
@@ -639,8 +514,11 @@ def api_delete_class():
         conn.close()
         return jsonify({'error': 'Class not found'}), 404
     kelas_id = row[0]
-    # Hapus semua upload di kelas ini
+
+    # Hapus semua hasil_penilaian di kelas ini
     cur.execute("DELETE FROM hasil_penilaian WHERE kelas_id = %s", (kelas_id,))
+    # Hapus semua assignments di kelas ini
+    cur.execute("DELETE FROM assignments WHERE kelas_id = %s", (kelas_id,))
     # Hapus kelas
     cur.execute("DELETE FROM classes WHERE id = %s", (kelas_id,))
     conn.commit()
@@ -892,7 +770,6 @@ def api_upload_student_answer(assignment_id):
     if 'user_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
     
-    # Pastikan hanya ada satu file yang diunggah
     if 'file' not in request.files:
         return jsonify({"error": "Tidak ada file yang diunggah."}), 400
     
@@ -900,7 +777,6 @@ def api_upload_student_answer(assignment_id):
     if student_file.filename == '':
         return jsonify({"error": "File tidak dipilih."}), 400
 
-    # Ambil kelas_id dan jalur jawaban guru dari database
     conn = get_postgres_conn()
     cur = conn.cursor()
     guru_jawaban_path = None
@@ -918,85 +794,43 @@ def api_upload_student_answer(assignment_id):
     if not guru_jawaban_path:
         return jsonify({"error": "Jalur file jawaban guru tidak ditemukan untuk assignment ini."}), 404
 
-    # Simpan file jawaban siswa
     original_name = secure_filename(student_file.filename)
     name, ext = os.path.splitext(original_name)
     short_name = (name[:50] + ext) if len(name) > 50 else original_name
     murid_path = os.path.join(app.config['UPLOAD_FOLDER'], short_name)
     student_file.save(murid_path)
 
-    # Pastikan jalur file adalah absolut
     murid_path_absolute = os.path.abspath(murid_path)
 
-    # Ekstrak teks dari file guru dan siswa
     guru_text = extract_text_from_any(os.path.abspath(guru_jawaban_path))
     murid_text = extract_text_from_any(murid_path_absolute)
 
-    # Pra-proses teks
-    all_preprocessed = [preprocess(guru_text), preprocess(murid_text)]
-    texts_for_lsa = [" ".join(tokens) for tokens in all_preprocessed]
-    similarities = lsa_similarity_sklearn(texts_for_lsa)
-    sim_score_guru = round(similarities[0], 4) # Similarity siswa dengan guru
-    grade = get_grade(sim_score_guru)
+    grade = lsa_similarity(guru_text, murid_text)
+    similarity = grade
 
-    # Data hasil untuk disimpan ke hasil_penilaian
     result_to_save = {
         "name": student_file.filename.replace(".pdf", ""),
-        "similarity": sim_score_guru,
+        "similarity": similarity,  
         "grade": grade,
         "user_id": session['user_id'],
         "kelas_id": kelas_id,
         "assignment_id": assignment_id,
-        "file_path": murid_path # Jalur file siswa yang disimpan
+        "file_path": murid_path
     }
 
     try:
-        # simpan_ke_postgres mengharapkan list, jadi bungkus dalam list
         simpan_ke_postgres([result_to_save])
         print(f"Student submission saved to hasil_penilaian: {result_to_save}")
     except Exception as e:
         print(f"Error saving student submission to PostgreSQL: {e}")
         return jsonify({"error": "Gagal menyimpan hasil unggahan siswa."}), 500
 
-    # --- Bagian Perbandingan Plagiarisme Antar Siswa ---
-    try:
-        # Ambil semua unggahan siswa lain untuk assignment ini (kecuali yang baru diupload)
-        existing_submissions = fetch_student_submissions_for_assignment(assignment_id, session['user_id'])
-        
-        plagiarism_data_to_save = []
-
-        # Bandingkan unggahan baru dengan setiap unggahan yang sudah ada
-        for existing_submission in existing_submissions:
-            existing_student_file_path = existing_submission['file_path']
-            existing_student_user_id = existing_submission['user_id']
-            existing_student_name = existing_submission['nama_murid']
-
-            # Ekstrak teks dari kedua file (yang baru diupload dan yang sudah ada)
-            text1_plag = extract_text_from_any(murid_path_absolute) # Menggunakan jalur absolut
-            text2_plag = extract_text_from_any(os.path.abspath(existing_student_file_path))
-
-            preprocessed_texts_plag = [preprocess(text1_plag), preprocess(text2_plag)]
-            
-            plagiarism_similarities = lsa_similarity_sklearn(preprocessed_texts_plag)
-            plagiarism_score = round(plagiarism_similarities[0], 4)
-
-            plagiarism_data_to_save.append({
-                "assignment_id": assignment_id,
-                "student1_user_id": session['user_id'], # Siswa yang baru mengunggah
-                "student2_user_id": existing_student_user_id,
-                "student1_file_path": murid_path,
-                "student2_file_path": existing_student_file_path,
-                "similarity_score": plagiarism_score
-            })
-
-        if plagiarism_data_to_save:
-            save_plagiarism_results(plagiarism_data_to_save)
-            print(f"Plagiarism results saved for {len(plagiarism_data_to_save)} pairs.")
-
-    except Exception as e:
-        print(f"Error performing or saving plagiarism comparison: {e}")
-
-    return jsonify({"success": True, "message": "Unggahan berhasil diproses!", "grade": grade, "similarity": sim_score_guru})
+    return jsonify({
+        "success": True,
+        "message": "Unggahan berhasil diproses!",
+        "grade": grade,
+        "similarity": similarity
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
