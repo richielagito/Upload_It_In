@@ -31,26 +31,26 @@
         <div class="hero-section">
             <div class="hero-content">
                 <div class="hero-text">
-                    <h1 class="hero-title">Revolutionize the Way You Grade Essays</h1>
+                    <h1 class="hero-title">{{ content.hero.title if content.hero and content.hero.title else 'Revolutionize the Way You Grade Essays' }}</h1>
                     <div class="hero-subtitle">
-                        <i>Analyze. Grade. Improve — in seconds.</i>
+                        <i>{{ content.hero.subtitle if content.hero and content.hero.subtitle else 'Analyze. Grade. Improve — in seconds.' }}</i>
                     </div>
-                    <p class="hero-description">UploadItIn transforms how you evaluate essays — making the process faster, smarter, and more reliable than ever. Trusted by 500+ users and counting.</p>
+                    <p class="hero-description">{{ content.hero.description if content.hero and content.hero.description else 'UploadItIn transforms how you evaluate essays — making the process faster, smarter, and more reliable than ever. Trusted by 500+ users and counting.' }}</p>
                     <div class="hero-buttons">
                         <a href="/login-register" class="btn btn-primary"> <i class="fas fa-rocket"></i> Start Now </a>
                         <a href="#how-it-works" class="btn btn-secondary"> <i class="fas fa-play"></i> How It Works </a>
                     </div>
                     <div class="hero-stats">
                         <div class="stat">
-                            <span class="stat-number">1000+</span>
+                            <span class="stat-number">{{ content.statistics.essays_graded if content.statistics and content.statistics.essays_graded else '1000+' }}</span>
                             <span class="stat-label">Essay Graded</span>
                         </div>
                         <div class="stat">
-                            <span class="stat-number">500+</span>
+                            <span class="stat-number">{{ content.statistics.active_users if content.statistics and content.statistics.active_users else '500+' }}</span>
                             <span class="stat-label">Active User</span>
                         </div>
                         <div class="stat">
-                            <span class="stat-number">98%</span>
+                            <span class="stat-number">{{ content.statistics.satisfaction if content.statistics and content.statistics.satisfaction else '98%' }}</span>
                             <span class="stat-label">Satisfaction</span>
                         </div>
                     </div>
@@ -164,7 +164,7 @@
                 <div class="testimonial">
                     <div class="testimonial-content">
                         <i class="fas fa-quote-left"></i>
-                        <p>{{ testimonial.content }}</p>
+                        <p>{{ testimonial.quote }}</p>
                     </div>
                     <div class="testimonial-author">
                         <img src="https://ui-avatars.com/api/?name={{ testimonial.name | replace(' ', '+') }}&background=random" alt="{{ testimonial.name }}" />
@@ -185,17 +185,17 @@
                     <div class="contact-item">
                         <i class="fas fa-envelope"></i>
                         <h3>Email</h3>
-                        <p>support@essaygrader.com</p>
+                        <p>{{ content.contact.email if content.contact and content.contact.email else 'support@essaygrader.com' }}</p>
                     </div>
                     <div class="contact-item">
                         <i class="fas fa-phone"></i>
                         <h3>Telepon</h3>
-                        <p>+62 123 4567 890</p>
+                        <p>{{ content.contact.phone if content.contact and content.contact.phone else '+62 123 4567 890' }}</p>
                     </div>
                     <div class="contact-item">
                         <i class="fas fa-map-marker-alt"></i>
                         <h3>Address</h3>
-                        <p>Jl. Pendidikan No. 123<br />Jakarta, Indonesia</p>
+                        <p>{{ content.contact.address if content.contact and content.contact.address else 'Jl. Pendidikan No. 123<br />Jakarta, Indonesia' | safe }}</p>
                     </div>
                 </div>
                 <form class="contact-form">

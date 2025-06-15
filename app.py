@@ -174,7 +174,6 @@ def admin_get_users():
     ]
     return jsonify(result)
 
-
 @app.route('/api/admin/landing', methods=['GET', 'POST'])
 def api_admin_landing():
     if 'user_id' not in session or session.get('role') != 'Admin':
@@ -189,24 +188,26 @@ def api_admin_landing():
         result = {}
         
         for section_name, content in rows:
-            if section_name == 'testimonials':
-                # For testimonials, try to parse as JSON if it's a string
-                try:
-                    if isinstance(content, str):
-                        result[section_name] = json.loads(content)
-                    else:
-                        result[section_name] = content
-                except json.JSONDecodeError:
-                    result[section_name] = []
-            else:
-                # For other sections, parse as JSON if it's a string
-                try:
-                    if isinstance(content, str):
-                        result[section_name] = json.loads(content)
-                    else:
-                        result[section_name] = content
-                except json.JSONDecodeError:
+            try:
+                # Try to parse as JSON first
+                if isinstance(content, str):
+                    parsed_content = json.loads(content)
+                    result[section_name] = parsed_content
+                else:
                     result[section_name] = content
+            except json.JSONDecodeError:
+                # If JSON parsing fails, store as string
+                result[section_name] = content
+        
+        # Ensure we have default empty structures if sections don't exist
+        if 'hero' not in result:
+            result['hero'] = {"title": "", "subtitle": "", "description": ""}
+        if 'statistics' not in result:
+            result['statistics'] = {"essays_graded": "1000+", "active_users": "500+", "satisfaction": "98%"}
+        if 'testimonials' not in result:
+            result['testimonials'] = []
+        if 'contact' not in result:
+            result['contact'] = {"email": "", "phone": "", "address": ""}
         
         cur.close()
         conn.close()
@@ -217,18 +218,14 @@ def api_admin_landing():
         print("Received data for saving:", data)  # Debug log
 
         try:
-            for section in ['hero', 'testimonials', 'contact']:
+            for section in ['hero', 'statistics', 'testimonials', 'contact']:
                 if section in data:
                     # Convert data to JSON string for storage
-                    if section == 'testimonials':
-                        # testimonials is already a JSON string from the frontend
-                        content_to_store = data[section]
-                    else:
-                        # Convert other sections to JSON string
-                        content_to_store = json.dumps(data[section])
+                    content_to_store = json.dumps(data[section])
                     
                     print(f"Storing {section}: {content_to_store}")  # Debug log
                     
+                    # First try to update
                     cur.execute("""
                         UPDATE landing_page_content
                         SET content = %s, updated_at = NOW(), updated_by = %s
@@ -239,8 +236,8 @@ def api_admin_landing():
                     if cur.rowcount == 0:
                         # If no rows were updated, insert a new row
                         cur.execute("""
-                            INSERT INTO landing_page_content (section_name, content, updated_by)
-                            VALUES (%s, %s, %s)
+                            INSERT INTO landing_page_content (section_name, content, updated_by, created_at, updated_at)
+                            VALUES (%s, %s, %s, NOW(), NOW())
                         """, (section, content_to_store, session['user_id']))
             
             conn.commit()
@@ -252,9 +249,10 @@ def api_admin_landing():
             cur.close()
             conn.close()
             return jsonify({"error": str(e)}), 500
+        finally:
+            cur.close()
+            conn.close()
         
-        cur.close()
-        conn.close()
         return jsonify({"success": True})
     
 @app.route('/admin/users')
@@ -282,23 +280,29 @@ def promote_user():
     conn = get_postgres_conn()
     cur = conn.cursor()
 
-    
-    cur.execute("SELECT id FROM admins WHERE user_id = %s", (target_user_id,))
-    row = cur.fetchone()
+    try:
+        cur.execute("SELECT id FROM admins WHERE user_id = %s", (target_user_id,))
+        row = cur.fetchone()
 
-    if row:
-   
-        cur.execute("UPDATE admins SET is_active = TRUE WHERE user_id = %s", (target_user_id,))
-    else:
-    
-        cur.execute("""
-            INSERT INTO admins (user_id, admin_level, is_active, created_by)
-            VALUES (%s, %s, %s, %s)
-        """, (target_user_id, 2, True, session['user_id']))
+        if row:
+            # User already exists in admins table, just activate
+            cur.execute("UPDATE admins SET is_active = TRUE WHERE user_id = %s", (target_user_id,))
+        else:
+            # Insert new admin record
+            cur.execute("""
+                INSERT INTO admins (user_id, admin_level, is_active, created_by)
+                VALUES (%s, %s, %s, %s)
+            """, (target_user_id, 2, True, session['user_id']))
 
-    conn.commit()
-    cur.close()
-    conn.close()
+        conn.commit()
+    except Exception as e:
+        print(f"Error promoting user: {e}")
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+    
     return jsonify({"success": True})
 
 @app.route('/api/admin/deactivate', methods=['POST'])
@@ -314,11 +318,17 @@ def deactivate_user():
     conn = get_postgres_conn()
     cur = conn.cursor()
 
-    cur.execute("UPDATE admins SET is_active = false WHERE user_id = %s", (target_user_id,))
-    conn.commit()
+    try:
+        cur.execute("UPDATE admins SET is_active = false WHERE user_id = %s", (target_user_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"Error deactivating user: {e}")
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
 
-    cur.close()
-    conn.close()
     return jsonify({"success": True})
 
 @app.route('/create-class', methods=['POST'])

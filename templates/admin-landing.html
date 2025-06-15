@@ -1,251 +1,1040 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Edit Landing Page - Admin Panel</title>
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f8fafc;
-      padding: 2rem;
-    }
-    h1 {
-      color: #1e293b;
-    }
-    section {
-      margin-bottom: 2rem;
-      background: white;
-      padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    label {
-      font-weight: bold;
-      display: block;
-      margin-top: 1rem;
-    }
-    textarea, input {
-      width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.5rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-    }
-    button {
-      margin-top: 1rem;
-      padding: 0.75rem 1.5rem;
-      background: #4f46e5;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .back-button {
-      margin-bottom: 1rem;
-      display: inline-block;
-      background: #64748b;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      text-decoration: none;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Landing Page - Admin Panel</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Roboto", sans-serif;
+            background: linear-gradient(135deg, #f7f9fc 0%, #e3eeff 100%);
+            padding-top: 70px;
+        }
+
+        /* Admin Header */
+        .admin-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 15px 40px;
+            z-index: 1001;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .admin-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #16a34a;
+        }
+
+        .btn-save:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .btn-back {
+            background: #64748b;
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-back:hover {
+            background: #475569;
+        }
+
+        /* Success/Error Messages */
+        .message {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1002;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .message.show {
+            transform: translateX(0);
+        }
+
+        .message.success {
+            background: #22c55e;
+        }
+
+        .message.error {
+            background: #ef4444;
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Editable elements */
+        .editable {
+            position: relative;
+            transition: all 0.3s ease;
+            border: 2px dashed transparent;
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        .editable:hover {
+            border-color: #4a7eff;
+            background: rgba(74, 126, 255, 0.05);
+        }
+
+        .editable.editing {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .edit-tooltip {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            background: #1e293b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .editable:hover .edit-tooltip {
+            opacity: 1;
+        }
+
+        .inline-input {
+            background: transparent;
+            border: none;
+            color: inherit;
+            font: inherit;
+            width: 100%;
+            outline: none;
+        }
+
+        .inline-textarea {
+            background: transparent;
+            border: none;
+            color: inherit;
+            font: inherit;
+            width: 100%;
+            outline: none;
+            resize: none;
+            min-height: 1.5em;
+        }
+
+        /* Navbar styles */
+        .navbar {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.06);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            height: 70px;
+            position: fixed;
+            top: 70px;
+            left: 0;
+            z-index: 1000;
+        }
+
+        .navbar-logo {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #4a7eff;
+        }
+
+        .text-black {
+            color: #2d3748 !important;
+        }
+
+        .navbar-menu {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 35px;
+        }
+
+        .navbar-menu a {
+            text-decoration: none;
+            color: #445566;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 8px 0;
+        }
+
+        .navbar-btn {
+            background: linear-gradient(45deg, #4a7eff, #3a6adf);
+            color: #fff !important;
+            padding: 12px 25px !important;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 126, 255, 0.2);
+            text-decoration: none;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            position: relative;
+            min-height: calc(100vh - 140px);
+            background: linear-gradient(135deg, #4a7eff 0%, #3a6adf 100%);
+            overflow: hidden;
+            padding: 40px;
+            margin-top: 70px;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-text {
+            color: #ffffff;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(180deg, #fff 75%, #3a6adf 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.3rem;
+            margin: 10px 0 20px;
+            opacity: 0.9;
+            font-style: italic;
+        }
+
+        .hero-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #fff;
+            color: #4a7eff;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .hero-image {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .main-illustration {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.15));
+        }
+
+        .floating-card {
+            position: absolute;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+
+        .floating-card i {
+            font-size: 1.2rem;
+            color: #4a7eff;
+        }
+
+        .floating-card span {
+            color: #2d3748;
+            font-weight: 500;
+        }
+
+        .card-1 {
+            top: 10%;
+            left: 0;
+        }
+
+        .card-2 {
+            top: 40%;
+            right: 0;
+        }
+
+        .card-3 {
+            bottom: 20%;
+            left: 20%;
+        }
+
+        .hero-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            line-height: 0;
+        }
+
+        .hero-wave svg {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Sections */
+        .section {
+            padding: 80px 20px;
+            text-align: center;
+            background: #fff;
+        }
+
+        .section:nth-child(even) {
+            background: #f7f9fc;
+        }
+
+        .section h2 {
+            font-size: 2.5rem;
+            color: #2d3748;
+            margin-bottom: 50px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section h2::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(45deg, #4a7eff, #3a6adf);
+            border-radius: 3px;
+        }
+
+        /* Steps */
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .step {
+            background: #fff;
+            padding: 40px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #4a7eff, #3a6adf);
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .step i {
+            font-size: 2.5rem;
+            color: #4a7eff;
+            margin: 20px 0;
+        }
+
+        .step h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .step p {
+            color: #718096;
+        }
+
+        /* Testimonials */
+        .testimonials-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .testimonial {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .testimonial-content {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .testimonial-content i {
+            color: #4a7eff;
+            font-size: 2rem;
+            opacity: 0.3;
+            position: absolute;
+            top: -10px;
+            left: -10px;
+        }
+
+        .testimonial-content p {
+            color: #4a5568;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-left: 20px;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            text-align: start;
+            gap: 15px;
+        }
+
+        .testimonial-author img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .testimonial-author h4 {
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .testimonial-author p {
+            color: #718096;
+            margin: 5px 0 0;
+        }
+
+        .testimonial-remove {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .testimonial:hover .testimonial-remove {
+            opacity: 1;
+        }
+
+        .add-testimonial-btn {
+            background: #4a7eff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .add-testimonial-btn:hover {
+            background: #3a6adf;
+        }
+
+        /* Contact form */
+        .contact-section {
+            padding: 80px 20px;
+            background: #f7f9fc;
+        }
+
+        .contact-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .contact-container h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2d3748;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2d3748;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4a7eff;
+        }
+
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        /* Responsive */
+        @media screen and (max-width: 1024px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-image {
+                order: -1;
+                margin-bottom: 30px;
+            }
+
+            .main-illustration {
+                max-width: 400px;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            .admin-header {
+                padding: 15px 20px;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-stats {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .floating-card {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>Edit Landing Page</h1>
-  <a href="/admin" class="back-button">&larr; Back to Dashboard</a>
+    <!-- Admin Header -->
+    <div class="admin-header">
+        <div class="admin-title">
+            <i class="fas fa-edit"></i> Landing Page Editor
+        </div>
+        <div class="admin-actions">
+            <button class="admin-btn btn-save" id="save-btn" onclick="saveChanges()">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <a href="/admin" class="admin-btn btn-back">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
 
-  <form id="landingForm">
-    <section>
-      <h2>Hero Section</h2>
-      <label for="hero_title">Title</label>
-      <input id="hero_title" type="text" />
+    <!-- Message Container -->
+    <div id="message-container"></div>
 
-      <label for="hero_subtitle">Subtitle</label>
-      <input id="hero_subtitle" type="text" />
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-logo">Upload<span class="text-black">ItIn</span></div>
+        <ul class="navbar-menu">
+            <li><a href="/">Home</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#testimonials">Testimonials</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <a href="/login-register" class="navbar-btn">
+            <i class="fas fa-sign-in-alt"></i> Login / Register
+        </a>
+    </nav>
 
-      <label for="hero_description">Description</label>
-      <textarea id="hero_description" rows="3"></textarea>
-    </section>
-
-    <section>
-      <h2>Testimonials</h2>
-      <div id="testimonials-container"></div>
-      <button type="button" id="add-testimonial-btn">Add Testimonial</button>
-    </section>
-
-    <section>
-      <h2>Contact Info</h2>
-      <label for="contact_email">Email</label>
-      <input id="contact_email" type="email" />
-
-      <label for="contact_phone">Phone</label>
-      <input id="contact_phone" type="text" />
-
-      <label for="contact_address">Address</label>
-      <textarea id="contact_address" rows="2"></textarea>
-    </section>
-
-    <button type="submit">Save Changes</button>
-  </form>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const testimonialsContainer = document.getElementById("testimonials-container");
-      const addTestimonialBtn = document.getElementById("add-testimonial-btn");
-
-        function createTestimonialElement(testimonial = { content: "", name: "", role: "" }) {
-          const div = document.createElement("div");
-          div.classList.add("testimonial-edit");
-          div.style.border = "1px solid #cbd5e1";
-          div.style.padding = "1rem";
-          div.style.marginBottom = "1rem";
-          div.style.borderRadius = "8px";
-          div.style.position = "relative";
-
-          const textLabel = document.createElement("label");
-          textLabel.textContent = "Testimonial Text";
-          const textArea = document.createElement("textarea");
-          textArea.rows = 3;
-          textArea.value = testimonial.content;
-
-          const authorLabel = document.createElement("label");
-          authorLabel.textContent = "Author";
-          const authorInput = document.createElement("input");
-          authorInput.type = "text";
-          authorInput.value = testimonial.name;
-
-          const roleLabel = document.createElement("label");
-          roleLabel.textContent = "Role";
-          const roleInput = document.createElement("input");
-          roleInput.type = "text";
-          roleInput.value = testimonial.role;
-
-          const removeBtn = document.createElement("button");
-          removeBtn.type = "button";
-          removeBtn.textContent = "Remove";
-          removeBtn.style.position = "absolute";
-          removeBtn.style.top = "10px";
-          removeBtn.style.right = "10px";
-          removeBtn.style.background = "#ef4444";
-          removeBtn.style.color = "white";
-          removeBtn.style.border = "none";
-          removeBtn.style.borderRadius = "4px";
-          removeBtn.style.padding = "0.25rem 0.5rem";
-          removeBtn.style.cursor = "pointer";
-
-          removeBtn.addEventListener("click", () => {
-            testimonialsContainer.removeChild(div);
-          });
-
-          div.appendChild(textLabel);
-          div.appendChild(textArea);
-          div.appendChild(authorLabel);
-          div.appendChild(authorInput);
-          div.appendChild(roleLabel);
-          div.appendChild(roleInput);
-          div.appendChild(removeBtn);
-
-          return div;
-        }
-
-        function loadTestimonials(testimonials) {
-          testimonialsContainer.innerHTML = "";
-          testimonials.forEach(t => {
-            testimonialsContainer.appendChild(createTestimonialElement(t));
-          });
-        }
-
-        addTestimonialBtn.addEventListener("click", () => {
-          testimonialsContainer.appendChild(createTestimonialElement());
-        });
-
-        fetch("/api/admin/landing")
-          .then(res => res.json())
-          .then(data => {
-            console.log("Received data:", data); // Debug log
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="editable" data-field="hero.title">
+                    <div class="edit-tooltip">Click to edit title</div>
+                    <h1 class="hero-title">
+                        <input type="text" class="inline-input" id="hero-title" value="Loading...">
+                    </h1>
+                </div>
+                
+                <div class="editable" data-field="hero.subtitle">
+                    <div class="edit-tooltip">Click to edit subtitle</div>
+                    <div class="hero-subtitle">
+                        <input type="text" class="inline-input" id="hero-subtitle" value="Loading...">
+                    </div>
+                </div>
+                
+                <div class="editable" data-field="hero.description">
+                    <div class="edit-tooltip">Click to edit description</div>
+                    <p class="hero-description">
+                        <textarea class="inline-textarea" id="hero-description">Loading...</textarea>
+                    </p>
+                </div>
+                
+                <div class="hero-buttons">
+                    <a href="/login-register" class="btn btn-primary">
+                        <i class="fas fa-rocket"></i> Start Now
+                    </a>
+                    <a href="#how-it-works" class="btn btn-secondary">
+                        <i class="fas fa-play"></i> How It Works
+                    </a>
+                </div>
+                
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="editable" data-field="statistics.essays_graded">
+                            <div class="edit-tooltip">Click to edit essay count</div>
+                            <input type="text" class="inline-input stat-number" id="stat-essays" value="...">
+                        </div>
+                        <span class="stat-label">Essay Graded</span>
+                    </div>
+                    <div class="stat">
+                        <div class="editable" data-field="statistics.active_users">
+                            <div class="edit-tooltip">Click to edit user count</div>
+                            <input type="text" class="inline-input stat-number" id="stat-users" value="...">
+                        </div>
+                        <span class="stat-label">Active User</span>
+                    </div>
+                    <div class="stat">
+                        <div class="editable" data-field="statistics.satisfaction">
+                            <div class="edit-tooltip">Click to edit satisfaction rate</div>
+                            <input type="text" class="inline-input stat-number" id="stat-satisfaction" value="...">
+                        </div>
+                        <span class="stat-label">Satisfaction</span>
+                    </div>
+                </div>
+            </div>
             
-            // Handle hero section
-            document.getElementById("hero_title").value = data.hero?.title || "";
-            document.getElementById("hero_subtitle").value = data.hero?.subtitle || "";
-            document.getElementById("hero_description").value = data.hero?.description || "";
+            <div class="hero-image">
+                <div class="floating-card card-1">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Analyzed Essay</span>
+                </div>
+                <div class="floating-card card-2">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Real-time Results</span>
+                </div>
+                <div class="floating-card card-3">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Safe and Trusted</span>
+                </div>
+                <svg class="main-illustration" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+                    <style>
+                        .primary { fill: #4a7eff; }
+                        .secondary { fill: #3a6adf; }
+                        .accent { fill: #ffffff; }
+                        .text { fill: #2d3748; }
+                    </style>
+                    <rect x="100" y="50" width="300" height="400" rx="20" class="accent" />
+                    <rect x="130" y="80" width="240" height="10" rx="5" class="primary" opacity="0.3" />
+                    <rect x="130" y="100" width="180" height="10" rx="5" class="primary" opacity="0.2" />
+                    <rect x="130" y="140" width="240" height="8" rx="4" class="text" opacity="0.1" />
+                    <rect x="130" y="160" width="200" height="8" rx="4" class="text" opacity="0.1" />
+                    <rect x="130" y="180" width="220" height="8" rx="4" class="text" opacity="0.1" />
+                    <rect x="130" y="200" width="190" height="8" rx="4" class="text" opacity="0.1" />
+                    <path d="M145,250 L155,260 L165,240" stroke="white" stroke-width="3" fill="none" />
+                    <path d="M145,300 L155,310 L165,290" stroke="white" stroke-width="3" fill="none" />
+                    <rect x="280" y="240" width="80" height="80" rx="10" class="primary" />
+                    <text x="320" y="285" text-anchor="middle" class="accent" style="font-size: 24px; font-weight: bold">95</text>
+                    <circle cx="400" cy="100" r="30" class="primary" opacity="0.1" />
+                    <circle cx="80" cy="300" r="40" class="secondary" opacity="0.1" />
+                    <circle cx="420" cy="400" r="25" class="primary" opacity="0.1" />
+                    <rect x="130" y="350" width="240" height="20" rx="10" class="text" opacity="0.1" />
+                    <rect x="130" y="350" width="180" height="20" rx="10" class="primary" opacity="0.5" />
+                </svg>
+            </div>
+        </div>
+        <div class="hero-wave">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 160">
+                <path fill="#ffffff" fill-opacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+        </div>
+    </div>
 
-            // Handle testimonials - more robust parsing
-            let testimonials = [];
-            try {
-              const testimonialsData = data.testimonials;
-              console.log("Raw testimonials data:", testimonialsData); // Debug log
-              
-              if (typeof testimonialsData === "string") {
-                // If it's a JSON string, parse it
-                testimonials = JSON.parse(testimonialsData);
-              } else if (Array.isArray(testimonialsData)) {
-                // If it's already an array, use it directly
-                testimonials = testimonialsData;
-              } else if (typeof testimonialsData === "object" && testimonialsData !== null) {
-                // If it's an object, check if it has testimonials key
-                if (testimonialsData.testimonials && Array.isArray(testimonialsData.testimonials)) {
-                  testimonials = testimonialsData.testimonials;
-                } else {
-                  testimonials = [];
-                }
-              } else {
-                testimonials = [];
-              }
-              
-              console.log("Parsed testimonials:", testimonials); // Debug log
-            } catch (error) {
-              console.error("Error parsing testimonials:", error);
-              testimonials = [];
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="section">
+        <h2>How It Works</h2>
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-number">1</div>
+                <i class="fas fa-user-plus"></i>
+                <h3>Create Account</h3>
+                <p>Register easily using your email</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <i class="fas fa-file-upload"></i>
+                <h3>Upload Essay</h3>
+                <p>Upload essay file(s) in supported formats</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <i class="fas fa-check-circle"></i>
+                <h3>Get Grade Result</h3>
+                <p>System will analyze and give grade result</p>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <i class="fas fa-chart-line"></i>
+                <h3>View Result</h3>
+                <p>Access detailed report and grade</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="section">
+        <h2>User Testimonial</h2>
+        <div class="testimonials-container" id="testimonials-container">
+            <!-- Testimonials will be loaded here -->
+        </div>
+        <button class="add-testimonial-btn" onclick="addTestimonial()">
+            <i class="fas fa-plus"></i> Add Testimonial
+        </button>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="contact-container">
+            <h2>Contact Information</h2>
+            <div class="form-group">
+                <label for="contact-email">Support Email:</label>
+                <div class="editable" data-field="contact.email">
+                    <div class="edit-tooltip">Click to edit email</div>
+                    <input type="email" class="form-group input" id="contact-email" value="Loading...">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="contact-phone">Phone Number:</label>
+                <div class="editable" data-field="contact.phone">
+                    <div class="edit-tooltip">Click to edit phone</div>
+                    <input type="tel" class="form-group input" id="contact-phone" value="Loading...">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="contact-address">Address:</label>
+                <div class="editable" data-field="contact.address">
+                    <div class="edit-tooltip">Click to edit address</div>
+                    <textarea class="form-group textarea" id="contact-address">Loading...</textarea>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    fetch('/api/admin/landing')
+        .then(res => res.json())
+        .then(data => {
+            const mapBySection = data;
+
+            // Hero
+            if (mapBySection.hero) {
+                document.getElementById('hero-title').value = mapBySection.hero.title || '';
+                document.getElementById('hero-subtitle').value = mapBySection.hero.subtitle || '';
+                document.getElementById('hero-description').value = mapBySection.hero.description || '';
             }
-            loadTestimonials(testimonials);
 
-            // Handle contact section
-            document.getElementById("contact_email").value = data.contact?.email || "";
-            document.getElementById("contact_phone").value = data.contact?.phone || "";
-            document.getElementById("contact_address").value = data.contact?.address || "";
-          })
-          .catch(error => {
-            console.error("Error loading landing page data:", error);
-          });
-
-        document.getElementById("landingForm").addEventListener("submit", e => {
-          e.preventDefault();
-
-          const testimonials = [];
-          testimonialsContainer.querySelectorAll(".testimonial-edit").forEach(div => {
-            const content = div.querySelector("textarea").value;
-            const name = div.querySelectorAll("input")[0].value;
-            const role = div.querySelectorAll("input")[1].value;
-            testimonials.push({ content, name, role });
-          });
-
-          const payload = {
-            hero: {
-              title: document.getElementById("hero_title").value,
-              subtitle: document.getElementById("hero_subtitle").value,
-              description: document.getElementById("hero_description").value
-            },
-            testimonials: JSON.stringify(testimonials),
-            contact: {
-              email: document.getElementById("contact_email").value,
-              phone: document.getElementById("contact_phone").value,
-              address: document.getElementById("contact_address").value
+            // Statistics
+            if (mapBySection.statistics) {
+                document.getElementById('stat-users').value = mapBySection.statistics.active_users || '';
+                document.getElementById('stat-satisfaction').value = mapBySection.statistics.satisfaction || '';
+                document.getElementById('stat-essays').value = mapBySection.statistics.essays_graded || '';
             }
-          };
 
-          fetch("/api/admin/landing", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          })
-            .then(res => res.json())
-            .then(() => alert("Changes saved successfully!"))
-            .catch(err => alert("Failed to save: " + err.message));
+            // Contact
+            if (mapBySection.contact) {
+                document.getElementById('contact-email').value = mapBySection.contact.email || '';
+                document.getElementById('contact-phone').value = mapBySection.contact.phone || '';
+                document.getElementById('contact-address').value = mapBySection.contact.address || '';
+            }
+
+            // Testimonials
+            if (Array.isArray(mapBySection.testimonials)) {
+                const container = document.getElementById('testimonials-container');
+                container.innerHTML = '';
+
+                mapBySection.testimonials.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'testimonial';
+                    card.innerHTML = `
+                        <div class="testimonial-content editable" data-field="testimonials[${index}].quote">
+                            <div class="edit-tooltip">Click to edit testimonial</div>
+                            <p><textarea class="inline-textarea testimonial-quote">${item.quote || item.content || item.text || ''}</textarea></p>
+                        </div>
+                        <div class="testimonial-author editable" data-field="testimonials[${index}].name">
+                            <img src="${item.image || '/static/default-avatar.png'}" alt="Avatar">
+                            <div>
+                                <input type="text" class="inline-input testimonial-name" value="${item.name || ''}">
+                                <p><input type="text" class="inline-input testimonial-role" value="${item.role || ''}"></p>
+                            </div>
+                        </div>
+                        <button class="testimonial-remove" onclick="removeTestimonial(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        })
+        .catch(err => {
+            showMessage("Failed to load content: " + err.message, "error");
         });
-      });
-  </script>
+});
+
+function saveChanges() {
+    const payload = {
+        hero: {
+            title: document.getElementById('hero-title').value,
+            subtitle: document.getElementById('hero-subtitle').value,
+            description: document.getElementById('hero-description').value
+        },
+        statistics: {
+            essays_graded: document.getElementById('stat-essays').value,
+            active_users: document.getElementById('stat-users').value,
+            satisfaction: document.getElementById('stat-satisfaction').value
+        },
+        contact: {
+            email: document.getElementById('contact-email').value,
+            phone: document.getElementById('contact-phone').value,
+            address: document.getElementById('contact-address').value
+        },
+        testimonials: Array.from(document.querySelectorAll('#testimonials-container .testimonial')).map(card => ({
+            quote: card.querySelector('.testimonial-quote')?.value || '',
+            name: card.querySelector('.testimonial-name')?.value || '',
+            role: card.querySelector('.testimonial-role')?.value || '',
+            image: '/static/default-avatar.png'
+        }))
+    };
+
+    document.getElementById('save-btn').disabled = true;
+
+    fetch('/api/admin/landing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Failed to save changes");
+        return res.json();
+    })
+    .then(() => {
+        showMessage("Changes saved successfully!", "success");
+    })
+    .catch(err => {
+        showMessage("Error saving changes: " + err.message, "error");
+    })
+    .finally(() => {
+        document.getElementById('save-btn').disabled = false;
+    });
+}
+
+function showMessage(text, type) {
+    const msgBox = document.createElement('div');
+    msgBox.className = `message ${type} show`;
+    msgBox.textContent = text;
+    document.getElementById('message-container').appendChild(msgBox);
+    setTimeout(() => {
+        msgBox.classList.remove('show');
+        msgBox.remove();
+    }, 4000);
+}
+
+function addTestimonial() {
+    const container = document.getElementById('testimonials-container');
+    const card = document.createElement('div');
+    card.className = 'testimonial';
+    card.innerHTML = `
+        <div class="testimonial-content editable">
+            <div class="edit-tooltip">Click to edit testimonial</div>
+            <p><textarea class="inline-textarea testimonial-quote"></textarea></p>
+        </div>
+        <div class="testimonial-author editable">
+            <img src="/static/default-avatar.png" alt="Avatar">
+            <div>
+                <input type="text" class="inline-input testimonial-name" placeholder="Name">
+                <p><input type="text" class="inline-input testimonial-role" placeholder="Role"></p>
+            </div>
+        </div>
+        <button class="testimonial-remove" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    container.appendChild(card);
+}
+
+function removeTestimonial(index) {
+    const container = document.getElementById('testimonials-container');
+    if (container.children[index]) {
+        container.children[index].remove();
+    }
+}
+</script>
+
 </body>
-</html>
