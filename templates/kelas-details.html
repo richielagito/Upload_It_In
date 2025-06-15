@@ -1,223 +1,226 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Upload Details Kelas</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='kelas-details.css') }}" />
-</head>
-<body>
-  <script>
-    window.userRole = "{{ session['role'] }}";
-  </script>
-  <!-- Navbar -->
-  <div class="navbar">
-    <div class="logo">Upload<span class="text-it-in">ItIn</span></div>
-    <div class="user-profile">
-      <button class="upload-btn-navbar">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-          <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
-        </svg>
-        <a href="/dashboard" style="text-decoration: none; color: inherit">Dashboard</a>
-      </button>
-      <div class="dropdown-wrapper">
-        <button class="dropdown-menu" id="dropdownToggle">
-          <img src="{{ url_for('static', filename='chevron-down.svg') }}" alt="chevron" />
-        </button>
-        <div class="dropdown-content" id="dropdownContent">
-          <button>Help</button>
-          <button>Settings</button>
-          <button>
-            <a href="/logout" style="text-decoration: none; color: inherit">Logout</a>
-          </button>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Upload Details Kelas</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='kelas-details.css') }}" />
+    </head>
+    <body>
+        <script>
+            window.userRole = "{{ session['role'] }}";
+        </script>
+        <!-- Navbar -->
+        <div class="navbar">
+            <div class="logo">Upload<span class="text-it-in">ItIn</span></div>
+            <div class="user-profile">
+                <button class="upload-btn-navbar">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                        <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
+                    </svg>
+                    <a href="/dashboard" style="text-decoration: none; color: inherit">Dashboard</a>
+                </button>
+                <div class="dropdown-wrapper">
+                    <button class="dropdown-menu" id="dropdownToggle">
+                        <img src="{{ url_for('static', filename='chevron-down.svg') }}" alt="chevron" />
+                    </button>
+                    <div class="dropdown-content" id="dropdownContent">
+                        <button>Help</button>
+                        <button>Settings</button>
+                        <button>
+                            <a href="/logout" style="text-decoration: none; color: inherit">Logout</a>
+                        </button>
+                    </div>
+                </div>
+                <div class="user-info">
+                    <div class="user-name">{{ session['username'] }}</div>
+                    <div class="user-role">{{ session['role'] }}</div>
+                </div>
+                <div class="user-avatar">
+                    <img src="https://i.pinimg.com/736x/69/78/19/69781905dd57ba144ab71ca4271ab294.jpg" alt="User Avatar" />
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="user-info">
-        <div class="user-name">{{ session['username'] }}</div>
-        <div class="user-role">{{ session['role'] }}</div>
-      </div>
-      <div class="user-avatar">
-        <img src="https://i.pinimg.com/736x/69/78/19/69781905dd57ba144ab71ca4271ab294.jpg" alt="User Avatar" />
-      </div>
-    </div>
-  </div>
-  <div class="main-container">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <button class="upload-btn" id="openTambahAssignmentModalBtn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-          <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
-        </svg>
-        Tambah Assignment
-      </button>
-      <div class="supports">Supports .DOCX, .PDF, .TXT files</div>
-      <div class="menu-section">
-        <div class="section-title">OTHER</div>
-        <a href="#" class="menu-item">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-            <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
-          </svg>
-          Help
-        </a>
-        <a href="#" class="menu-item">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
-            <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
-          </svg>
-          Settings
-        </a>
-        <a href="/logout" class="menu-item">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
-            <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
-          </svg>
-          Logout
-        </a>
-      </div>
-    </div>
-    <!-- Main Content -->
-    <div class="main-content">
-      <div class="header">
-        <h1 class="page-title" id="mainPageTitle"></h1>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">Assignment:</h2>
-          <div>
-            <button id="editKelasBtn" class="btn-edit">Edit Kelas</button>
-            <button id="hapusKelasBtn" class="btn-delete">Hapus Kelas</button>
-          </div>
-        </div>
-        
-        <!-- Daftar Assignment -->
-        <div class="assignments-section">
-          
-          <div class="assignments-list" id="assignmentsList">
-            <!-- Assignment items will be added here dynamically -->
-          </div>
-        </div>
+        <div class="main-container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <a href="/dashboard" class="upload-btn">Back to Dashboard</a>
+                <div class="supports">Go back to your dashboard</div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>File Name</th>
-              <th>Grade</th>
-              <th>Similarity</th>
-              <th>Status</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="uploadDetailsKelasTbody"></tbody>
-        </table>
-      </div>
-    </div>
-    <!-- Modal Edit Kelas -->
-    <div class="modal-overlay" id="editKelasModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Edit Nama Kelas</h3>
-          <button class="modal-close" id="closeEditKelasModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form id="editKelasForm">
-            <div class="form-group">
-              <label class="form-label" for="editNamaKelas">Nama Kelas Baru:</label>
-              <input class="form-input" type="text" id="editNamaKelas" name="editNamaKelas" required />
+                <div class="menu-section">
+                    <div class="section-title">OTHER</div>
+                    <a href="#" class="menu-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                            <path
+                                d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"
+                            />
+                        </svg>
+                        Help
+                    </a>
+                    <a href="#" class="menu-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z" />
+                            <path
+                                d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"
+                            />
+                        </svg>
+                        Settings
+                    </a>
+                    <a href="/logout" class="menu-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path
+                                fill-rule="evenodd"
+                                d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"
+                            />
+                            <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z" />
+                        </svg>
+                        Logout
+                    </a>
+                </div>
             </div>
-            <button class="form-submit" type="submit">Simpan</button>
-          </form>
-        </div>
-      </div>
-    </div>
-    <!-- Modal Konfirmasi Hapus Kelas -->
-    <div class="modal-overlay" id="hapusKelasModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Konfirmasi Hapus Kelas</h3>
-          <button class="modal-close" id="closeHapusKelasModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p>Apakah Anda yakin ingin menghapus kelas ini beserta semua upload di dalamnya?</p>
-          <button class="form-submit" id="confirmHapusKelasBtn" style="background:#f04438;">Ya, Hapus</button>
-        </div>
-      </div>
-    </div>
-    <!-- Modal Konfirmasi Hapus Upload -->
-    <div class="modal-overlay" id="hapusUploadModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Konfirmasi Hapus Upload</h3>
-          <button class="modal-close" id="closeHapusUploadModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p>Apakah Anda yakin ingin menghapus upload ini?</p>
-          <button class="form-submit" id="confirmHapusUploadBtn" style="background:#f04438;">Ya, Hapus</button>
-        </div>
-      </div>
-    </div>
-    <!-- Modal Upload Form -->
-    <div class="modal-overlay" id="uploadModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Upload File Jawaban & Murid</h3>
-          <button class="modal-close" id="closeUploadModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form class="upload-form" id="uploadForm" action="/grade" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-              <label class="form-label" for="guruFile">File Jawaban Guru (DOCX, PDF, TXT):</label>
-              <input class="form-input" type="file" id="guruFile" name="guru" accept=".docx, .pdf, .txt" required />
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="header">
+                    <h1 class="page-title" id="mainPageTitle"></h1>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Assignment</h2>
+                        <div>
+                            <button class="btn-tambah-assignment" id="openTambahAssignmentModalBtn">Tambah Assignment</button>
+                            <button id="editKelasBtn" class="btn-edit">Edit Kelas</button>
+                            <button id="hapusKelasBtn" class="btn-delete">Hapus Kelas</button>
+                        </div>
+                    </div>
+
+                    <!-- Daftar Assignment -->
+                    <div class="assignments-section">
+                        <div class="assignments-list" id="assignmentsList">
+                            <!-- Assignment items will be added here dynamically -->
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>File Name</th>
+                                <th>Grade</th>
+                                <th>Similarity</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="uploadDetailsKelasTbody"></tbody>
+                    </table>
+                </div>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="muridFile">File Murid (DOCX, PDF, TXT) (Multiple):</label>
-              <input class="form-input" type="file" id="muridFile" name="murid" accept=".docx, .pdf, .txt" multiple required />
+            <!-- Modal Edit Kelas -->
+            <div class="modal-overlay" id="editKelasModal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Edit Nama Kelas</h3>
+                        <button class="modal-close" id="closeEditKelasModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editKelasForm">
+                            <div class="form-group">
+                                <label class="form-label" for="editNamaKelas">Nama Kelas Baru:</label>
+                                <input class="form-input" type="text" id="editNamaKelas" name="editNamaKelas" required />
+                            </div>
+                            <button class="form-submit" type="submit">Simpan</button>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <input type="hidden" name="kelas_id" id="kelasIdInput" />
-            <input type="hidden" name="assignment_id" id="assignmentIdInput" />
-            <button class="form-submit" type="submit">Upload</button>
-          </form>
+            <!-- Modal Konfirmasi Hapus Kelas -->
+            <div class="modal-overlay" id="hapusKelasModal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Konfirmasi Hapus Kelas</h3>
+                        <button class="modal-close" id="closeHapusKelasModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Apakah Anda yakin ingin menghapus kelas ini beserta semua upload di dalamnya?</p>
+                        <button class="form-submit" id="confirmHapusKelasBtn" style="background: #f04438">Ya, Hapus</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal Konfirmasi Hapus Upload -->
+            <div class="modal-overlay" id="hapusUploadModal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Konfirmasi Hapus Upload</h3>
+                        <button class="modal-close" id="closeHapusUploadModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Apakah Anda yakin ingin menghapus upload ini?</p>
+                        <button class="form-submit" id="confirmHapusUploadBtn" style="background: #f04438">Ya, Hapus</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal Upload Form -->
+            <div class="modal-overlay" id="uploadModal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Upload File Jawaban & Murid</h3>
+                        <button class="modal-close" id="closeUploadModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form class="upload-form" id="uploadForm" action="/grade" method="post" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label class="form-label" for="guruFile">File Jawaban Guru (DOCX, PDF, TXT):</label>
+                                <input class="form-input" type="file" id="guruFile" name="guru" accept=".docx, .pdf, .txt" required />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="muridFile">File Murid (DOCX, PDF, TXT) (Multiple):</label>
+                                <input class="form-input" type="file" id="muridFile" name="murid" accept=".docx, .pdf, .txt" multiple required />
+                            </div>
+                            <input type="hidden" name="kelas_id" id="kelasIdInput" />
+                            <input type="hidden" name="assignment_id" id="assignmentIdInput" />
+                            <button class="form-submit" type="submit">Upload</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal Tambah Assignment -->
+            <div class="modal-overlay" id="tambahAssignmentModal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Tambah Assignment Baru</h3>
+                        <button class="modal-close" id="closeTambahAssignmentModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="tambahAssignmentForm" action="/api/assignments" method="post" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label class="form-label" for="judulAssignment">Judul Assignment:</label>
+                                <input class="form-input" type="text" id="judulAssignment" name="judulAssignment" required />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="deskripsiAssignment">Deskripsi:</label>
+                                <textarea class="form-input" id="deskripsiAssignment" name="deskripsiAssignment" rows="4" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="deadlineAssignment">Deadline:</label>
+                                <input class="form-input" type="datetime-local" id="deadlineAssignment" name="deadlineAssignment" required />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="fileAssignment">File Assignment (DOCX, PDF, TXT):</label>
+                                <input class="form-input" type="file" id="fileAssignment" name="fileAssignment" accept=".docx, .pdf, .txt" required />
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="jawabanGuru">Jawaban Guru (DOCX, PDF, TXT):</label>
+                                <input class="form-input" type="file" id="jawabanGuru" name="jawabanGuru" accept=".docx, .pdf, .txt" required />
+                            </div>
+                            <input type="hidden" name="kelas_id" id="kelasIdAssignmentInput" />
+                            <button class="form-submit" type="submit">Tambah Assignment</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-    <!-- Modal Tambah Assignment -->
-    <div class="modal-overlay" id="tambahAssignmentModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Tambah Assignment Baru</h3>
-          <button class="modal-close" id="closeTambahAssignmentModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <form id="tambahAssignmentForm" action="/api/assignments" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-              <label class="form-label" for="judulAssignment">Judul Assignment:</label>
-              <input class="form-input" type="text" id="judulAssignment" name="judulAssignment" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="deskripsiAssignment">Deskripsi:</label>
-              <textarea class="form-input" id="deskripsiAssignment" name="deskripsiAssignment" rows="4" required></textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="deadlineAssignment">Deadline:</label>
-              <input class="form-input" type="datetime-local" id="deadlineAssignment" name="deadlineAssignment" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="fileAssignment">File Assignment (DOCX, PDF, TXT):</label>
-              <input class="form-input" type="file" id="fileAssignment" name="fileAssignment" accept=".docx, .pdf, .txt" required />
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="jawabanGuru">Jawaban Guru (DOCX, PDF, TXT):</label>
-              <input class="form-input" type="file" id="jawabanGuru" name="jawabanGuru" accept=".docx, .pdf, .txt" required />
-            </div>
-            <input type="hidden" name="kelas_id" id="kelasIdAssignmentInput" />
-            <button class="form-submit" type="submit">Tambah Assignment</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-  <script src="{{ url_for('static', filename='kelas-details.js') }}"></script>
-</body>
-</html> 
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script src="{{ url_for('static', filename='kelas-details.js') }}"></script>
+    </body>
+</html>
