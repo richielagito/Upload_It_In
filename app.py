@@ -331,6 +331,55 @@ def deactivate_user():
 
     return jsonify({"success": True})
 
+@app.route('/api/admin/classes', methods=['GET'])
+def api_admin_get_classes():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, nama_kelas, kode_kelas, created_at FROM classes
+        ORDER BY created_at DESC
+    """)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return jsonify([{
+        "id": r[0],
+        "nama_kelas": r[1],
+        "kode_kelas": r[2],
+        "created_at": r[3].strftime("%Y-%m-%d %H:%M")
+    } for r in rows])
+
+@app.route('/api/admin/delete-user', methods=['POST'])
+def admin_delete_user():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    target_user_id = data.get('user_id')
+    if not target_user_id:
+        return jsonify({"error": "No user_id provided"}), 400
+
+    conn = get_postgres_conn()
+    cur = conn.cursor()
+    try:
+        # Hapus user dari semua relasi terlebih dahulu
+        cur.execute("DELETE FROM murid_kelas WHERE user_id = %s", (target_user_id,))
+        cur.execute("DELETE FROM admins WHERE user_id = %s", (target_user_id,))
+        cur.execute("DELETE FROM auth.users WHERE id = %s", (target_user_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+    return jsonify({"success": True})
+
 @app.route('/create-class', methods=['POST'])
 def create_class():
     if 'user_id' not in session:
@@ -495,18 +544,38 @@ def kelas_murid_details_page(kode_kelas):
 def api_update_class():
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
+
+    role = session.get('role')
     data = request.get_json()
     kode_kelas = data.get('kode_kelas')
     nama_kelas = data.get('nama_kelas')
+
     if not kode_kelas or not nama_kelas:
         return jsonify({'error': 'Invalid data'}), 400
+
     conn = get_postgres_conn()
     cur = conn.cursor()
-    cur.execute("UPDATE classes SET nama_kelas = %s WHERE kode_kelas = %s AND user_id = %s", (nama_kelas, kode_kelas, session['user_id']))
-    conn.commit()
-    cur.close()
-    conn.close()
+
+    try:
+        if role == 'Admin':
+            cur.execute("UPDATE classes SET nama_kelas = %s WHERE kode_kelas = %s", (nama_kelas, kode_kelas))
+        else:
+            cur.execute("UPDATE classes SET nama_kelas = %s WHERE kode_kelas = %s AND user_id = %s", (nama_kelas, kode_kelas, session['user_id']))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
     return jsonify({'success': True})
+
+@app.route('/admin/classes')
+def admin_classes():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return redirect(url_for('login_register'))
+    return render_template('admin-classes.html')
 
 @app.route('/api/class/delete', methods=['POST'])
 def api_delete_class():

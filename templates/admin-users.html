@@ -79,7 +79,6 @@
     </thead>
     <tbody id="userTable"></tbody>
   </table>
-
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       fetch("/api/admin/users")
@@ -93,10 +92,11 @@
               <td>${u.email}</td>
               <td>${u.created_at}</td>
               <td><span class="status ${isAdmin}">${isAdmin}</span></td>
-              <td>
-                <button class="btn promote" data-id="${u.id}">Promote</button>
-                <button class="btn deactivate" data-id="${u.id}">Deactivate</button>
-              </td>
+                  <td>
+                    <button class="btn promote" data-id="${u.id}">Promote</button>
+                    <button class="btn deactivate" data-id="${u.id}">Deactivate</button>
+                    <button class="btn delete" data-id="${u.id}" style="background:#ef4444; color:white;">Delete</button>
+                  </td>
             `;
             table.appendChild(tr);
           });
@@ -126,8 +126,22 @@
                 .catch(err => alert("Error: " + err));
             });
           });
+          document.querySelectorAll(".btn.delete").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.id;
+          if (confirm("Yakin ingin menghapus user ini?")) {
+            fetch("/api/admin/delete-user", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ user_id: id })
+            }).then(res => res.json())
+              .then(data => location.reload())
+              .catch(err => alert("Error: " + err));
+          }
         });
+      });
     });
+  });
   </script>
 </body>
 </html>

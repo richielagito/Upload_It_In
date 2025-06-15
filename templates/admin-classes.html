@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manage Classes - Admin Panel</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f9fafb;
+      padding: 2rem;
+    }
+    h1 {
+      color: #1e293b;
+      margin-bottom: 1rem;
+    }
+    .back-button {
+      display: inline-block;
+      margin-bottom: 1rem;
+      background: #64748b;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th {
+      background: #e2e8f0;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .form-input {
+      padding: 0.5rem;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      width: 100%;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn.save {
+      background: #4f46e5;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>Manage Classes</h1>
+  <a href="/admin" class="back-button">&larr; Back to Dashboard</a>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nama Kelas</th>
+        <th>Kode Kelas</th>
+        <th>Dibuat Pada</th>
+        <th>Ubah Nama</th>
+      </tr>
+    </thead>
+    <tbody id="classTable"></tbody>
+  </table>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("/api/admin/classes")
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById("classTable");
+          data.forEach(kelas => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td><strong>${kelas.nama_kelas}</strong></td>
+              <td>${kelas.kode_kelas}</td>
+              <td>${kelas.created_at}</td>
+              <td>
+                <input type="text" class="form-input" value="${kelas.nama_kelas}" id="input-${kelas.kode_kelas}" />
+                <button class="btn save" onclick="updateClass('${kelas.kode_kelas}')">Simpan</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+    });
+
+    function updateClass(kode_kelas) {
+      const input = document.getElementById("input-" + kode_kelas);
+      const newName = input.value.trim();
+      if (!newName) {
+        alert("Nama kelas tidak boleh kosong");
+        return;
+      }
+      fetch("/api/class/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kode_kelas, nama_kelas: newName })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert("Nama kelas berhasil diperbarui");
+        } else {
+          alert("Gagal mengupdate nama kelas");
+        }
+      })
+      .catch(err => {
+        alert("Terjadi kesalahan: " + err);
+      });
+    }
+  </script>
+</body>
+</html>
