@@ -1,129 +1,897 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Manage Classes - Admin Panel</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f9fafb;
-      padding: 2rem;
-    }
-    h1 {
-      color: #1e293b;
-      margin-bottom: 1rem;
-    }
-    .back-button {
-      display: inline-block;
-      margin-bottom: 1rem;
-      background: #64748b;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      text-decoration: none;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    th, td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    th {
-      background: #e2e8f0;
-    }
-    tr:last-child td {
-      border-bottom: none;
-    }
-    .form-input {
-      padding: 0.5rem;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      width: 100%;
-    }
-    .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .btn.save {
-      background: #4f46e5;
-      color: white;
-    }
-  </style>
-</head>
-<body>
-  <h1>Manage Classes</h1>
-  <a href="/admin" class="back-button">&larr; Back to Dashboard</a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Classes - Admin Panel</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        margin: 0;
+        padding: 2rem;
+        min-height: 100vh;
+        color: #334155;
+      }
+      
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      h1 {
+        color: #1e293b;
+        margin-bottom: 2rem;
+        font-size: 2.5rem;
+        font-weight: 700;
+        text-align: center;
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        background: linear-gradient(135deg, #64748b, #475569);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+      }
+      
+      .back-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(100, 116, 139, 0.4);
+      }
+      
+      .main-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        margin-bottom: 2rem;
+      }
+      
+      .main-table th {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+        padding: 1.25rem 1rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.95rem;
+        letter-spacing: 0.025em;
+        white-space: nowrap;
+      }
+      
+      .main-table th:first-child {
+        border-top-left-radius: 16px;
+      }
+      
+      .main-table th:last-child {
+        border-top-right-radius: 16px;
+      }
+      
+      .main-table td {
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        word-wrap: break-word;
+        max-width: 0;
+      }
+      
+      .main-table tr:last-child td {
+        border-bottom: none;
+      }
+      
+      .main-table tr:hover {
+        background: #f8fafc;
+      }
+      
+      /* Fixed width columns to prevent misalignment */
+      .col-name {
+        width: 30%;
+        min-width: 200px;
+      }
+      
+      .col-code {
+        width: 15%;
+        min-width: 120px;
+      }
+      
+      .col-date {
+        width: 20%;
+        min-width: 150px;
+      }
+      
+      .col-actions {
+        width: 35%;
+        min-width: 300px;
+      }
+      
+      .form-input {
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        width: 100%;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        background: white;
+      }
+      
+      .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      
+      .btn {
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.875rem;
+        margin: 0.25rem;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+      
+      .btn.save {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      }
+      
+      .btn.save:hover {
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+      }
+      
+      .btn.delete {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+      }
+      
+      .btn.delete:hover {
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+      }
+      
+      .link-class {
+        color: #3b82f6;
+        cursor: pointer;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .link-class:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+      }
+      
+      .detail-row {
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      }
+      
+      .detail-cell {
+        padding: 2rem;
+      }
+      
+      .assignment-card {
+        margin: 1.5rem 0;
+        padding: 1.5rem;
+        background: white;
+        border-left: 4px solid #3b82f6;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+      }
+      
+      .assignment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      }
+      
+      .assignment-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .assignment-info {
+        margin: 0.5rem 0;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .assignment-info strong {
+        color: #334155;
+        font-weight: 600;
+      }
+      
+      .download-links {
+        margin: 1rem 0;
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      
+      .download-link {
+        color: #3b82f6;
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        background: #eff6ff;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .download-link:hover {
+        background: #dbeafe;
+        transform: translateY(-1px);
+      }
+      
+      .results-table-container {
+        margin-top: 1.5rem;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+      }
+      
+      .results-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      .results-table th {
+        background: linear-gradient(135deg, #64748b, #475569);
+        color: white;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      
+      .results-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+      }
+      
+      .results-table tr:hover {
+        background: #f8fafc;
+      }
+      
+      .results-table tr:last-child td {
+        border-bottom: none;
+      }
+      
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 8px;
+      }
+      
+      .pagination button {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #64748b;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+      
+      .pagination button:hover:not(:disabled) {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+      }
+      
+      .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      .pagination button.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+      }
+      
+      .pagination-info {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin: 0 1rem;
+      }
+      
+      .loading, .error {
+        text-align: center;
+        font-style: italic;
+        padding: 2rem;
+      }
+      
+      .loading {
+        color: #64748b;
+      }
+      
+      .error {
+        color: #ef4444;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+      }
+      
+      .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+      }
+      
+      .grade-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      
+      .grade-excellent {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+      }
+      
+      .grade-good {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+      }
+      
+      .grade-average {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+      }
+      
+      .grade-poor {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+      }
+      
+      .similarity-bar {
+        width: 60px;
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+      
+      .similarity-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+      }
+      
+      .similarity-high {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+      }
+      
+      .similarity-medium {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+      }
+      
+      .similarity-low {
+        background: linear-gradient(90deg, #10b981, #059669);
+      }
+      
+      @media (max-width: 1024px) {
+        .main-table {
+          font-size: 0.875rem;
+        }
+        
+        .col-name, .col-code, .col-date, .col-actions {
+          min-width: auto;
+        }
+        
+        .download-links {
+          flex-direction: column;
+        }
+      }
+      
+      @media (max-width: 768px) {
+        body {
+          padding: 1rem;
+        }
+        
+        h1 {
+          font-size: 2rem;
+        }
+        
+        .main-table {
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+        
+        .assignment-card {
+          padding: 1rem;
+        }
+        
+        .results-table-container {
+          overflow-x: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1><i class="fas fa-graduation-cap"></i> Manage Classes</h1>
+      <a href="/admin" class="back-button">
+        <i class="fas fa-arrow-left"></i>
+        Back to Dashboard
+      </a>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Nama Kelas</th>
-        <th>Kode Kelas</th>
-        <th>Dibuat Pada</th>
-        <th>Ubah Nama</th>
-      </tr>
-    </thead>
-    <tbody id="classTable"></tbody>
-  </table>
+      <table class="main-table">
+        <thead>
+          <tr>
+            <th class="col-name"><i class="fas fa-users"></i> Nama Kelas</th>
+            <th class="col-code"><i class="fas fa-code"></i> Kode Kelas</th>
+            <th class="col-date"><i class="fas fa-calendar"></i> Dibuat Pada</th>
+            <th class="col-actions"><i class="fas fa-cogs"></i> Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="classTable"></tbody>
+      </table>
+    </div>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      fetch("/api/admin/classes")
-        .then(res => res.json())
-        .then(data => {
-          const tbody = document.getElementById("classTable");
-          data.forEach(kelas => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td><strong>${kelas.nama_kelas}</strong></td>
-              <td>${kelas.kode_kelas}</td>
-              <td>${kelas.created_at}</td>
-              <td>
-                <input type="text" class="form-input" value="${kelas.nama_kelas}" id="input-${kelas.kode_kelas}" />
-                <button class="btn save" onclick="updateClass('${kelas.kode_kelas}')">Simpan</button>
+    <script>
+      // Pagination state for each assignment
+      const paginationState = {};
+      const ITEMS_PER_PAGE = 10;
+
+      document.addEventListener("DOMContentLoaded", () => {
+        fetch("/api/admin/classes")
+          .then((res) => res.json())
+          .then((data) => {
+            const tbody = document.getElementById("classTable");
+            data.forEach((kelas) => {
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+              <td class="col-name">
+                <span class="link-class" onclick="toggleDetail('${kelas.kode_kelas}', this)">
+                  <i class="fas fa-chevron-right"></i>
+                  ${kelas.nama_kelas}
+                </span>
+              </td>
+              <td class="col-code">${kelas.kode_kelas}</td>
+              <td class="col-date">${new Date(kelas.created_at).toLocaleDateString('id-ID')}</td>
+              <td class="col-actions">
+                <input type="text" class="form-input" value="${kelas.nama_kelas}" id="input-${kelas.kode_kelas}" placeholder="Nama kelas..." />
+                <div>
+                  <button class="btn save" onclick="updateClass('${kelas.kode_kelas}')">
+                    <i class="fas fa-save"></i> Simpan
+                  </button>
+                  <button class="btn delete" onclick="deleteClass('${kelas.kode_kelas}')">
+                    <i class="fas fa-trash"></i> Hapus
+                  </button>
+                </div>
               </td>
             `;
-            tbody.appendChild(tr);
-          });
-        });
-    });
+              tbody.appendChild(tr);
 
-    function updateClass(kode_kelas) {
-      const input = document.getElementById("input-" + kode_kelas);
-      const newName = input.value.trim();
-      if (!newName) {
-        alert("Nama kelas tidak boleh kosong");
-        return;
-      }
-      fetch("/api/class/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kode_kelas, nama_kelas: newName })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          alert("Nama kelas berhasil diperbarui");
-        } else {
-          alert("Gagal mengupdate nama kelas");
-        }
-      })
-      .catch(err => {
-        alert("Terjadi kesalahan: " + err);
+              // Hidden detail row
+              const detailRow = document.createElement("tr");
+              detailRow.className = "detail-row";
+              detailRow.style.display = "none";
+              detailRow.id = `detail-${kelas.kode_kelas}`;
+              detailRow.innerHTML = `
+              <td colspan="4" class="detail-cell">
+                <div class="loading">
+                  <i class="fas fa-spinner fa-spin"></i> Loading assignments...
+                </div>
+              </td>
+            `;
+              tbody.appendChild(detailRow);
+            });
+          })
+          .catch(error => {
+            console.error('Error loading classes:', error);
+            document.getElementById("classTable").innerHTML = 
+              '<tr><td colspan="4" class="error"><i class="fas fa-exclamation-triangle"></i> Error loading classes</td></tr>';
+          });
       });
-    }
-  </script>
-</body>
+
+      function updateClass(kode_kelas) {
+        const input = document.getElementById("input-" + kode_kelas);
+        const newName = input.value.trim();
+        if (!newName) return alert("Nama kelas tidak boleh kosong");
+
+        fetch("/api/class/update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kode_kelas, nama_kelas: newName }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              alert("✅ Nama kelas berhasil diperbarui!");
+              // Update the display name
+              const linkElement = document.querySelector(`[onclick="toggleDetail('${kode_kelas}', this)"]`);
+              if (linkElement) {
+                linkElement.innerHTML = `<i class="fas fa-chevron-right"></i> ${newName}`;
+              }
+            } else {
+              alert("❌ Gagal mengupdate nama kelas");
+            }
+          })
+          .catch(error => {
+            console.error('Error updating class:', error);
+            alert("❌ Error updating class");
+          });
+      }
+
+      function deleteClass(kode_kelas) {
+        if (
+          !confirm(
+            "⚠️ Yakin ingin menghapus kelas ini beserta assignment dan upload murid?\n\nTindakan ini tidak dapat dibatalkan!"
+          )
+        )
+          return;
+
+        fetch("/api/class/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kode_kelas }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              alert("✅ Kelas berhasil dihapus");
+              location.reload();
+            } else {
+              alert("❌ Gagal menghapus kelas");
+            }
+          })
+          .catch(error => {
+            console.error('Error deleting class:', error);
+            alert("❌ Error deleting class");
+          });
+      }
+
+      function toggleDetail(kode_kelas, el) {
+        const row = document.getElementById("detail-" + kode_kelas);
+        const icon = el.querySelector('i');
+        
+        if (row.style.display === "none") {
+          row.style.display = "table-row";
+          icon.className = "fas fa-chevron-down";
+          loadDetail(kode_kelas, row);
+        } else {
+          row.style.display = "none";
+          icon.className = "fas fa-chevron-right";
+        }
+      }
+
+      function loadDetail(kode_kelas, row) {
+        console.log('Loading detail for class:', kode_kelas);
+        
+        fetch("/api/assignments/" + kode_kelas)
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+          })
+          .then((assignments) => {
+            console.log('Assignments loaded:', assignments);
+            
+            if (assignments.error) {
+              row.querySelector(".detail-cell").innerHTML = `
+                <div class="error">
+                  <i class="fas fa-exclamation-triangle"></i> ${assignments.error}
+                </div>
+              `;
+              return;
+            }
+
+            let html = "";
+            if (assignments.length === 0) {
+              html = `
+                <div style="text-align: center; padding: 2rem; color: #64748b;">
+                  <i class="fas fa-clipboard-list fa-3x" style="margin-bottom: 1rem; opacity: 0.5;"></i>
+                  <p><em>Tidak ada assignment di kelas ini.</em></p>
+                </div>
+              `;
+            } else {
+              html = assignments
+                .map(
+                  (a) => `
+              <div class="assignment-card">
+                <div class="assignment-title">
+                  <i class="fas fa-file-alt"></i>
+                  ${a.judul}
+                </div>
+                <div class="assignment-info">
+                  <i class="fas fa-info-circle"></i>
+                  <strong>Deskripsi:</strong> ${a.deskripsi}
+                </div>
+                <div class="assignment-info">
+                  <i class="fas fa-clock"></i>
+                  <strong>Deadline:</strong> ${new Date(a.deadline).toLocaleString('id-ID')}
+                </div>
+                <div class="download-links">
+                  <a href="/${a.file_path}" target="_blank" class="download-link">
+                    <i class="fas fa-download"></i> Download Soal
+                  </a>
+                  <a href="/${a.jawaban_path}" target="_blank" class="download-link">
+                    <i class="fas fa-key"></i> Download Kunci Jawaban
+                  </a>
+                </div>
+                <div class="results-table-container">
+                  <table class="results-table">
+                    <thead>
+                      <tr>
+                        <th><i class="fas fa-user"></i> Nama Murid</th>
+                        <th><i class="fas fa-star"></i> Nilai</th>
+                        <th><i class="fas fa-percentage"></i> Similarity</th>
+                        <th><i class="fas fa-check-circle"></i> Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="hasil-${a.id}">
+                      <tr><td colspan="4" class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading hasil penilaian...
+                      </td></tr>
+                    </tbody>
+                  </table>
+                  <div id="pagination-${a.id}" class="pagination" style="display: none;"></div>
+                </div>
+              </div>
+            `
+                )
+                .join("");
+            }
+
+            row.querySelector(".detail-cell").innerHTML = html;
+
+            // Fetch results for each assignment
+            assignments.forEach((a) => {
+              console.log('Loading results for assignment:', a.id);
+              
+              fetch(`/api/results/assignment/${a.id}`)
+                .then((res) => {
+                  console.log('Response status for assignment', a.id, ':', res.status);
+                  if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                  }
+                  return res.json();
+                })
+                .then((results) => {
+                  console.log('Results loaded for assignment', a.id, ':', results);
+                  
+                  const tbody = document.getElementById("hasil-" + a.id);
+                  if (!tbody) {
+                    console.error('Results table not found for assignment', a.id);
+                    return;
+                  }
+                  
+                  if (!results || results.length === 0) {
+                    tbody.innerHTML = `
+                      <tr><td colspan="4" style="text-align: center; padding: 2rem; color: #64748b;">
+                        <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <br><em>Belum ada jawaban murid</em>
+                      </td></tr>
+                    `;
+                  } else {
+                    // Initialize pagination state
+                    paginationState[a.id] = {
+                      currentPage: 1,
+                      totalItems: results.length,
+                      totalPages: Math.ceil(results.length / ITEMS_PER_PAGE),
+                      allResults: results
+                    };
+                    
+                    displayResultsPage(a.id);
+                  }
+                })
+                .catch(error => {
+                  console.error('Error loading results for assignment', a.id, ':', error);
+                  const tbody = document.getElementById("hasil-" + a.id);
+                  if (tbody) {
+                    tbody.innerHTML = `
+                      <tr><td colspan="4" class="error">
+                        <i class="fas fa-exclamation-triangle"></i> Error loading results: ${error.message}
+                      </td></tr>
+                    `;
+                  }
+                });
+            });
+          })
+          .catch(error => {
+            console.error('Error loading assignments:', error);
+            row.querySelector(".detail-cell").innerHTML = `
+              <div class="error">
+                <i class="fas fa-exclamation-triangle"></i> Error loading assignments: ${error.message}
+              </div>
+            `;
+          });
+      }
+
+      function displayResultsPage(assignmentId) {
+        const state = paginationState[assignmentId];
+        if (!state) return;
+
+        const startIndex = (state.currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const pageResults = state.allResults.slice(startIndex, endIndex);
+
+        const tbody = document.getElementById("hasil-" + assignmentId);
+        const paginationDiv = document.getElementById("pagination-" + assignmentId);
+
+        if (!tbody || !paginationDiv) return;
+
+        // Display results
+        tbody.innerHTML = pageResults
+          .map((r) => {
+            const grade = r.grade !== null && r.grade !== undefined ? r.grade : (r.nilai !== null && r.nilai !== undefined ? r.nilai : null);
+            const similarity = r.similarity !== null && r.similarity !== undefined ? r.similarity : null;
+            
+            let gradeClass = '';
+            if (grade !== null) {
+              if (grade >= 80) gradeClass = 'grade-excellent';
+              else if (grade >= 70) gradeClass = 'grade-good';
+              else if (grade >= 60) gradeClass = 'grade-average';
+              else gradeClass = 'grade-poor';
+            }
+
+            let similarityClass = '';
+            let similarityWidth = '0%';
+            if (similarity !== null) {
+              const simPercent = similarity * 100;
+              similarityWidth = simPercent + '%';
+              if (simPercent >= 70) similarityClass = 'similarity-high';
+              else if (simPercent >= 40) similarityClass = 'similarity-medium';
+              else similarityClass = 'similarity-low';
+            }
+
+            return `
+              <tr>
+                <td>
+                  <i class="fas fa-user-graduate" style="margin-right: 0.5rem; color: #64748b;"></i>
+                  ${r.name || r.nama_murid || 'Unknown Student'}
+                </td>
+                <td>
+                  ${grade !== null ? `<span class="grade-badge ${gradeClass}">${grade}</span>` : '-'}
+                </td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="similarity-bar">
+                      <div class="similarity-fill ${similarityClass}" style="width: ${similarityWidth}"></div>
+                    </div>
+                    <span style="font-size: 0.8rem; color: #64748b;">
+                      ${similarity !== null ? (similarity * 100).toFixed(1) + '%' : '-'}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge">
+                    <i class="fas fa-check"></i> Completed
+                  </span>
+                </td>
+              </tr>
+            `;
+          })
+          .join("");
+
+        // Display pagination if needed
+        if (state.totalPages > 1) {
+          paginationDiv.style.display = 'flex';
+          paginationDiv.innerHTML = generatePaginationHTML(assignmentId, state);
+        } else {
+          paginationDiv.style.display = 'none';
+        }
+      }
+
+      function generatePaginationHTML(assignmentId, state) {
+        let html = '';
+        
+        // Previous button
+        html += `
+          <button onclick="changePage(${assignmentId}, ${state.currentPage - 1})" 
+                  ${state.currentPage === 1 ? 'disabled' : ''}>
+            <i class="fas fa-chevron-left"></i> Previous
+          </button>
+        `;
+
+        // Page numbers
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, state.currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(state.totalPages, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage + 1 < maxVisiblePages) {
+          startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+          html += `
+            <button onclick="changePage(${assignmentId}, ${i})" 
+                    class="${i === state.currentPage ? 'active' : ''}">
+              ${i}
+            </button>
+          `;
+        }
+
+        // Next button
+        html += `
+          <button onclick="changePage(${assignmentId}, ${state.currentPage + 1})" 
+                  ${state.currentPage === state.totalPages ? 'disabled' : ''}>
+            Next <i class="fas fa-chevron-right"></i>
+          </button>
+        `;
+
+        // Info
+        const startItem = (state.currentPage - 1) * ITEMS_PER_PAGE + 1;
+        const endItem = Math.min(state.currentPage * ITEMS_PER_PAGE, state.totalItems);
+        html += `
+          <span class="pagination-info">
+            Showing ${startItem}-${endItem} of ${state.totalItems} results
+          </span>
+        `;
+
+        return html;
+      }
+
+      function changePage(assignmentId, newPage) {
+        const state = paginationState[assignmentId];
+        if (!state || newPage < 1 || newPage > state.totalPages) return;
+        
+        state.currentPage = newPage;
+        displayResultsPage(assignmentId);
+      }
+    </script>
+  </body>
 </html>
