@@ -10,6 +10,8 @@ import requests
 import random
 import string
 import datetime
+import json
+import re
 
 from utils.db import get_postgres_conn
 from utils.LSA import (
@@ -17,7 +19,6 @@ from utils.LSA import (
     lsa_similarity,
 )
 from utils.db import simpan_ke_postgres, fetch_all_results, fetch_results_by_kelas, fetch_results_by_kode_kelas, fetch_results_by_assignment_id
-
 
 load_dotenv()
 
@@ -40,7 +41,8 @@ def generate_unique_class_code(length=6):
     conn.close()
     return code
 
-import json
+def clean_part(s):
+    return re.sub(r'[\\/*?:"<>| ]', "", s)
 
 @app.route('/')
 def homescreen():
@@ -616,26 +618,33 @@ def api_add_assignment():
         file_assignment = request.files.get('fileAssignment')
         file_jawaban = request.files.get('jawabanGuru')
         
-        print(f"Received assignment data: judul={judul}, deskripsi={deskripsi}, deadline={deadline}, kelas_id={kelas_id}")
-        print(f"Files received: assignment={file_assignment is not None}, jawaban={file_jawaban is not None}")
-        
-        if not all([judul, deskripsi, deadline, kelas_id, file_assignment, file_jawaban]):
-            print("Missing required fields")
-            return jsonify({"error": "Semua field harus diisi"}), 400
-            
+        # Ambil nama user dan nama kelas
+        nama_user = session.get('username', 'user')
+        conn = get_postgres_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT nama_kelas FROM classes WHERE id = %s", (kelas_id,))
+        kelas_row = cur.fetchone()
+        nama_kelas = kelas_row[0] if kelas_row else "kelas"
+        cur.close()
+        conn.close()
+
+        # Format nama file
+        def format_filename(prefix, ext):
+            return f"{nama_user}_{nama_kelas}_{judul}_{prefix}{ext}".replace(" ", "_")
+
         # Simpan file assignment
-        assignment_filename = secure_filename(file_assignment.filename)
+        assignment_ext = os.path.splitext(file_assignment.filename)[-1]
+        assignment_filename = format_filename("assignment", assignment_ext)
         assignment_path = os.path.join(app.config['UPLOAD_FOLDER'], assignment_filename)
         file_assignment.save(assignment_path)
-        print(f"Assignment file saved to: {assignment_path}")
-        
+
         # Simpan file jawaban
-        jawaban_filename = secure_filename(file_jawaban.filename)
+        jawaban_ext = os.path.splitext(file_jawaban.filename)[-1]
+        jawaban_filename = format_filename("jawaban", jawaban_ext)
         jawaban_path = os.path.join(app.config['UPLOAD_FOLDER'], jawaban_filename)
         file_jawaban.save(jawaban_path)
-        print(f"Answer file saved to: {jawaban_path}")
-        
-        # Simpan ke database
+
+        # ...existing code untuk simpan ke database...
         conn = get_postgres_conn()
         cur = conn.cursor()
         cur.execute(
@@ -646,11 +655,10 @@ def api_add_assignment():
             """,
             (judul, deskripsi, deadline, assignment_path, jawaban_path, kelas_id, datetime.datetime.now())
         )
-        assignment_id_from_db = cur.fetchone()[0] # Dapatkan ID assignment yang baru dibuat
+        assignment_id_from_db = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
-        print(f"Assignment saved to database with ID: {assignment_id_from_db}")
         
         return jsonify({
             "success": True,
@@ -781,12 +789,18 @@ def api_upload_student_answer(assignment_id):
     cur = conn.cursor()
     guru_jawaban_path = None
     kelas_id = None
+    nama_kelas = None
+    judul_assignment = None
     try:
-        cur.execute("SELECT kelas_id, jawaban_path FROM assignments WHERE id = %s", (assignment_id,))
+        cur.execute("SELECT kelas_id, jawaban_path, judul FROM assignments WHERE id = %s", (assignment_id,))
         assignment_info = cur.fetchone()
         if not assignment_info:
             return jsonify({"error": "Assignment tidak ditemukan."}), 404
-        kelas_id, guru_jawaban_path = assignment_info
+        kelas_id, guru_jawaban_path, judul_assignment = assignment_info
+
+        cur.execute("SELECT nama_kelas FROM classes WHERE id = %s", (kelas_id,))
+        kelas_row = cur.fetchone()
+        nama_kelas = kelas_row[0] if kelas_row else "kelas"
     finally:
         cur.close()
         conn.close()
@@ -794,10 +808,12 @@ def api_upload_student_answer(assignment_id):
     if not guru_jawaban_path:
         return jsonify({"error": "Jalur file jawaban guru tidak ditemukan untuk assignment ini."}), 404
 
-    original_name = secure_filename(student_file.filename)
-    name, ext = os.path.splitext(original_name)
-    short_name = (name[:50] + ext) if len(name) > 50 else original_name
-    murid_path = os.path.join(app.config['UPLOAD_FOLDER'], short_name)
+    nama_user = session.get('username', 'user')
+    ext = os.path.splitext(student_file.filename)[-1]
+
+    # Gabungkan bagian nama file tanpa spasi di setiap bagian
+    student_filename = f"{clean_part(nama_user)}_{clean_part(nama_kelas)}_{clean_part(judul_assignment)}{ext}"
+    murid_path = os.path.join(app.config['UPLOAD_FOLDER'], student_filename)
     student_file.save(murid_path)
 
     murid_path_absolute = os.path.abspath(murid_path)
@@ -805,11 +821,11 @@ def api_upload_student_answer(assignment_id):
     guru_text = extract_text_from_any(os.path.abspath(guru_jawaban_path))
     murid_text = extract_text_from_any(murid_path_absolute)
 
-    grade = lsa_similarity(guru_text, murid_text)
-    similarity = grade
+    avg_similarity, grade = lsa_similarity(guru_text, murid_text)
+    similarity = avg_similarity
 
     result_to_save = {
-        "name": student_file.filename.replace(".pdf", ""),
+        "name": student_filename.replace(ext, ""),
         "similarity": similarity,  
         "grade": grade,
         "user_id": session['user_id'],
@@ -831,6 +847,7 @@ def api_upload_student_answer(assignment_id):
         "grade": grade,
         "similarity": similarity
     })
+
 
 if __name__ == '__main__':
     app.run(debug=True)

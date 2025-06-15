@@ -123,6 +123,7 @@ def lsa_similarity(guru_text, siswa_text):
 
     jumlah_soal = len(model_answers)
     total_similarity = sum(results.values())
-    skor_akhir = round((total_similarity / jumlah_soal) * 100) if jumlah_soal > 0 else 0
+    avg_similarity = (total_similarity / jumlah_soal) if jumlah_soal > 0 else 0
+    skor_akhir = round(avg_similarity * 100)  
 
-    return skor_akhir
+    return avg_similarity, skor_akhir
