@@ -12,6 +12,8 @@ import string
 import datetime
 import json
 import re
+from supabase import create_client, Client
+from urllib.parse import urlparse
 
 from utils.db import get_postgres_conn
 from utils.LSA import (
@@ -28,6 +30,10 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['CSV_FOLDER'] = 'data'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['CSV_FOLDER'], exist_ok=True)
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     
 def generate_unique_class_code(length=6):
     conn = get_postgres_conn()
@@ -686,9 +692,8 @@ def api_joined_classes():
 @app.route('/api/assignments', methods=['POST'])
 def api_add_assignment():
     if 'user_id' not in session or session.get('role') != 'Teacher':
-        print("Unauthorized: user not logged in or not a teacher")
         return jsonify({"error": "Unauthorized"}), 401
-    
+
     try:
         judul = request.form.get('judulAssignment')
         deskripsi = request.form.get('deskripsiAssignment')
@@ -696,34 +701,18 @@ def api_add_assignment():
         kelas_id = request.form.get('kelas_id')
         file_assignment = request.files.get('fileAssignment')
         file_jawaban = request.files.get('jawabanGuru')
-        
-        # Ambil nama user dan nama kelas
-        nama_user = session.get('username', 'user')
-        conn = get_postgres_conn()
-        cur = conn.cursor()
-        cur.execute("SELECT nama_kelas FROM classes WHERE id = %s", (kelas_id,))
-        kelas_row = cur.fetchone()
-        nama_kelas = kelas_row[0] if kelas_row else "kelas"
-        cur.close()
-        conn.close()
 
         # Format nama file
-        def format_filename(prefix, ext):
-            return f"{nama_user}_{nama_kelas}_{judul}_{prefix}{ext}".replace(" ", "_")
-
-        # Simpan file assignment
         assignment_ext = os.path.splitext(file_assignment.filename)[-1]
-        assignment_filename = format_filename("assignment", assignment_ext)
-        assignment_path = os.path.join(app.config['UPLOAD_FOLDER'], assignment_filename)
-        file_assignment.save(assignment_path)
-
-        # Simpan file jawaban
         jawaban_ext = os.path.splitext(file_jawaban.filename)[-1]
-        jawaban_filename = format_filename("jawaban", jawaban_ext)
-        jawaban_path = os.path.join(app.config['UPLOAD_FOLDER'], jawaban_filename)
-        file_jawaban.save(jawaban_path)
+        assignment_filename = f"assignments/{kelas_id}_{judul}_assignment{assignment_ext}".replace(" ", "_")
+        jawaban_filename = f"answers/teacher/{kelas_id}_{judul}_jawaban{jawaban_ext}".replace(" ", "_")
 
-        # ...existing code untuk simpan ke database...
+        # Upload ke Supabase Storage
+        assignment_url = upload_to_supabase_storage(file_assignment, assignment_filename)
+        jawaban_url = upload_to_supabase_storage(file_jawaban, jawaban_filename)
+
+        # Simpan ke database
         conn = get_postgres_conn()
         cur = conn.cursor()
         cur.execute(
@@ -732,19 +721,19 @@ def api_add_assignment():
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
-            (judul, deskripsi, deadline, assignment_path, jawaban_path, kelas_id, datetime.datetime.now())
+            (judul, deskripsi, deadline, assignment_url, jawaban_url, kelas_id, datetime.datetime.now())
         )
         assignment_id_from_db = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
-        
+
         return jsonify({
             "success": True,
             "message": "Assignment berhasil ditambahkan",
             "assignment_id": assignment_id_from_db
         })
-        
+
     except Exception as e:
         print(f"Error adding assignment: {e}")
         return jsonify({"error": "Terjadi kesalahan saat menambahkan assignment"}), 500
@@ -856,10 +845,10 @@ def api_results_by_assignment(assignment_id):
 def api_upload_student_answer(assignment_id):
     if 'user_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-    
+
     if 'file' not in request.files:
         return jsonify({"error": "Tidak ada file yang diunggah."}), 400
-    
+
     student_file = request.files['file']
     if student_file.filename == '':
         return jsonify({"error": "File tidak dipilih."}), 400
@@ -875,7 +864,7 @@ def api_upload_student_answer(assignment_id):
         assignment_info = cur.fetchone()
         if not assignment_info:
             return jsonify({"error": "Assignment tidak ditemukan."}), 404
-        kelas_id, guru_jawaban_path, judul_assignment = assignment_info
+        kelas_id, guru_jawaban_url, judul_assignment = assignment_info
 
         cur.execute("SELECT nama_kelas FROM classes WHERE id = %s", (kelas_id,))
         kelas_row = cur.fetchone()
@@ -884,33 +873,64 @@ def api_upload_student_answer(assignment_id):
         cur.close()
         conn.close()
 
-    if not guru_jawaban_path:
-        return jsonify({"error": "Jalur file jawaban guru tidak ditemukan untuk assignment ini."}), 404
-
     nama_user = session.get('username', 'user')
     ext = os.path.splitext(student_file.filename)[-1]
+    student_filename = f"answers/student/{kelas_id}_{assignment_id}_{nama_user}_jawaban{ext}".replace(" ", "_")
 
-    # Gabungkan bagian nama file tanpa spasi di setiap bagian
-    student_filename = f"{clean_part(nama_user)}_{clean_part(nama_kelas)}_{clean_part(judul_assignment)}{ext}"
-    murid_path = os.path.join(app.config['UPLOAD_FOLDER'], student_filename)
-    student_file.save(murid_path)
+    # Upload file murid ke Supabase Storage
+    murid_url = upload_to_supabase_storage(student_file, student_filename)
 
-    murid_path_absolute = os.path.abspath(murid_path)
+    # Download file guru dan murid ke lokal sementara untuk LSA
+    import requests as pyrequests
+    import tempfile
 
-    guru_text = extract_text_from_any(os.path.abspath(guru_jawaban_path))
-    murid_text = extract_text_from_any(murid_path_absolute)
+    guru_ext = get_clean_ext(guru_jawaban_url)
+    murid_ext = get_clean_ext(murid_url)
 
-    avg_similarity, grade = lsa_similarity(guru_text, murid_text)
-    similarity = avg_similarity
+    # Ambil path file dari URL public
+    def get_path_from_public_url(public_url):
+        parsed = urlparse(public_url)
+        parts = parsed.path.split('/object/public/uploads/')
+        if len(parts) > 1:
+            return parts[1]
+        return ""
+
+    guru_path = get_path_from_public_url(guru_jawaban_url)
+    murid_path = get_path_from_public_url(murid_url)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=guru_ext) as tmp_guru, \
+         tempfile.NamedTemporaryFile(delete=False, suffix=murid_ext) as tmp_murid:
+        # Download file guru dari Supabase Storage
+        guru_bytes = supabase.storage.from_('uploads').download(guru_path)
+        tmp_guru.write(guru_bytes)
+        tmp_guru.flush()
+        # Download file murid dari Supabase Storage
+        murid_bytes = supabase.storage.from_('uploads').download(murid_path)
+        tmp_murid.write(murid_bytes)
+        tmp_murid.flush()
+
+        print("Guru temp file:", tmp_guru.name)
+        print("Murid temp file:", tmp_murid.name)
+
+        # Proses LSA di dalam blok with!
+        guru_text = extract_text_from_any(tmp_guru.name)
+        murid_text = extract_text_from_any(tmp_murid.name)
+
+        if not guru_text or not murid_text:
+            print("Format tidak didukung atau file kosong")
+            return jsonify({"error": "Format tidak didukung atau file kosong"}), 400
+
+        avg_similarity, grade = lsa_similarity(guru_text, murid_text)
+        similarity = avg_similarity
 
     result_to_save = {
-        "name": student_filename.replace(ext, ""),
-        "similarity": similarity,  
+        "name": nama_user,
+        "similarity": similarity,
         "grade": grade,
         "user_id": session['user_id'],
         "kelas_id": kelas_id,
         "assignment_id": assignment_id,
-        "file_path": murid_path
+        "file_path": murid_url
     }
 
     try:
@@ -919,6 +939,15 @@ def api_upload_student_answer(assignment_id):
     except Exception as e:
         print(f"Error saving student submission to PostgreSQL: {e}")
         return jsonify({"error": "Gagal menyimpan hasil unggahan siswa."}), 500
+    
+    try:
+        os.remove(tmp_guru.name)
+    except Exception as e:
+        print(f"Gagal hapus file temp guru: {e}")
+    try:
+        os.remove(tmp_murid.name)
+    except Exception as e:
+        print(f"Gagal hapus file temp murid: {e}")
 
     return jsonify({
         "success": True,
@@ -926,6 +955,29 @@ def api_upload_student_answer(assignment_id):
         "grade": grade,
         "similarity": similarity
     })
+
+def upload_to_supabase_storage(file_storage, dest_path):
+    file_bytes = file_storage.read()
+    file_storage.seek(0)
+    # Gunakan .update untuk overwrite, .upload untuk baru
+    try:
+        res = supabase.storage.from_('uploads').upload(dest_path, file_bytes)
+    except Exception as e:
+        # Jika file sudah ada, overwrite dengan update
+        if "already exists" in str(e):
+            res = supabase.storage.from_('uploads').update(dest_path, file_bytes)
+        else:
+            raise
+    public_url = supabase.storage.from_('uploads').get_public_url(dest_path)
+    return public_url
+
+def get_clean_ext(url):
+    path = urlparse(url).path  # hanya path, tanpa query string
+    ext = os.path.splitext(path)[-1]
+    # fallback ke .pdf jika tidak ada ekstensi
+    if ext.lower() not in [".pdf", ".docx", ".txt"]:
+        return ".pdf"
+    return ext
 
 
 if __name__ == '__main__':

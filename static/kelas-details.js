@@ -208,17 +208,14 @@ async function renderPage() {
     kodeKelasGlobal = kodeKelas;
     if (!kodeKelas) return;
 
-    // const namaKelasSpan = document.getElementById('namaKelasDetail'); // Dihapus karena tidak lagi dibutuhkan di H2
     const mainPageTitle = document.getElementById("mainPageTitle");
     const tbody = document.getElementById("uploadDetailsKelasTbody");
 
     // Set loading state for the main title and table
-    // namaKelasSpan.textContent = 'Loading...'; // Dihapus
     mainPageTitle.textContent = "Loading...";
     tbody.innerHTML = '<tr><td colspan="5">Pilih assignment untuk melihat detail upload</td></tr>';
 
     const namaKelas = await fetchNamaKelasByKode(kodeKelas);
-    // namaKelasSpan.textContent = namaKelas || '-'; // Dihapus
     mainPageTitle.textContent = `Kelas ${namaKelas || "-"}`; // Mengisi judul h1 utama
 }
 
@@ -238,10 +235,8 @@ if (tambahAssignmentModal)
 if (tambahAssignmentForm) {
     tambahAssignmentForm.addEventListener("submit", async function (e) {
         e.preventDefault();
-        console.log("Form submitted");
 
         const formData = new FormData(tambahAssignmentForm);
-        console.log("Form data:", Object.fromEntries(formData));
 
         try {
             const response = await fetch("/api/assignments", {
@@ -250,18 +245,20 @@ if (tambahAssignmentForm) {
             });
 
             if (response.ok) {
-                const result = await response.json();
-                console.log("Success:", result);
-                alert("Assignment berhasil ditambahkan!");
+                Swal.fire({
+                    icon: "success",
+                    title: "Success",
+                    text: `Assignment added!`,
+                    timer: 1000,
+                    showConfirmButton: false,
+                });
                 hideModal("tambahAssignmentModal");
                 await loadAssignments(); // Reload daftar assignment
             } else {
                 const error = await response.json();
-                console.error("Error:", error);
                 alert(error.error || "Gagal menambahkan assignment");
             }
         } catch (error) {
-            console.error("Error:", error);
             alert("Terjadi kesalahan saat menambahkan assignment");
         }
     });
@@ -397,20 +394,22 @@ function openUploadModalForAssignment(assignmentId) {
 }
 
 // Fungsi untuk mengunduh file assignment
-function downloadAssignment(filePath) {
-    const link = document.createElement("a");
-    link.href = filePath;
-    link.download = filePath.split("/").pop();
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+function addDownloadQuery(url) {
+    // Hilangkan download duplikat
+    url = url.replace(/[?&]download\b/, "");
+    if (url.includes("?")) {
+        return url + "&download";
+    } else {
+        return url + "?download";
+    }
 }
 
-// Fungsi untuk mengunduh jawaban guru
-function downloadJawaban(filePath) {
+function downloadAssignment(fileUrl) {
+    const urlWithDownload = addDownloadQuery(fileUrl);
     const link = document.createElement("a");
-    link.href = filePath;
-    link.download = filePath.split("/").pop();
+    link.href = urlWithDownload;
+    // Optional: set filename
+    link.download = fileUrl.split("/").pop();
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
