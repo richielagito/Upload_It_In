@@ -20,19 +20,38 @@ def simpan_ke_postgres(results):
         with engine.begin() as conn:
             for r in results:
                 assignment_id = r.get("assignment_id")
-                file_path = r.get("file_path")
-                conn.execute(
-                    text("INSERT INTO hasil_penilaian (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path) VALUES (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path)"),
-                    {
-                        "name": r["name"],
-                        "similarity": float(r["similarity"]),
-                        "grade": r["grade"],
-                        "user_id": r["user_id"],
-                        "kelas_id": r["kelas_id"],
-                        "assignment_id": assignment_id,
-                        "file_path": file_path
-                    }
-                )
+                user_id = r.get("user_id")
+                # Cek apakah sudah ada hasil untuk user & assignment ini
+                existing = conn.execute(
+                    text("SELECT id FROM hasil_penilaian WHERE user_id = :user_id AND assignment_id = :assignment_id"),
+                    {"user_id": user_id, "assignment_id": assignment_id}
+                ).fetchone()
+                if existing:
+                    # Update hasil lama
+                    conn.execute(
+                        text("UPDATE hasil_penilaian SET nama_murid=:name, similarity=:similarity, nilai=:grade, file_path=:file_path, updated_at=NOW() WHERE id=:id"),
+                        {
+                            "name": r["name"],
+                            "similarity": float(r["similarity"]),
+                            "grade": r["grade"],
+                            "file_path": r["file_path"],
+                            "id": existing[0]
+                        }
+                    )
+                else:
+                    # Insert baru
+                    conn.execute(
+                        text("INSERT INTO hasil_penilaian (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path) VALUES (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path)"),
+                        {
+                            "name": r["name"],
+                            "similarity": float(r["similarity"]),
+                            "grade": r["grade"],
+                            "user_id": r["user_id"],
+                            "kelas_id": r["kelas_id"],
+                            "assignment_id": assignment_id,
+                            "file_path": r["file_path"]
+                        }
+                    )
     except Exception as e:
         print("Gagal menyimpan ke PostgreSQL:", e)
         traceback.print_exc()
@@ -87,13 +106,18 @@ def fetch_results_by_kode_kelas(kode_kelas, user_id):
             )
             kelas_row = kelas_result.fetchone()
             if not kelas_row:
-                # Jika siswa bukan bagian dari kelas ini, atau kelas tidak ditemukan
                 return []
             kelas_id = kelas_row[0]
             
-            # Sekarang ambil hasil penilaian untuk kelas_id ini
+            # Ambil hasil penilaian + judul assignment
             result = conn.execute(
-                text("SELECT * FROM public.hasil_penilaian WHERE kelas_id = :kelas_id AND user_id = :user_id ORDER BY nama_murid"),
+                text("""
+                    SELECT hp.*, a.judul AS judul_assignment
+                    FROM public.hasil_penilaian hp
+                    JOIN assignments a ON hp.assignment_id = a.id
+                    WHERE hp.kelas_id = :kelas_id AND hp.user_id = :user_id
+                    ORDER BY hp.nama_murid
+                """),
                 {"kelas_id": kelas_id, "user_id": user_id}
             )
             results = [dict(row) for row in result.mappings()]

@@ -14,6 +14,9 @@ import json
 import re
 from supabase import create_client, Client
 from urllib.parse import urlparse
+import csv
+from io import StringIO, BytesIO
+from flask import send_file, jsonify, session
 
 from utils.db import get_postgres_conn
 from utils.LSA import (
@@ -979,6 +982,38 @@ def get_clean_ext(url):
         return ".pdf"
     return ext
 
+@app.route('/api/assignments/<int:assignment_id>/download-csv', methods=['GET'])
+def download_assignment_csv(assignment_id):
+    if 'user_id' not in session or session.get('role') != 'Teacher':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    results = fetch_results_by_assignment_id(assignment_id)
+    if not results:
+        return jsonify({"error": "No results found"}), 404
+
+    # Buat CSV di memory
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Student Name', 'Grade', 'Similarity', 'Upload Time'])
+    for row in results:
+        writer.writerow([
+            row.get('nama_murid', '-'),
+            row.get('nilai', row.get('grade', '-')),
+            row.get('similarity', '-'),
+            row.get('created_at', '-')
+        ])
+    # Encode ke bytes
+    mem = BytesIO()
+    mem.write(output.getvalue().encode('utf-8'))
+    mem.seek(0)
+
+    filename = f"assignment_{assignment_id}_results.csv"
+    return send_file(
+        mem,
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=filename
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
