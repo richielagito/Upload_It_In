@@ -1016,4 +1016,5 @@ def download_assignment_csv(assignment_id):
     )
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000)) # Railway akan menyediakan 'PORT'
+    app.run(host='0.0.0.0', port=port)
