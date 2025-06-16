@@ -1,12 +1,12 @@
 // --- Fungsi untuk render assignment ---
 async function renderAssignments(kodeKelas) {
     const assignmentList = document.getElementById("assignment-list");
-    assignmentList.innerHTML = "<div>Loading assignments...</div>";
+    assignmentList.innerHTML = `<div class="assignment-status-message loading">Loading assignments...</div>`;
     const assignmentRes = await fetch(`/api/assignments/${kodeKelas}`);
     const assignments = await assignmentRes.json();
     assignmentList.innerHTML = "";
     if (!assignments.length) {
-        assignmentList.innerHTML = "<div>No assignments yet.</div>";
+        assignmentList.innerHTML = `<div class="assignment-status-message">No assignments yet.</div>`;
     } else {
         assignments.forEach((ass) => {
             const card = document.createElement("div");
@@ -63,17 +63,42 @@ function handleUploadJawaban() {
             if (!fileInput.files.length) return;
             const formData = new FormData();
             formData.append("file", fileInput.files[0]);
-            document.querySelectorAll(".upload-it-in-btn").innerHTML = "Uploading...";
+            Swal.fire({
+                title: "Processing...",
+                text: "Please wait while we upload your answer.",
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+            });
             const res = await fetch(`/api/assignments/upload/${assignmentId}`, {
                 method: "POST",
                 body: formData,
             });
             const data = await res.json();
+
+            Swal.close();
+
             if (data.success) {
-                statusSpan.textContent = "Uploaded!";
+                await Swal.fire({
+                    title: "Success",
+                    icon: "success",
+                    text: "Upload Success!",
+                    timer: 1000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                });
                 setTimeout(() => window.location.reload(), 1000);
             } else {
-                statusSpan.textContent = data.error || "Failed to upload.";
+                await Swal.fire({
+                    title: "Error",
+                    icon: "error",
+                    text: data.error,
+                    timer: 1000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                });
             }
         });
     });

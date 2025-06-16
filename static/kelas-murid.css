@@ -408,6 +408,31 @@ td {
     margin-top: 4px;
 }
 
+.assignment-status-message {
+    width: 100%;
+    text-align: center;
+    color: #888;
+    font-size: 1.1rem;
+    margin: 20px 0 70px 0;
+    letter-spacing: 0.5px;
+}
+
+.assignment-status-message.loading {
+    color: var(--color-primary);
+    font-weight: 500;
+    font-size: 1.15rem;
+    animation: assignment-loading-blink 0.5 s linear infinite alternate;
+}
+
+@keyframes assignment-loading-blink {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.5;
+    }
+}
+
 /* Responsive Style */
 @media (min-width: 768px) {
     body {

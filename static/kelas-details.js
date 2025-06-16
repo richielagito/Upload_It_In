@@ -239,10 +239,22 @@ if (tambahAssignmentForm) {
         const formData = new FormData(tambahAssignmentForm);
 
         try {
+            Swal.fire({
+                title: "Processing...",
+                text: "Please wait while we add the assignment.",
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+            });
+
             const response = await fetch("/api/assignments", {
                 method: "POST",
                 body: formData,
             });
+
+            Swal.close();
 
             if (response.ok) {
                 Swal.fire({
@@ -256,10 +268,21 @@ if (tambahAssignmentForm) {
                 await loadAssignments(); // Reload daftar assignment
             } else {
                 const error = await response.json();
-                alert(error.error || "Gagal menambahkan assignment");
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: error.error || "Failed to add assignment",
+                });
+                console.error("Error adding assignment:", error);
             }
         } catch (error) {
-            alert("Terjadi kesalahan saat menambahkan assignment");
+            Swal.close();
+            console.error("Error:", error);
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "An unexpected error occurred while adding the assignment.",
+            });
         }
     });
 }
@@ -272,7 +295,7 @@ async function fetchKelasIdByKode(kodeKelas) {
         const kelas = kelasList.find((k) => String(k.kode_kelas) === String(kodeKelas));
         return kelas ? kelas.id : null;
     } catch (error) {
-        console.error("Error fetching kelas ID:", error);
+        console.error("Error fetching Class ID:", error);
         return null;
     }
 }
@@ -304,7 +327,7 @@ async function loadAssignments() {
             ${
                 window.userRole === "Teacher"
                     ? `<button class="form-submit" style="background:#f04438;" onclick="deleteAssignment('${assignment.id}')">
-                    Hapus
+                    Delete
                   </button>`
                     : ""
             }
@@ -313,12 +336,12 @@ async function loadAssignments() {
                 assignmentsList.appendChild(assignmentItem);
             });
         } else {
-            console.error("Gagal mengambil daftar assignment");
-            alert("Terjadi kesalahan saat mengambil daftar assignment");
+            console.error("Failed to fetch assignments");
+            alert("An error occurred while fetching assignments");
         }
     } catch (error) {
-        console.error("Error memuat assignment:", error);
-        alert("Terjadi kesalahan saat memuat assignment");
+        console.error("Error fetching assignments:", error);
+        alert("An error occurred while fetching assignments");
     }
 }
 
@@ -332,7 +355,7 @@ async function displayUploadsForAssignment(assignmentId) {
         if (response.ok) {
             const data = await response.json();
             if (!data.length) {
-                tbody.innerHTML = '<tr><td colspan="5">Belum ada upload untuk assignment ini</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5">No uploads for this assignment yet</td></tr>';
                 return;
             }
             tbody.innerHTML = "";
@@ -364,17 +387,17 @@ async function displayUploadsForAssignment(assignmentId) {
     <td>${item.nilai || item.grade || "-"}</td>
     <td>${item.similarity ?? "-"}</td>
     <td><span class="status-pill ${statusColor}">${status}</span></td>
-     <td><button class="form-submit" style="background:#f04438;" onclick="window.hapusUpload('${item.id}')">Hapus</button></td>
+     <td><button class="form-submit" style="background:#f04438;" onclick="window.hapusUpload('${item.id}')">Delete</button></td>
   `;
                 tbody.appendChild(tr);
             });
         } else {
-            console.error("Gagal mengambil hasil upload untuk assignment");
-            tbody.innerHTML = '<tr><td colspan="5">Error memuat upload</td></tr>';
+            console.error("Failed to fetch uploads for assignment");
+            tbody.innerHTML = '<tr><td colspan="5">Error fetching uploads</td></tr>';
         }
     } catch (error) {
-        console.error("Error memuat upload untuk assignment:", error);
-        tbody.innerHTML = '<tr><td colspan="5">Error memuat upload</td></tr>';
+        console.error("Error fetching uploads for assignment:", error);
+        tbody.innerHTML = '<tr><td colspan="5">Error fetching uploads</td></tr>';
     }
 }
 
@@ -417,7 +440,7 @@ function downloadAssignment(fileUrl) {
 
 // Fungsi untuk menghapus assignment
 async function deleteAssignment(assignmentId) {
-    if (!confirm("Apakah Anda yakin ingin menghapus assignment ini?")) {
+    if (!confirm("Are you sure you want to delete this assignment? This action cannot be undone.")) {
         return;
     }
 
@@ -427,15 +450,15 @@ async function deleteAssignment(assignmentId) {
         });
 
         if (response.ok) {
-            alert("Assignment berhasil dihapus");
+            alert("Assignment successfully deleted");
             loadAssignments(); // Muat ulang daftar assignment
         } else {
             const error = await response.json();
-            alert("Gagal menghapus assignment: " + error.message);
+            alert("Failed to delete assignment: " + error.message);
         }
     } catch (error) {
         console.error("Error:", error);
-        alert("Terjadi kesalahan saat menghapus assignment");
+        alert("An error occurred while deleting the assignment");
     }
 }
 

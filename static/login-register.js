@@ -93,6 +93,15 @@ loginForm.addEventListener("submit", async function (e) {
         // Ambil access_token dari Supabase
         const { data } = await supabase.auth.getSession();
         const access_token = data.session.access_token;
+        Swal.fire({
+            title: "Processing...",
+            text: "Please wait while we log you in.",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            },
+        });
         // Kirim ke backend untuk set session
         await fetch("/set_session", {
             method: "POST",
@@ -100,15 +109,18 @@ loginForm.addEventListener("submit", async function (e) {
             body: JSON.stringify({ access_token }),
             credentials: "same-origin",
         });
-        let timerInterval;
+
+        Swal.close();
+
         await Swal.fire({
             title: "Success",
             icon: "success",
             html: "Login success! Redirecting you...",
-            timer: 2000,
+            timer: 1000,
             timerProgressBar: true,
             showConfirmButton: false,
         });
+
         window.location.href = "/dashboard";
     }
 });
