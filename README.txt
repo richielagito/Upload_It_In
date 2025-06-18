@@ -18,8 +18,8 @@ HARUS BUKA FILE db.py UNTUK CONNECT KE PG ADMIN, ROUTE DAN PASSWORD GANTI SESUAI
 pip install -r requirements.txt (UNTUK INSTALL LIBRARY DI requirements.txt)
 
 Kelompok 11 (NLP):
-Nikolaus Nathaniel (535230113)
-Dhani Andika Maharsi (535230149)
+OctoNik | Nikolaus Nathaniel (535230113)
+Borjues | Dhani Andika Maharsi (535230149)
 
 Kelompok 11 (Software Development):
 Jalsson (535230145)
