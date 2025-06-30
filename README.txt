@@ -16,3 +16,13 @@ essay_grader/
 HARUS BUKA FILE db.py UNTUK CONNECT KE PG ADMIN, ROUTE DAN PASSWORD GANTI SESUAI YANG UDAH DI SETTING YA.
 
 pip install -r requirements.txt (UNTUK INSTALL LIBRARY DI requirements.txt)
+
+Kelompok 11 (NLP):
+OctoNik | Nikolaus Nathaniel (535230113)
+Borjues | Dhani Andika Maharsi (535230149)
+
+Kelompok 11 (Software Development):
+Jalsson (535230145)
+Richie Lagito (535230037)
+Nikolaus Nathaniel (535230113)
+Dhani Andika Maharsi (535230149)

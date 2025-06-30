@@ -1,1 +1,9 @@
+# Python
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Lainnya
 .env
+node_modules
