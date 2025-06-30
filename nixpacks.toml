@@ -1,12 +1,17 @@
-# File: nixpacks.toml (VERSI YANG BENAR)
+# File: nixpacks.toml
 
-# Memberitahu Nixpacks untuk menggunakan provider Python dalam format array/sequence
-providers = ["python"]
+# Tahap instalasi provider
+[providers]
+# Memaksa Nixpacks untuk menggunakan provider Python, mengabaikan yang lain
+python = {}
 
-# Mendefinisikan fase build
+# Tahap build, untuk menginstal dependensi
 [phases.build]
+# Perintah untuk menginstal paket dari requirements.txt
 cmds = ["pip install -r requirements.txt"]
 
-# Mendefinisikan perintah start
+# Tahap start, untuk menjalankan aplikasi
 [start]
+# Perintah untuk menjalankan Gunicorn. Ini menggantikan Procfile.
+# $PORT akan secara otomatis disediakan oleh Railway.
 cmd = "gunicorn --bind 0.0.0.0:$PORT app:app"
