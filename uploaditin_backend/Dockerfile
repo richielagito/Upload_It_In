@@ -6,6 +6,11 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
+    gdal-bin \
+    libgdal-dev \
+    libgeos-dev \
+    libproj-dev \
+    proj-bin \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

@@ -1,0 +1,7 @@
+
+import { createBrowserClient } from '@supabase/ssr'
+
+const supabaseUrl = 'https://rexkylqupopiusorgdni.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJleGt5bHF1cG9waXVzb3JnZG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4NDAyNTAsImV4cCI6MjA2MzQxNjI1MH0.A0ha39mt_dkSSkBAQHehVXQwpzhb6JoxhymF2mxtczA'
+
+export const createClient = () => createBrowserClient(supabaseUrl, supabaseKey)
