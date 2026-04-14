@@ -50,45 +50,46 @@ export default function Navbar() {
   return (
     <nav
       className={cn(
-        "fixed top-0 left-0 w-full z-50 transition-all duration-300",
+        "fixed top-0 left-0 w-full z-50 transition-all duration-500",
         scrolled
-          ? "bg-white/80 backdrop-blur-md shadow-sm border-b border-white/20 py-4"
-          : "bg-transparent py-6"
+          ? "bg-surface-lowest/80 backdrop-blur-xl shadow-2xl shadow-primary/5 py-4"
+          : "bg-transparent py-8"
       )}
     >
       <div className="container mx-auto px-6 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold text-slate-800 flex items-center">
-          Upload<span className="text-blue-600">ItIn</span>
+        <Link href="/" className="text-2xl font-extrabold text-foreground flex items-center font-headline tracking-tight">
+          Upload<span className="text-primary">ItIn</span>
         </Link>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-8">
-          <div className="flex gap-6">
+        <div className="hidden md:flex items-center gap-10">
+          <div className="flex gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-slate-600 hover:text-blue-600 font-medium transition-colors"
+                className="text-slate-600 hover:text-primary font-bold transition-all font-sans relative group"
               >
                 {link.name}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
           </div>
           
           {session ? (
-              <div className="flex items-center gap-4">
-                  <Link href="/dashboard" className="px-5 py-2.5 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30">
+              <div className="flex items-center gap-6">
+                  <Link href="/dashboard" className="px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-primary-container text-white font-bold hover:shadow-xl hover:shadow-primary/20 transition-all font-headline">
                       Dashboard
                   </Link>
-                   <button onClick={handleLogout} className="text-slate-600 hover:text-red-500 font-medium">Log out</button>
+                   <button onClick={handleLogout} className="text-slate-600 hover:text-red-500 font-bold font-sans transition-colors cursor-pointer">Log out</button>
               </div>
 
           ) : (
             <Link
               href="/login-register"
-              className="px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium hover:shadow-lg hover:shadow-blue-500/30 transition-all transform hover:-translate-y-0.5"
+              className="px-8 py-3 rounded-xl bg-gradient-to-r from-primary to-primary-container text-white font-bold hover:shadow-xl hover:shadow-primary/20 transition-all font-headline"
             >
-              Login / Register
+              Get Started
             </Link>
           )}
         </div>
@@ -104,30 +105,30 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-slate-100 shadow-xl p-6 flex flex-col gap-4">
+        <div className="md:hidden absolute top-full left-0 w-full bg-surface-lowest/95 backdrop-blur-2xl shadow-[0_40px_60px_-15px_rgba(0,0,0,0.1)] p-8 flex flex-col gap-6">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
-              className="text-lg text-slate-700 font-medium py-2"
+              className="text-xl text-slate-700 font-bold font-headline"
               onClick={() => setIsOpen(false)}
             >
               {link.name}
             </Link>
           ))}
-            <div className="h-px bg-slate-100 my-2" />
+            <div className="h-[2px] bg-surface-low my-2" />
              {session ? (
                  <>
-                    <Link href="/dashboard" className="w-full text-center py-3 rounded-xl bg-blue-600 text-white font-bold">Dashboard</Link>
-                    <button onClick={handleLogout} className="w-full text-center py-3 text-red-500 font-medium">Log out</button>
+                    <Link href="/dashboard" className="w-full text-center py-4 rounded-2xl bg-gradient-to-br from-primary to-primary-container text-white font-bold font-headline shadow-lg">Dashboard</Link>
+                    <button onClick={handleLogout} className="w-full text-center py-4 text-red-500 font-bold font-headline">Log out</button>
                  </>
              ) : (
                  <Link
                     href="/login-register"
-                    className="w-full text-center py-3 rounded-xl bg-blue-600 text-white font-bold"
+                    className="w-full text-center py-4 rounded-2xl bg-gradient-to-br from-primary to-primary-container text-white font-bold font-headline shadow-lg"
                     onClick={() => setIsOpen(false)}
                   >
-                    Login / Register
+                    Get Started
                   </Link>
              )}
         </div>
