@@ -101,7 +101,7 @@ export default function ClassDetailsStudent() {
   if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
 
   return (
-    <DashboardShell role="Student" username={user?.user_metadata?.username} onLogout={() => router.push('/logout')}>
+    <DashboardShell role="Student" username={user?.user_metadata?.username}>
         <div className="mb-8">
             <Link href="/dashboard" className="text-slate-500 hover:text-blue-600 flex items-center gap-1 mb-4 text-sm font-medium">
                 <ArrowLeft size={16} /> Back to Dashboard

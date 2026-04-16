@@ -1,6 +1,7 @@
 #app.py:
 
 from flask import Flask, request, render_template, jsonify, redirect, url_for, session
+from flask_cors import CORS
 import os
 import datetime
 from dotenv import load_dotenv
@@ -39,6 +40,7 @@ from uploaditin_backend.utils.db import (
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-super-secret-key-fixed-for-dev")
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['CSV_FOLDER'] = 'data'
@@ -72,6 +74,10 @@ def clean_part(s: str) -> str:
 
 
   
+
+@app.route('/login_register')
+def login_register():
+    return jsonify({"error": "Unauthorized / Please login"}), 401
 
 @app.route('/admin')
 def admin_dashboard():
@@ -482,7 +488,7 @@ def set_session():
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
     session.clear()
-    return redirect(url_for('login_register'))
+    return jsonify({"success": True})
 
 
 
@@ -657,8 +663,8 @@ def api_add_assignment():
         jawaban_filename = f"answers/teacher/{kelas_id}_{judul}_jawaban{jawaban_ext}".replace(" ", "_")
 
         # Upload ke Supabase Storage
-        assignment_url = upload_to_supabase_storage(file_assignment, assignment_filename)
-        jawaban_url = upload_to_supabase_storage(file_jawaban, jawaban_filename)
+        assignment_url = upload_file(file_assignment.read(), assignment_filename)
+        jawaban_url = upload_file(file_jawaban.read(), jawaban_filename)
 
         # Simpan ke database
         conn = get_postgres_conn()
@@ -828,7 +834,7 @@ def api_upload_student_answer(assignment_id):
     student_filename = f"answers/student/{kelas_id}_{assignment_id}_{nama_user}_jawaban{ext}".replace(" ", "_")
 
     # Upload file murid ke Supabase Storage
-    murid_url = upload_to_supabase_storage(student_file, student_filename)
+    murid_url = upload_file(student_file.read(), student_filename)
 
     # Download file guru dan murid ke lokal sementara untuk LSA
     import tempfile

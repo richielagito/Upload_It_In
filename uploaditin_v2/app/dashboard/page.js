@@ -54,7 +54,6 @@ export default function Dashboard() {
     <DashboardShell 
         role={role} 
         username={user?.user_metadata?.username || user?.email} 
-        onLogout={handleLogout}
     >
       {role === 'Teacher' ? (
         <TeacherDashboard user={user} />
