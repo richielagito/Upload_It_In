@@ -27,6 +27,7 @@ from uploaditin_backend.utils.LSA import (
     extract_text_from_any,
     lsa_similarity,
 )
+from uploaditin_backend.utils.embedding_scorer import embedding_score_submission
 from uploaditin_backend.utils.db import (
     simpan_ke_postgres,
     fetch_all_results,
@@ -867,7 +868,7 @@ def api_upload_student_answer(assignment_id):
         print("Guru temp file:", tmp_guru.name)
         print("Murid temp file:", tmp_murid.name)
 
-        # Proses scoring via scorer interface (routes to legacy LSA by default)
+        # Proses scoring via scorer interface
         guru_text = extract_text_from_any(tmp_guru.name)
         murid_text = extract_text_from_any(tmp_murid.name)
 
@@ -875,7 +876,18 @@ def api_upload_student_answer(assignment_id):
             print("Format tidak didukung atau file kosong")
             return jsonify({"error": "Format tidak didukung atau file kosong"}), 400
 
-        avg_similarity, grade = lsa_similarity(guru_text, murid_text)
+        scoring_engine = os.getenv("SCORING_ENGINE", "legacy").lower()
+        if scoring_engine == "embeddings":
+            try:
+                score_res = embedding_score_submission(guru_text, murid_text)
+                avg_similarity = score_res["avg_similarity"]
+                grade = score_res["grade"]
+            except Exception as e:
+                print(f"Embedding scoring failed: {e}")
+                return jsonify({"error": "Gagal memproses penilaian dengan AI. Silakan coba lagi nanti atau hubungi admin."}), 502
+        else:
+            avg_similarity, grade = lsa_similarity(guru_text, murid_text)
+        
         similarity = avg_similarity
 
     result_to_save = {
