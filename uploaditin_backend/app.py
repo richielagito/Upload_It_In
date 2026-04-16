@@ -1,4 +1,4 @@
-#app.py:
+﻿#app.py:
 
 from flask import Flask, request, render_template, jsonify, redirect, url_for, session
 from werkzeug.utils import secure_filename
@@ -419,8 +419,8 @@ def set_session():
     if not access_token:
         return jsonify({"error": "No token"}), 400
 
-    headers = {"apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJleGt5bHF1cG9waXVzb3JnZG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4NDAyNTAsImV4cCI6MjA2MzQxNjI1MH0.A0ha39mt_dkSSkBAQHehVXQwpzhb6JoxhymF2mxtczA", "Authorization": f"Bearer {access_token}"}
-    resp = requests.get("https://rexkylqupopiusorgdni.supabase.co/auth/v1/user", headers=headers)
+    headers = {"apikey": os.getenv("SUPABASE_PUBLISHABLE_KEY"), "Authorization": f"Bearer {access_token}"}
+    resp = requests.get(f"{os.getenv('SUPABASE_URL')}/auth/v1/user", headers=headers)
     if resp.status_code != 200:
         return jsonify({"error": "Invalid token"}), 401
     user = resp.json()

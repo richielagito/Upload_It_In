@@ -1,3 +1,3 @@
-const supabaseUrl = "https://rexkylqupopiusorgdni.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJleGt5bHF1cG9waXVzb3JnZG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4NDAyNTAsImV4cCI6MjA2MzQxNjI1MH0.A0ha39mt_dkSSkBAQHehVXQwpzhb6JoxhymF2mxtczA";
+const supabaseUrl = window.SUPABASE_URL || "https://example.supabase.co";
+const supabaseKey = window.SUPABASE_PUBLISHABLE_KEY || "pubkey-placeholder";
 export const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
