@@ -1,7 +1,7 @@
 # Migration & Operations Runbook: Embedding + Supabase Modernization
 
 ## Purpose & scope
-This runbook provides step-by-step guidance for migrating the essay grading engine from legacy LSA to Google Embeddings (`google-embedding-2-preview`) and modernizing Supabase key usage. Infrastructure changes (database migrations or vector DB additions) are out of scope.
+This runbook provides step-by-step guidance for migrating the essay grading engine from legacy LSA to Google Embeddings (`gemini-embedding-2-preview`) and modernizing Supabase key usage. Infrastructure changes (database migrations or vector DB additions) are out of scope.
 
 ## Required environment variables
 The following variables must be set in the runtime environment. Do NOT hardcode these in source files.

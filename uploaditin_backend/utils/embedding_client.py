@@ -3,7 +3,7 @@ import time
 from typing import List
 
 
-DEFAULT_MODEL = "google-embedding-2-preview"
+DEFAULT_MODEL = "gemini-embedding-2-preview"
 DEFAULT_BATCH_SIZE = 16
 DEFAULT_MAX_ATTEMPTS = int(os.getenv("EMBEDDING_RETRY_ATTEMPTS", "3"))
 DEFAULT_BACKOFF_SECONDS = float(os.getenv("EMBEDDING_RETRY_BASE_SECONDS", "0.5"))
@@ -18,7 +18,7 @@ def _normalize_vector(values: List[float]) -> List[float]:
       - Zero vectors are returned unchanged to avoid division-by-zero.
 
     Note:
-      - `google-embedding-2-preview` dimensionality may evolve over time.
+      - `gemini-embedding-2-preview` dimensionality may evolve over time.
       - This utility does not hardcode dimension checks; it expects each
         embedding to be a non-empty list of floats from the API.
     """
