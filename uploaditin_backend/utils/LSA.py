@@ -12,7 +12,7 @@ from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFacto
 def extract_text_from_pdf(path):
     try:
         doc = fitz.open(path)
-        return " ".join(page.get_text() for page in doc)
+        return " ".join(page.get_text("text") for page in doc.pages())
     except Exception as e:
         print(f"Error membaca PDF {path}: {e}")
         return ""
