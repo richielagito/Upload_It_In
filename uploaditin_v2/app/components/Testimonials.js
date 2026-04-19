@@ -57,7 +57,7 @@ export default function Testimonials({ data = defaultTestimonials }) {
 
                     <div className="relative z-10 flex items-center gap-5 pt-10">
                         <img 
-                            src={`https://ui-avatars.com/api/?name=${item.name.replace(' ', '+')}&background=003d9b&color=ffffff`} 
+                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=003d9b&color=ffffff`} 
                             alt={item.name}
                             className="w-16 h-16 rounded-2xl shadow-lg shadow-primary/10"
                         />
