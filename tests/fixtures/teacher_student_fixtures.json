@@ -1,0 +1,7 @@
+{
+  "teacher": "jawaban 1 = The capital of France is Paris.\njawaban 2 = Water boils at 100 degrees Celsius.\njawaban 3 = Photosynthesis converts light into chemical energy.",
+  "student_full": "jawaban 1 = The capital of France is Paris.\njawaban 2 = Water boils at 100 degrees Celsius.\njawaban 3 = Photosynthesis converts light into chemical energy.",
+  "student_partial": "jawaban 1 = The capital of France is Paris.\njawaban 2 = Water boils at one hundred degrees Celsius.\njawaban 3 = Plants use sunlight to make food.",
+  "student_missing": "jawaban 1 = The capital of France is Paris.\njawaban 3 = Photosynthesis converts light into chemical energy.",
+  "teacher_malformed": "This teacher text contains no parsable answers."
+}

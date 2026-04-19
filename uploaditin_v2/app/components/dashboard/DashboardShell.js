@@ -103,7 +103,11 @@ export default function DashboardShell({ children, role, username, onLogout }) {
 
         <div className="p-4 border-t border-slate-100">
             <button 
-                onClick={onLogout}
+                onClick={async () => {
+                    await supabase.auth.signOut();
+                    await fetch('/logout');
+                    window.location.href = '/login-register';
+                }}
                 className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors font-medium"
             >
                 <LogOut size={20} />

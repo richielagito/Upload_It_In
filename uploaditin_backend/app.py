@@ -1,44 +1,62 @@
 #app.py:
 
 from flask import Flask, request, render_template, jsonify, redirect, url_for, session
-from werkzeug.utils import secure_filename
+from flask_cors import CORS
 import os
 import datetime
-import secrets
 from dotenv import load_dotenv
 import requests
 import random
 import string
-import datetime
 import json
 import re
-from supabase import create_client, Client
 from urllib.parse import urlparse
 import csv
 from io import StringIO, BytesIO
-from flask import send_file, jsonify, session
+from flask import send_file
 
-from utils.db import get_postgres_conn
-from utils.LSA import (
+from uploaditin_backend.utils.db import get_postgres_conn
+from uploaditin_backend.utils.supabase_helpers import (
+    get_server_supabase_client,
+    upload_file,
+    download_file,
+    get_public_path,
+    SupabaseStorageError,
+    SupabaseDownloadError,
+)
+from uploaditin_backend.utils.LSA import (
     extract_text_from_any,
     lsa_similarity,
 )
-from utils.db import simpan_ke_postgres, fetch_all_results, fetch_results_by_kelas, fetch_results_by_kode_kelas, fetch_results_by_assignment_id
+from uploaditin_backend.utils.embedding_scorer import embedding_score_submission
+from uploaditin_backend.utils.db import (
+    simpan_ke_postgres,
+    fetch_all_results,
+    fetch_results_by_kelas,
+    fetch_results_by_kode_kelas,
+    fetch_results_by_assignment_id,
+)
 
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-super-secret-key-fixed-for-dev")
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['CSV_FOLDER'] = 'data'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['CSV_FOLDER'], exist_ok=True)
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = None
+
+
+def _get_supabase():
+    global supabase
+    if supabase is None:
+        supabase = get_server_supabase_client()
+    return supabase
     
-def generate_unique_class_code(length=6):
+def generate_unique_class_code(length: int = 6):
     conn = get_postgres_conn()
     cur = conn.cursor()
     while True:
@@ -50,12 +68,16 @@ def generate_unique_class_code(length=6):
     conn.close()
     return code
 
-def clean_part(s):
+def clean_part(s: str) -> str:
     return re.sub(r'[\\/*?:"<>| ]', "", s)
 
 
 
   
+
+@app.route('/login_register')
+def login_register():
+    return jsonify({"error": "Unauthorized / Please login"}), 401
 
 @app.route('/admin')
 def admin_dashboard():
@@ -73,16 +95,20 @@ def admin_summary():
 
     try:
         cur.execute("SELECT COUNT(*) FROM auth.users")
-        total_users = cur.fetchone()[0]
+        row = cur.fetchone()
+        total_users = row[0] if row and row[0] is not None else 0
 
         cur.execute("SELECT COUNT(*) FROM classes")
-        total_classes = cur.fetchone()[0]
+        row = cur.fetchone()
+        total_classes = row[0] if row and row[0] is not None else 0
 
         cur.execute("SELECT COUNT(*) FROM hasil_penilaian")
-        total_uploads = cur.fetchone()[0]
+        row = cur.fetchone()
+        total_uploads = row[0] if row and row[0] is not None else 0
 
         cur.execute("SELECT COUNT(*) FROM admins WHERE is_active = TRUE")
-        active_admins = cur.fetchone()[0]
+        row = cur.fetchone()
+        active_admins = row[0] if row and row[0] is not None else 0
 
     except Exception as e:
         print("Error fetching admin stats:", e)
@@ -211,6 +237,8 @@ def api_admin_landing():
             conn.close()
         
         return jsonify({"success": True})
+
+    return jsonify({"error": "Method not allowed"}), 405
     
 @app.route('/admin/users')
 def admin_users():
@@ -229,7 +257,7 @@ def promote_user():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return jsonify({"error": "Unauthorized"}), 401
 
-    data = request.get_json()
+    data = request.get_json() or {}
     target_user_id = data.get('user_id')
     if not target_user_id:
         return jsonify({"error": "No user_id provided"}), 400
@@ -351,13 +379,12 @@ def create_class():
         "INSERT INTO classes (nama_kelas, kode_kelas, user_id, created_at) VALUES (%s, %s, %s, %s) RETURNING id",
         (nama_kelas, kode_kelas, user_id, created_at)
     )
-    kelas_id = cur.fetchone()[0]
+    row = cur.fetchone()
+    kelas_id = row[0] if row and len(row) > 0 else None
     conn.commit()
     cur.close()
     conn.close()
     return jsonify({"class_code": kode_kelas, "kelas_id": kelas_id})
-
-from flask import jsonify
 
 @app.route('/api/classes', methods=['GET'])
 def api_classes():
@@ -414,30 +441,41 @@ def api_results_by_kode_kelas(kode_kelas):
 
 @app.route('/set_session', methods=['POST'])
 def set_session():
-    data = request.json
+    # Use get_json to ensure we always have a dict (avoid None)
+    data = request.get_json() or {}
     access_token = data.get('access_token')
     if not access_token:
         return jsonify({"error": "No token"}), 400
 
-    headers = {"apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJleGt5bHF1cG9waXVzb3JnZG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc4NDAyNTAsImV4cCI6MjA2MzQxNjI1MH0.A0ha39mt_dkSSkBAQHehVXQwpzhb6JoxhymF2mxtczA", "Authorization": f"Bearer {access_token}"}
-    resp = requests.get("https://rexkylqupopiusorgdni.supabase.co/auth/v1/user", headers=headers)
+    supabase_url = os.getenv("SUPABASE_URL")
+    supabase_secret_key = os.getenv("SUPABASE_SECRET_KEY")
+    if not supabase_url or not supabase_secret_key:
+        return jsonify({"error": "Server configuration error: missing SUPABASE_URL or SUPABASE_SECRET_KEY"}), 500
+
+    headers = {
+        "apikey": supabase_secret_key,
+        "Authorization": f"Bearer {access_token}",
+    }
+    resp = requests.get(f"{supabase_url}/auth/v1/user", headers=headers, timeout=10)
     if resp.status_code != 200:
         return jsonify({"error": "Invalid token"}), 401
-    user = resp.json()
+    user = resp.json() if hasattr(resp, 'json') else {}
 
-    session['user_id'] = user['id']
-    session['username'] = user['user_metadata'].get('username', user['email'])
-
-    session['role'] = user['user_metadata'].get('role', 'Student')  # fallback ke Student
+    # Defensive access for responses from external auth service
+    session['user_id'] = user.get('id')
+    user_metadata = user.get('user_metadata') or {}
+    session['username'] = user_metadata.get('username') or user.get('email') or 'user'
+    session['role'] = user_metadata.get('role') or 'Student'
 
     try:
         conn = get_postgres_conn()
         cur = conn.cursor()
-        cur.execute("SELECT admin_level FROM admins WHERE user_id = %s AND is_active = true", (user['id'],))
+        cur.execute("SELECT admin_level FROM admins WHERE user_id = %s AND is_active = true", (session.get('user_id'),))
         admin_row = cur.fetchone()
         if admin_row:
             session['role'] = 'Admin'
-            session['admin_level'] = admin_row[0]
+            # guard admin_row indexing
+            session['admin_level'] = admin_row[0] if len(admin_row) > 0 else None
         cur.close()
         conn.close()
     except Exception as e:
@@ -450,7 +488,7 @@ def set_session():
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
     session.clear()
-    return redirect(url_for('login_register'))
+    return jsonify({"success": True})
 
 
 
@@ -612,15 +650,21 @@ def api_add_assignment():
         file_assignment = request.files.get('fileAssignment')
         file_jawaban = request.files.get('jawabanGuru')
 
+        # Validate uploaded files before using filename
+        if file_assignment is None or not getattr(file_assignment, 'filename', None):
+            return jsonify({"error": "No assignment file provided"}), 400
+        if file_jawaban is None or not getattr(file_jawaban, 'filename', None):
+            return jsonify({"error": "No teacher answer file provided"}), 400
+
         # Format nama file
-        assignment_ext = os.path.splitext(file_assignment.filename)[-1]
-        jawaban_ext = os.path.splitext(file_jawaban.filename)[-1]
+        assignment_ext = os.path.splitext(file_assignment.filename or "")[ -1]
+        jawaban_ext = os.path.splitext(file_jawaban.filename or "")[ -1]
         assignment_filename = f"assignments/{kelas_id}_{judul}_assignment{assignment_ext}".replace(" ", "_")
         jawaban_filename = f"answers/teacher/{kelas_id}_{judul}_jawaban{jawaban_ext}".replace(" ", "_")
 
         # Upload ke Supabase Storage
-        assignment_url = upload_to_supabase_storage(file_assignment, assignment_filename)
-        jawaban_url = upload_to_supabase_storage(file_jawaban, jawaban_filename)
+        assignment_url = upload_file(file_assignment.read(), assignment_filename)
+        jawaban_url = upload_file(file_jawaban.read(), jawaban_filename)
 
         # Simpan ke database
         conn = get_postgres_conn()
@@ -633,7 +677,8 @@ def api_add_assignment():
             """,
             (judul, deskripsi, deadline, assignment_url, jawaban_url, kelas_id, datetime.datetime.now())
         )
-        assignment_id_from_db = cur.fetchone()[0]
+        row = cur.fetchone()
+        assignment_id_from_db = row[0] if row and len(row) > 0 else None
         conn.commit()
         cur.close()
         conn.close()
@@ -778,51 +823,58 @@ def api_upload_student_answer(assignment_id):
 
         cur.execute("SELECT nama_kelas FROM classes WHERE id = %s", (kelas_id,))
         kelas_row = cur.fetchone()
-        nama_kelas = kelas_row[0] if kelas_row else "kelas"
+        nama_kelas = kelas_row[0] if kelas_row and len(kelas_row) > 0 and kelas_row[0] is not None else "kelas"
     finally:
         cur.close()
         conn.close()
 
     nama_user = session.get('username', 'user')
-    ext = os.path.splitext(student_file.filename)[-1]
+    # student_file.filename should be present by earlier checks
+    ext = os.path.splitext(student_file.filename or "")[ -1]
     student_filename = f"answers/student/{kelas_id}_{assignment_id}_{nama_user}_jawaban{ext}".replace(" ", "_")
 
     # Upload file murid ke Supabase Storage
-    murid_url = upload_to_supabase_storage(student_file, student_filename)
+    murid_url = upload_file(student_file.read(), student_filename)
 
     # Download file guru dan murid ke lokal sementara untuk LSA
-    import requests as pyrequests
     import tempfile
+
+    # Guard external URLs before deriving extensions / paths
+    if not guru_jawaban_url:
+        return jsonify({"error": "Guru jawaban url tidak tersedia"}), 500
+    if not murid_url:
+        return jsonify({"error": "murid url tidak tersedia"}), 500
 
     guru_ext = get_clean_ext(guru_jawaban_url)
     murid_ext = get_clean_ext(murid_url)
 
     # Ambil path file dari URL public
-    def get_path_from_public_url(public_url):
-        parsed = urlparse(public_url)
-        parts = parsed.path.split('/object/public/uploads/')
-        if len(parts) > 1:
-            return parts[1]
-        return ""
-
-    guru_path = get_path_from_public_url(guru_jawaban_url)
-    murid_path = get_path_from_public_url(murid_url)
+    _ = get_public_path(guru_jawaban_url)
+    _ = get_public_path(murid_url)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=guru_ext) as tmp_guru, \
          tempfile.NamedTemporaryFile(delete=False, suffix=murid_ext) as tmp_murid:
-        # Download file guru dari Supabase Storage
-        guru_bytes = supabase.storage.from_('uploads').download(guru_path)
+        # Download file guru dari Supabase Storage via helper
+        try:
+            guru_bytes = download_file(guru_jawaban_url, client=_get_supabase())
+        except SupabaseDownloadError as e:
+            print(f"Failed to download guru file: {e}")
+            return jsonify({"error": "Gagal mendownload file guru dari storage"}), 500
         tmp_guru.write(guru_bytes)
         tmp_guru.flush()
-        # Download file murid dari Supabase Storage
-        murid_bytes = supabase.storage.from_('uploads').download(murid_path)
+        # Download file murid dari Supabase Storage via helper
+        try:
+            murid_bytes = download_file(murid_url, client=_get_supabase())
+        except SupabaseDownloadError as e:
+            print(f"Failed to download murid file: {e}")
+            return jsonify({"error": "Gagal mendownload file murid dari storage"}), 500
         tmp_murid.write(murid_bytes)
         tmp_murid.flush()
 
         print("Guru temp file:", tmp_guru.name)
         print("Murid temp file:", tmp_murid.name)
 
-        # Proses LSA di dalam blok with!
+        # Proses scoring via scorer interface
         guru_text = extract_text_from_any(tmp_guru.name)
         murid_text = extract_text_from_any(tmp_murid.name)
 
@@ -830,7 +882,18 @@ def api_upload_student_answer(assignment_id):
             print("Format tidak didukung atau file kosong")
             return jsonify({"error": "Format tidak didukung atau file kosong"}), 400
 
-        avg_similarity, grade = lsa_similarity(guru_text, murid_text)
+        scoring_engine = os.getenv("SCORING_ENGINE", "legacy").lower()
+        if scoring_engine == "embeddings":
+            try:
+                score_res = embedding_score_submission(guru_text, murid_text)
+                avg_similarity = score_res["avg_similarity"]
+                grade = score_res["grade"]
+            except Exception as e:
+                print(f"Embedding scoring failed: {e}")
+                return jsonify({"error": "Gagal memproses penilaian dengan AI. Silakan coba lagi nanti atau hubungi admin."}), 502
+        else:
+            avg_similarity, grade = lsa_similarity(guru_text, murid_text)
+        
         similarity = avg_similarity
 
     result_to_save = {
@@ -866,22 +929,17 @@ def api_upload_student_answer(assignment_id):
         "similarity": similarity
     })
 
-def upload_to_supabase_storage(file_storage, dest_path):
+def upload_to_supabase_storage(file_storage, dest_path: str) -> str:
     file_bytes = file_storage.read()
     file_storage.seek(0)
-    # Gunakan .update untuk overwrite, .upload untuk baru
     try:
-        res = supabase.storage.from_('uploads').upload(dest_path, file_bytes)
-    except Exception as e:
-        # Jika file sudah ada, overwrite dengan update
-        if "already exists" in str(e):
-            res = supabase.storage.from_('uploads').update(dest_path, file_bytes)
-        else:
-            raise
-    public_url = supabase.storage.from_('uploads').get_public_url(dest_path)
-    return public_url
+        public_url = upload_file(file_bytes, dest_path, client=_get_supabase())
+        return public_url
+    except SupabaseStorageError as e:
+        print(f"Supabase upload error for {dest_path}: {e}")
+        raise
 
-def get_clean_ext(url):
+def get_clean_ext(url: str) -> str:
     path = urlparse(url).path  # hanya path, tanpa query string
     ext = os.path.splitext(path)[-1]
     # fallback ke .pdf jika tidak ada ekstensi
