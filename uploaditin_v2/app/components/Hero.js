@@ -67,7 +67,7 @@ export default function Hero() {
                             </div>
                             <div className="p-6 rounded-3xl bg-surface-low/50">
                                 <div className="text-3xl lg:text-4xl font-black text-foreground font-headline tracking-tight">98%</div>
-                                <div className="text-sm text-slate-500 font-sans font-bold uppercase tracking-wider mt-1">Satisified</div>
+                                <div className="text-sm text-slate-500 font-sans font-bold uppercase tracking-wider mt-1">Satisfied</div>
                             </div>
                         </motion.div>
                     </div>
