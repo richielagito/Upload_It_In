@@ -32,18 +32,20 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-20 bg-white">
+    <section id="how-it-works" className="py-24 bg-surface-low">
       <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
+        <div className="max-w-3xl mx-auto text-center mb-20">
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl md:text-4xl font-bold text-slate-900 mb-4"
+            className="text-3xl md:text-5xl font-extrabold text-foreground mb-6 font-headline tracking-tight"
           >
             How It Works
           </motion.h2>
-          <div className="w-20 h-1.5 bg-blue-600 rounded-full mx-auto" />
+          <p className="text-slate-600 text-lg font-sans">
+            Get started in minutes with our streamlined process designed for both teachers and students.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -54,18 +56,18 @@ export default function HowItWorks() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="group p-8 rounded-2xl bg-slate-50 hover:bg-white border border-slate-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 relative overflow-hidden"
+              className="group p-10 rounded-[2.5rem] bg-surface-lowest hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.1)] transition-all duration-500 relative overflow-hidden flex flex-col items-center text-center"
             >
-              <div className="absolute top-0 right-0 p-4 opacity-10 font-black text-6xl text-slate-300 select-none">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] font-black text-9xl text-primary select-none font-headline">
                 {step.id}
               </div>
               
-              <div className="w-16 h-16 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+              <div className="w-24 h-24 rounded-[1.5rem] bg-surface-low text-primary flex items-center justify-center mb-10 group-hover:scale-110 transition-transform duration-500 group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-primary-container group-hover:text-white group-hover:shadow-xl group-hover:shadow-primary/20">
                 {step.icon}
               </div>
               
-              <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
-              <p className="text-slate-600 leading-relaxed">{step.description}</p>
+              <h3 className="text-2xl font-black text-foreground mb-4 font-headline tracking-tight">{step.title}</h3>
+              <p className="text-slate-500 text-lg leading-relaxed font-sans font-medium">{step.description}</p>
             </motion.div>
           ))}
         </div>
