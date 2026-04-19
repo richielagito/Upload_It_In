@@ -13,7 +13,7 @@ ARG NEXT_PUBLIC_BACKEND_URL=http://backend:5000
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Salin semua kode
 COPY . .
