@@ -1,256 +1,276 @@
 #app.py:
 
-from flask import Flask, request, render_template, jsonify, redirect, url_for, session
-from flask_cors import CORS
-import os
-import datetime
-from dotenv import load_dotenv
-import requests
-import random
-import string
-import json
-import re
-from urllib.parse import urlparse
 import csv
-from io import StringIO, BytesIO
-from flask import send_file
+import datetime
+import json
+import logging
+import os
+import random
+import re
+import string
+import tempfile
+from io import BytesIO, StringIO
+from urllib.parse import urlparse
 
-from uploaditin_backend.utils.db import get_postgres_conn
+from dotenv import load_dotenv
+from flask import Flask, g, jsonify, redirect, render_template, request, send_file, session, url_for
+from flask_cors import CORS
+import requests
+
+from uploaditin_backend.utils.db import (
+    fetch_all_results,
+    fetch_results_by_assignment_id,
+    fetch_results_by_kelas,
+    fetch_results_by_kode_kelas,
+    get_engine,
+    simpan_ke_postgres,
+)
 from uploaditin_backend.utils.supabase_helpers import (
-    get_server_supabase_client,
-    upload_file,
+    SupabaseDownloadError,
+    SupabaseStorageError,
     download_file,
     get_public_path,
-    SupabaseStorageError,
-    SupabaseDownloadError,
+    get_server_supabase_client,
+    upload_file,
 )
 from uploaditin_backend.utils.LSA import (
     extract_text_from_any,
     lsa_similarity,
 )
 from uploaditin_backend.utils.embedding_scorer import embedding_score_submission
-from uploaditin_backend.utils.db import (
-    simpan_ke_postgres,
-    fetch_all_results,
-    fetch_results_by_kelas,
-    fetch_results_by_kode_kelas,
-    fetch_results_by_assignment_id,
-)
+from sqlalchemy import text
 
 load_dotenv()
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 CORS(app)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-super-secret-key-fixed-for-dev")
+
+# --- Security: secret key wajib di-set via environment variable ---
+_secret = os.getenv("FLASK_SECRET_KEY")
+if not _secret:
+    raise RuntimeError(
+        "FLASK_SECRET_KEY environment variable harus di-set. "
+        "Generate dengan: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
+app.secret_key = _secret
+
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['CSV_FOLDER'] = 'data'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['CSV_FOLDER'], exist_ok=True)
 
-supabase = None
 
+# ---------------------------------------------------------------------------
+# Database helpers — menggunakan flask.g untuk connection per-request
+# ---------------------------------------------------------------------------
+
+def get_db():
+    """Dapatkan koneksi SQLAlchemy per-request via flask.g (Flask best practice)."""
+    if 'db' not in g:
+        g.db = get_engine().connect()
+    return g.db
+
+
+@app.teardown_appcontext
+def close_db(exception):
+    """Tutup koneksi DB otomatis saat request selesai (termasuk saat ada exception)."""
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+
+
+# ---------------------------------------------------------------------------
+# Supabase client helper
+# ---------------------------------------------------------------------------
 
 def _get_supabase():
-    global supabase
-    if supabase is None:
-        supabase = get_server_supabase_client()
-    return supabase
-    
+    """Lazy-load Supabase client, cached di flask.g per-request."""
+    if 'supabase' not in g:
+        g.supabase = get_server_supabase_client()
+    return g.supabase
+
+
+# ---------------------------------------------------------------------------
+# Utility functions
+# ---------------------------------------------------------------------------
+
 def generate_unique_class_code(length: int = 6):
-    conn = get_postgres_conn()
-    cur = conn.cursor()
+    conn = get_db()
     while True:
         code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
-        cur.execute("SELECT 1 FROM classes WHERE kode_kelas = %s", (code,))
-        if not cur.fetchone():
+        row = conn.execute(
+            text("SELECT 1 FROM classes WHERE kode_kelas = :code"), {"code": code}
+        ).fetchone()
+        if not row:
             break
-    cur.close()
-    conn.close()
     return code
+
 
 def clean_part(s: str) -> str:
     return re.sub(r'[\\/*?:"<>| ]', "", s)
 
 
+def get_clean_ext(url: str) -> str:
+    path = urlparse(url).path
+    ext = os.path.splitext(path)[-1]
+    if ext.lower() not in [".pdf", ".docx", ".txt"]:
+        return ".pdf"
+    return ext
 
-  
+
+# ---------------------------------------------------------------------------
+# Auth placeholder (frontend uses this endpoint reference for url_for)
+# ---------------------------------------------------------------------------
 
 @app.route('/login_register')
 def login_register():
     return jsonify({"error": "Unauthorized / Please login"}), 401
 
+
+# ---------------------------------------------------------------------------
+# Admin routes
+# ---------------------------------------------------------------------------
+
 @app.route('/admin')
 def admin_dashboard():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return redirect(url_for('login_register'))
-    return render_template('admin-dashboard.html') 
+    return render_template('admin-dashboard.html')
+
 
 @app.route('/api/admin/summary')
 def admin_summary():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return jsonify({"error": "Unauthorized"}), 401
 
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-
+    conn = get_db()
     try:
-        cur.execute("SELECT COUNT(*) FROM auth.users")
-        row = cur.fetchone()
-        total_users = row[0] if row and row[0] is not None else 0
-
-        cur.execute("SELECT COUNT(*) FROM classes")
-        row = cur.fetchone()
-        total_classes = row[0] if row and row[0] is not None else 0
-
-        cur.execute("SELECT COUNT(*) FROM hasil_penilaian")
-        row = cur.fetchone()
-        total_uploads = row[0] if row and row[0] is not None else 0
-
-        cur.execute("SELECT COUNT(*) FROM admins WHERE is_active = TRUE")
-        row = cur.fetchone()
-        active_admins = row[0] if row and row[0] is not None else 0
-
-    except Exception as e:
-        print("Error fetching admin stats:", e)
-        return jsonify({"error": "Failed to fetch summary"}), 500
-    finally:
-        cur.close()
-        conn.close()
+        total_users = conn.execute(text("SELECT COUNT(*) FROM auth.users")).scalar() or 0
+        total_classes = conn.execute(text("SELECT COUNT(*) FROM classes")).scalar() or 0
+        total_uploads = conn.execute(text("SELECT COUNT(*) FROM hasil_penilaian")).scalar() or 0
+        active_admins = conn.execute(
+            text("SELECT COUNT(*) FROM admins WHERE is_active = TRUE")
+        ).scalar() or 0
+    except Exception:
+        logger.exception("Error fetching admin stats")
+        return jsonify({"error": "Gagal mengambil statistik admin"}), 500
 
     return jsonify({
         "total_users": total_users,
         "total_classes": total_classes,
         "total_uploads": total_uploads,
-        "active_admins": active_admins
+        "active_admins": active_admins,
     })
+
 
 @app.route('/api/admin/users')
 def admin_get_users():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return jsonify({"error": "Unauthorized"}), 401
 
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT 
-            u.id,
-            u.email,
-            u.created_at,
-            CASE WHEN a.id IS NOT NULL AND a.is_active THEN true ELSE false END as is_admin
-        FROM auth.users u
-        LEFT JOIN admins a ON u.id = a.user_id
-        ORDER BY u.created_at DESC
-    """)
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    conn = get_db()
+    try:
+        rows = conn.execute(text("""
+            SELECT
+                u.id,
+                u.email,
+                u.created_at,
+                CASE WHEN a.id IS NOT NULL AND a.is_active THEN true ELSE false END as is_admin
+            FROM auth.users u
+            LEFT JOIN admins a ON u.id = a.user_id
+            ORDER BY u.created_at DESC
+        """)).fetchall()
+    except Exception:
+        logger.exception("Error fetching admin users")
+        return jsonify({"error": "Gagal mengambil data user"}), 500
 
     result = [
         {
-            "id": r[0],  
+            "id": str(r[0]),
             "email": r[1],
             "created_at": r[2].strftime("%Y-%m-%d %H:%M"),
-            "is_admin": r[3]
+            "is_admin": r[3],
         }
         for r in rows
     ]
     return jsonify(result)
+
 
 @app.route('/api/admin/landing', methods=['GET', 'POST'])
 def api_admin_landing():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return jsonify({"error": "Unauthorized"}), 401
 
-    conn = get_postgres_conn()
-    cur = conn.cursor()
+    conn = get_db()
 
     if request.method == 'GET':
-        cur.execute("SELECT section_name, content FROM landing_page_content")
-        rows = cur.fetchall()
+        try:
+            rows = conn.execute(
+                text("SELECT section_name, content FROM landing_page_content")
+            ).fetchall()
+        except Exception:
+            logger.exception("Error fetching landing page content")
+            return jsonify({"error": "Gagal mengambil konten landing page"}), 500
+
         result = {}
-        
         for section_name, content in rows:
             try:
-                # Try to parse as JSON first
-                if isinstance(content, str):
-                    parsed_content = json.loads(content)
-                    result[section_name] = parsed_content
-                else:
-                    result[section_name] = content
+                result[section_name] = json.loads(content) if isinstance(content, str) else content
             except json.JSONDecodeError:
-                # If JSON parsing fails, store as string
                 result[section_name] = content
-        
-        # Ensure we have default empty structures if sections don't exist
-        if 'hero' not in result:
-            result['hero'] = {"title": "", "subtitle": "", "description": ""}
-        if 'statistics' not in result:
-            result['statistics'] = {"essays_graded": "1000+", "active_users": "500+", "satisfaction": "98%"}
-        if 'testimonials' not in result:
-            result['testimonials'] = []
-        if 'contact' not in result:
-            result['contact'] = {"email": "", "phone": "", "address": ""}
-        
-        cur.close()
-        conn.close()
+
+        result.setdefault('hero', {"title": "", "subtitle": "", "description": ""})
+        result.setdefault('statistics', {"essays_graded": "1000+", "active_users": "500+", "satisfaction": "98%"})
+        result.setdefault('testimonials', [])
+        result.setdefault('contact', {"email": "", "phone": "", "address": ""})
         return jsonify(result)
 
     elif request.method == 'POST':
-        data = request.get_json()
-        print("Received data for saving:", data)  # Debug log
-
+        data = request.get_json() or {}
         try:
-            for section in ['hero', 'statistics', 'testimonials', 'contact']:
-                if section in data:
-                    # Convert data to JSON string for storage
-                    content_to_store = json.dumps(data[section])
-                    
-                    print(f"Storing {section}: {content_to_store}")  # Debug log
-                    
-                    # First try to update
-                    cur.execute("""
-                        UPDATE landing_page_content
-                        SET content = %s, updated_at = NOW(), updated_by = %s
-                        WHERE section_name = %s
-                    """, (content_to_store, session['user_id'], section))
-                    
-                    # Check if the update affected any rows
-                    if cur.rowcount == 0:
-                        # If no rows were updated, insert a new row
-                        cur.execute("""
-                            INSERT INTO landing_page_content (section_name, content, updated_by, created_at, updated_at)
-                            VALUES (%s, %s, %s, NOW(), NOW())
-                        """, (section, content_to_store, session['user_id']))
-            
-            conn.commit()
-            print("Changes committed successfully")  # Debug log
-            
-        except Exception as e:
-            print(f"Error saving landing page data: {e}")  # Debug log
-            conn.rollback()
-            cur.close()
-            conn.close()
-            return jsonify({"error": str(e)}), 500
-        finally:
-            cur.close()
-            conn.close()
-        
+            with get_engine().begin() as txn:
+                for section in ['hero', 'statistics', 'testimonials', 'contact']:
+                    if section in data:
+                        content_to_store = json.dumps(data[section])
+                        txn.execute(
+                            text("""
+                                INSERT INTO landing_page_content
+                                    (section_name, content, updated_by, created_at, updated_at)
+                                VALUES
+                                    (:section, :content, :user_id, NOW(), NOW())
+                                ON CONFLICT (section_name)
+                                DO UPDATE SET
+                                    content    = EXCLUDED.content,
+                                    updated_by = EXCLUDED.updated_by,
+                                    updated_at = NOW()
+                            """),
+                            {"section": section, "content": content_to_store, "user_id": session['user_id']},
+                        )
+        except Exception:
+            logger.exception("Error saving landing page data")
+            return jsonify({"error": "Gagal menyimpan konten landing page"}), 500
+
         return jsonify({"success": True})
 
     return jsonify({"error": "Method not allowed"}), 405
-    
+
+
 @app.route('/admin/users')
 def admin_users():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return redirect(url_for('login_register'))
     return render_template('admin-users.html')
 
+
 @app.route('/admin/landing-page')
 def admin_landing():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return redirect(url_for('login_register'))
     return render_template('admin-landing.html')
+
 
 @app.route('/api/admin/promote', methods=['POST'])
 def promote_user():
@@ -262,160 +282,245 @@ def promote_user():
     if not target_user_id:
         return jsonify({"error": "No user_id provided"}), 400
 
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-
     try:
-        cur.execute("SELECT id FROM admins WHERE user_id = %s", (target_user_id,))
-        row = cur.fetchone()
+        with get_engine().begin() as txn:
+            existing = txn.execute(
+                text("SELECT id FROM admins WHERE user_id = :uid"), {"uid": target_user_id}
+            ).fetchone()
+            if existing:
+                txn.execute(
+                    text("UPDATE admins SET is_active = TRUE WHERE user_id = :uid"),
+                    {"uid": target_user_id},
+                )
+            else:
+                txn.execute(
+                    text("""
+                        INSERT INTO admins (user_id, admin_level, is_active, created_by)
+                        VALUES (:uid, :level, TRUE, :created_by)
+                    """),
+                    {"uid": target_user_id, "level": 2, "created_by": session['user_id']},
+                )
+    except Exception:
+        logger.exception("Error promoting user")
+        return jsonify({"error": "Gagal mempromosikan user"}), 500
 
-        if row:
-            # User already exists in admins table, just activate
-            cur.execute("UPDATE admins SET is_active = TRUE WHERE user_id = %s", (target_user_id,))
-        else:
-            # Insert new admin record
-            cur.execute("""
-                INSERT INTO admins (user_id, admin_level, is_active, created_by)
-                VALUES (%s, %s, %s, %s)
-            """, (target_user_id, 2, True, session['user_id']))
-
-        conn.commit()
-    except Exception as e:
-        print(f"Error promoting user: {e}")
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cur.close()
-        conn.close()
-    
     return jsonify({"success": True})
+
 
 @app.route('/api/admin/deactivate', methods=['POST'])
 def deactivate_user():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return jsonify({"error": "Unauthorized"}), 401
 
-    data = request.get_json()
+    data = request.get_json() or {}
     target_user_id = data.get('user_id')
     if not target_user_id:
         return jsonify({"error": "No user_id provided"}), 400
 
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-
     try:
-        cur.execute("UPDATE admins SET is_active = false WHERE user_id = %s", (target_user_id,))
-        conn.commit()
-    except Exception as e:
-        print(f"Error deactivating user: {e}")
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cur.close()
-        conn.close()
+        with get_engine().begin() as txn:
+            txn.execute(
+                text("UPDATE admins SET is_active = false WHERE user_id = :uid"),
+                {"uid": target_user_id},
+            )
+    except Exception:
+        logger.exception("Error deactivating user")
+        return jsonify({"error": "Gagal menonaktifkan user"}), 500
 
     return jsonify({"success": True})
+
 
 @app.route('/api/admin/classes', methods=['GET'])
 def api_admin_get_classes():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return jsonify({"error": "Unauthorized"}), 401
 
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT id, nama_kelas, kode_kelas, created_at FROM classes
-        ORDER BY created_at DESC
-    """)
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            text("SELECT id, nama_kelas, kode_kelas, created_at FROM classes ORDER BY created_at DESC")
+        ).fetchall()
+    except Exception:
+        logger.exception("Error fetching admin classes")
+        return jsonify({"error": "Gagal mengambil daftar kelas"}), 500
 
     return jsonify([{
         "id": r[0],
         "nama_kelas": r[1],
         "kode_kelas": r[2],
-        "created_at": r[3].strftime("%Y-%m-%d %H:%M")
+        "created_at": r[3].strftime("%Y-%m-%d %H:%M"),
     } for r in rows])
+
 
 @app.route('/api/admin/delete-user', methods=['POST'])
 def admin_delete_user():
     if 'user_id' not in session or session.get('role') != 'Admin':
         return jsonify({"error": "Unauthorized"}), 401
 
-    data = request.get_json()
+    data = request.get_json() or {}
     target_user_id = data.get('user_id')
     if not target_user_id:
         return jsonify({"error": "No user_id provided"}), 400
 
-    conn = get_postgres_conn()
-    cur = conn.cursor()
     try:
-        # Hapus user dari semua relasi terlebih dahulu
-        cur.execute("DELETE FROM murid_kelas WHERE user_id = %s", (target_user_id,))
-        cur.execute("DELETE FROM admins WHERE user_id = %s", (target_user_id,))
-        cur.execute("DELETE FROM auth.users WHERE id = %s", (target_user_id,))
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cur.close()
-        conn.close()
+        with get_engine().begin() as txn:
+            txn.execute(
+                text("DELETE FROM murid_kelas WHERE user_id = :uid"), {"uid": target_user_id}
+            )
+            txn.execute(
+                text("DELETE FROM admins WHERE user_id = :uid"), {"uid": target_user_id}
+            )
+            txn.execute(
+                text("DELETE FROM auth.users WHERE id = :uid"), {"uid": target_user_id}
+            )
+    except Exception:
+        logger.exception("Error deleting user")
+        return jsonify({"error": "Gagal menghapus user"}), 500
 
     return jsonify({"success": True})
+
+
+# ---------------------------------------------------------------------------
+# Class routes
+# ---------------------------------------------------------------------------
 
 @app.route('/create-class', methods=['POST'])
 def create_class():
     if 'user_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
+
     nama_kelas = request.form.get('class_name')
     user_id = session['user_id']
     kode_kelas = generate_unique_class_code()
     created_at = datetime.datetime.now()
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO classes (nama_kelas, kode_kelas, user_id, created_at) VALUES (%s, %s, %s, %s) RETURNING id",
-        (nama_kelas, kode_kelas, user_id, created_at)
-    )
-    row = cur.fetchone()
-    kelas_id = row[0] if row and len(row) > 0 else None
-    conn.commit()
-    cur.close()
-    conn.close()
+
+    try:
+        with get_engine().begin() as txn:
+            row = txn.execute(
+                text(
+                    "INSERT INTO classes (nama_kelas, kode_kelas, user_id, created_at) "
+                    "VALUES (:nama, :kode, :uid, :created) RETURNING id"
+                ),
+                {"nama": nama_kelas, "kode": kode_kelas, "uid": user_id, "created": created_at},
+            ).fetchone()
+            kelas_id = row[0] if row else None
+    except Exception:
+        logger.exception("Error creating class")
+        return jsonify({"error": "Gagal membuat kelas"}), 500
+
     return jsonify({"class_code": kode_kelas, "kelas_id": kelas_id})
+
 
 @app.route('/api/classes', methods=['GET'])
 def api_classes():
     if 'user_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-        
+
+    conn = get_db()
     try:
-        user_id = session['user_id']
-        conn = get_postgres_conn()
-        cur = conn.cursor()
-        cur.execute("SELECT id, nama_kelas, kode_kelas, created_at FROM classes WHERE user_id = %s ORDER BY created_at DESC", (user_id,))
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        kelas = [
-            {
-                "id": row[0],
-                "nama_kelas": row[1],
-                "kode_kelas": row[2],
-                "created_at": row[3].strftime("%Y-%m-%d %H:%M")
-            }
-            for row in rows
-        ]
-        return jsonify(kelas)
-        
-    except Exception as e:
-        print(f"Error getting classes: {e}")
+        rows = conn.execute(
+            text(
+                "SELECT id, nama_kelas, kode_kelas, created_at FROM classes "
+                "WHERE user_id = :uid ORDER BY created_at DESC"
+            ),
+            {"uid": session['user_id']},
+        ).fetchall()
+    except Exception:
+        logger.exception("Error getting classes")
         return jsonify({"error": "Terjadi kesalahan saat mengambil daftar kelas"}), 500
 
+    return jsonify([{
+        "id": row[0],
+        "nama_kelas": row[1],
+        "kode_kelas": row[2],
+        "created_at": row[3].strftime("%Y-%m-%d %H:%M"),
+    } for row in rows])
 
+
+@app.route('/api/class/update', methods=['POST'])
+def api_update_class():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    role = session.get('role')
+    data = request.get_json() or {}
+    kode_kelas = data.get('kode_kelas')
+    nama_kelas = data.get('nama_kelas')
+
+    if not kode_kelas or not nama_kelas:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    try:
+        with get_engine().begin() as txn:
+            if role == 'Admin':
+                txn.execute(
+                    text("UPDATE classes SET nama_kelas = :nama WHERE kode_kelas = :kode"),
+                    {"nama": nama_kelas, "kode": kode_kelas},
+                )
+            else:
+                txn.execute(
+                    text(
+                        "UPDATE classes SET nama_kelas = :nama "
+                        "WHERE kode_kelas = :kode AND user_id = :uid"
+                    ),
+                    {"nama": nama_kelas, "kode": kode_kelas, "uid": session['user_id']},
+                )
+    except Exception:
+        logger.exception("Error updating class")
+        return jsonify({'error': 'Gagal memperbarui kelas'}), 500
+
+    return jsonify({'success': True})
+
+
+@app.route('/admin/classes')
+def admin_classes():
+    if 'user_id' not in session or session.get('role') != 'Admin':
+        return redirect(url_for('login_register'))
+    return render_template('admin-classes.html')
+
+
+@app.route('/api/class/delete', methods=['POST'])
+def api_delete_class():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    kode_kelas = data.get('kode_kelas')
+    if not kode_kelas:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    conn = get_db()
+    try:
+        kelas_row = conn.execute(
+            text("SELECT id FROM classes WHERE kode_kelas = :kode AND user_id = :uid"),
+            {"kode": kode_kelas, "uid": session['user_id']},
+        ).fetchone()
+
+        if not kelas_row:
+            return jsonify({'error': 'Class not found'}), 404
+
+        kelas_id = kelas_row[0]
+
+        with get_engine().begin() as txn:
+            txn.execute(
+                text("DELETE FROM hasil_penilaian WHERE kelas_id = :kid"), {"kid": kelas_id}
+            )
+            txn.execute(
+                text("DELETE FROM assignments WHERE kelas_id = :kid"), {"kid": kelas_id}
+            )
+            txn.execute(
+                text("DELETE FROM classes WHERE id = :kid"), {"kid": kelas_id}
+            )
+    except Exception:
+        logger.exception("Error deleting class")
+        return jsonify({'error': 'Gagal menghapus kelas'}), 500
+
+    return jsonify({'success': True})
+
+
+# ---------------------------------------------------------------------------
+# Results routes
+# ---------------------------------------------------------------------------
 
 @app.route('/api/results', methods=['GET'])
 def api_results():
@@ -424,12 +529,14 @@ def api_results():
     results = fetch_all_results(session['user_id'])
     return jsonify(results)
 
+
 @app.route('/api/results/kelas/<int:kelas_id>', methods=['GET'])
 def api_results_by_kelas(kelas_id):
     if 'user_id' not in session:
         return jsonify([]), 401
     results = fetch_results_by_kelas(kelas_id)
     return jsonify(results)
+
 
 @app.route('/api/results/kelas-kode/<kode_kelas>', methods=['GET'])
 def api_results_by_kode_kelas(kode_kelas):
@@ -439,9 +546,12 @@ def api_results_by_kode_kelas(kode_kelas):
     return jsonify(results)
 
 
+# ---------------------------------------------------------------------------
+# Auth routes
+# ---------------------------------------------------------------------------
+
 @app.route('/set_session', methods=['POST'])
 def set_session():
-    # Use get_json to ensure we always have a dict (avoid None)
     data = request.get_json() or {}
     access_token = data.get('access_token')
     if not access_token:
@@ -450,7 +560,7 @@ def set_session():
     supabase_url = os.getenv("SUPABASE_URL")
     supabase_secret_key = os.getenv("SUPABASE_SECRET_KEY")
     if not supabase_url or not supabase_secret_key:
-        return jsonify({"error": "Server configuration error: missing SUPABASE_URL or SUPABASE_SECRET_KEY"}), 500
+        return jsonify({"error": "Server configuration error"}), 500
 
     headers = {
         "apikey": supabase_secret_key,
@@ -459,31 +569,30 @@ def set_session():
     resp = requests.get(f"{supabase_url}/auth/v1/user", headers=headers, timeout=10)
     if resp.status_code != 200:
         return jsonify({"error": "Invalid token"}), 401
+
     user = resp.json() if hasattr(resp, 'json') else {}
 
-    # Defensive access for responses from external auth service
     session['user_id'] = user.get('id')
     user_metadata = user.get('user_metadata') or {}
     session['username'] = user_metadata.get('username') or user.get('email') or 'user'
     session['role'] = user_metadata.get('role') or 'Student'
 
+    # Cek apakah user adalah admin
     try:
-        conn = get_postgres_conn()
-        cur = conn.cursor()
-        cur.execute("SELECT admin_level FROM admins WHERE user_id = %s AND is_active = true", (session.get('user_id'),))
-        admin_row = cur.fetchone()
+        conn = get_db()
+        admin_row = conn.execute(
+            text("SELECT admin_level FROM admins WHERE user_id = :uid AND is_active = true"),
+            {"uid": session.get('user_id')},
+        ).fetchone()
         if admin_row:
             session['role'] = 'Admin'
-            # guard admin_row indexing
             session['admin_level'] = admin_row[0] if len(admin_row) > 0 else None
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print("Error checking admin role:", e)
+    except Exception:
+        logger.exception("Error checking admin role")
 
-    print("LOGIN ROLE:", session['role'])
-
+    logger.info("LOGIN ROLE: %s", session['role'])
     return jsonify({"success": True})
+
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
@@ -491,151 +600,110 @@ def logout():
     return jsonify({"success": True})
 
 
-
-
-
-@app.route('/api/class/update', methods=['POST'])
-def api_update_class():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    role = session.get('role')
-    data = request.get_json()
-    kode_kelas = data.get('kode_kelas')
-    nama_kelas = data.get('nama_kelas')
-
-    if not kode_kelas or not nama_kelas:
-        return jsonify({'error': 'Invalid data'}), 400
-
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-
-    try:
-        if role == 'Admin':
-            cur.execute("UPDATE classes SET nama_kelas = %s WHERE kode_kelas = %s", (nama_kelas, kode_kelas))
-        else:
-            cur.execute("UPDATE classes SET nama_kelas = %s WHERE kode_kelas = %s AND user_id = %s", (nama_kelas, kode_kelas, session['user_id']))
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        return jsonify({'error': str(e)}), 500
-    finally:
-        cur.close()
-        conn.close()
-
-    return jsonify({'success': True})
-
-@app.route('/admin/classes')
-def admin_classes():
-    if 'user_id' not in session or session.get('role') != 'Admin':
-        return redirect(url_for('login_register'))
-    return render_template('admin-classes.html')
-
-@app.route('/api/class/delete', methods=['POST'])
-def api_delete_class():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-    data = request.get_json()
-    kode_kelas = data.get('kode_kelas')
-    if not kode_kelas:
-        return jsonify({'error': 'Invalid data'}), 400
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-    # Dapatkan id kelas
-    cur.execute("SELECT id FROM classes WHERE kode_kelas = %s AND user_id = %s", (kode_kelas, session['user_id']))
-    row = cur.fetchone()
-    if not row:
-        cur.close()
-        conn.close()
-        return jsonify({'error': 'Class not found'}), 404
-    kelas_id = row[0]
-
-    # Hapus semua hasil_penilaian di kelas ini
-    cur.execute("DELETE FROM hasil_penilaian WHERE kelas_id = %s", (kelas_id,))
-    # Hapus semua assignments di kelas ini
-    cur.execute("DELETE FROM assignments WHERE kelas_id = %s", (kelas_id,))
-    # Hapus kelas
-    cur.execute("DELETE FROM classes WHERE id = %s", (kelas_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return jsonify({'success': True})
+# ---------------------------------------------------------------------------
+# Upload delete
+# ---------------------------------------------------------------------------
 
 @app.route('/api/upload/delete', methods=['POST'])
 def api_delete_upload():
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
-    data = request.get_json()
+
+    data = request.get_json() or {}
     upload_id = data.get('id')
-    print(f"Deleting upload with ID: {upload_id}")
     if not upload_id:
         return jsonify({'error': 'Invalid data'}), 400
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-    # Pastikan upload milik user
-    cur.execute("SELECT id FROM hasil_penilaian WHERE id = %s", (upload_id,))
-    if not cur.fetchone():
-        cur.close()
-        conn.close()
-        return jsonify({'error': 'Not found'}), 404
-    cur.execute("DELETE FROM hasil_penilaian WHERE id = %s", (upload_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
+
+    conn = get_db()
+    try:
+        existing = conn.execute(
+            text("SELECT id FROM hasil_penilaian WHERE id = :id"), {"id": upload_id}
+        ).fetchone()
+        if not existing:
+            return jsonify({'error': 'Not found'}), 404
+
+        with get_engine().begin() as txn:
+            txn.execute(
+                text("DELETE FROM hasil_penilaian WHERE id = :id"), {"id": upload_id}
+            )
+    except Exception:
+        logger.exception("Error deleting upload")
+        return jsonify({'error': 'Gagal menghapus upload'}), 500
+
     return jsonify({'success': True})
+
+
+# ---------------------------------------------------------------------------
+# Join class routes
+# ---------------------------------------------------------------------------
 
 @app.route('/api/join-class', methods=['POST'])
 def join_class():
     if 'user_id' not in session or session.get('role') != 'Student':
         return jsonify({'error': 'Unauthorized'}), 401
-    data = request.get_json()
+
+    data = request.get_json() or {}
     kode_kelas = data.get('kode_kelas')
     if not kode_kelas:
         return jsonify({'error': 'Kode kelas harus diisi'}), 400
 
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-    # Cari kelas berdasarkan kode_kelas
-    cur.execute("SELECT id, nama_kelas FROM classes WHERE kode_kelas = %s", (kode_kelas,))
-    kelas = cur.fetchone()
-    if not kelas:
-        cur.close()
-        conn.close()
-        return jsonify({'error': 'Kode kelas tidak ditemukan'}), 404
-    kelas_id, nama_kelas = kelas
+    conn = get_db()
+    try:
+        kelas = conn.execute(
+            text("SELECT id, nama_kelas FROM classes WHERE kode_kelas = :kode"),
+            {"kode": kode_kelas},
+        ).fetchone()
+        if not kelas:
+            return jsonify({'error': 'Kode kelas tidak ditemukan'}), 404
 
-    # Cek apakah murid sudah join kelas ini
-    cur.execute("SELECT 1 FROM murid_kelas WHERE user_id = %s AND kelas_id = %s", (session['user_id'], kelas_id))
-    if cur.fetchone():
-        cur.close()
-        conn.close()
-        return jsonify({'error': 'Kamu sudah join kelas ini'}), 400
+        kelas_id, nama_kelas = kelas
 
-    # Simpan relasi murid-kelas
-    cur.execute("INSERT INTO murid_kelas (user_id, kelas_id) VALUES (%s, %s)", (session['user_id'], kelas_id))
-    conn.commit()
-    cur.close()
-    conn.close()
+        already_joined = conn.execute(
+            text("SELECT 1 FROM murid_kelas WHERE user_id = :uid AND kelas_id = :kid"),
+            {"uid": session['user_id'], "kid": kelas_id},
+        ).fetchone()
+        if already_joined:
+            return jsonify({'error': 'Kamu sudah join kelas ini'}), 400
+
+        with get_engine().begin() as txn:
+            txn.execute(
+                text("INSERT INTO murid_kelas (user_id, kelas_id) VALUES (:uid, :kid)"),
+                {"uid": session['user_id'], "kid": kelas_id},
+            )
+    except Exception:
+        logger.exception("Error joining class")
+        return jsonify({'error': 'Gagal bergabung ke kelas'}), 500
+
     return jsonify({'success': True, 'nama_kelas': nama_kelas, 'kode_kelas': kode_kelas})
+
 
 @app.route('/api/joined-classes', methods=['GET'])
 def api_joined_classes():
     if 'user_id' not in session or session.get('role') != 'Student':
         return jsonify({'error': 'Unauthorized'}), 401
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT c.nama_kelas, c.kode_kelas
-        FROM murid_kelas mk
-        JOIN classes c ON mk.kelas_id = c.id
-        WHERE mk.user_id = %s
-        ORDER BY mk.joined_at DESC
-    """, (session['user_id'],))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    kelas = [{"nama_kelas": row[0], "kode_kelas": row[1]} for row in rows]
-    return jsonify(kelas)
+
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            text("""
+                SELECT c.nama_kelas, c.kode_kelas
+                FROM murid_kelas mk
+                JOIN classes c ON mk.kelas_id = c.id
+                WHERE mk.user_id = :uid
+                ORDER BY mk.joined_at DESC
+            """),
+            {"uid": session['user_id']},
+        ).fetchall()
+    except Exception:
+        logger.exception("Error fetching joined classes")
+        return jsonify({'error': 'Gagal mengambil daftar kelas'}), 500
+
+    return jsonify([{"nama_kelas": row[0], "kode_kelas": row[1]} for row in rows])
+
+
+# ---------------------------------------------------------------------------
+# Assignment routes
+# ---------------------------------------------------------------------------
 
 @app.route('/api/assignments', methods=['POST'])
 def api_add_assignment():
@@ -650,151 +718,157 @@ def api_add_assignment():
         file_assignment = request.files.get('fileAssignment')
         file_jawaban = request.files.get('jawabanGuru')
 
-        # Validate uploaded files before using filename
         if file_assignment is None or not getattr(file_assignment, 'filename', None):
             return jsonify({"error": "No assignment file provided"}), 400
         if file_jawaban is None or not getattr(file_jawaban, 'filename', None):
             return jsonify({"error": "No teacher answer file provided"}), 400
 
-        # Format nama file
-        assignment_ext = os.path.splitext(file_assignment.filename or "")[ -1]
-        jawaban_ext = os.path.splitext(file_jawaban.filename or "")[ -1]
+        assignment_ext = os.path.splitext(file_assignment.filename or "")[-1]
+        jawaban_ext = os.path.splitext(file_jawaban.filename or "")[-1]
         assignment_filename = f"assignments/{kelas_id}_{judul}_assignment{assignment_ext}".replace(" ", "_")
         jawaban_filename = f"answers/teacher/{kelas_id}_{judul}_jawaban{jawaban_ext}".replace(" ", "_")
 
-        # Upload ke Supabase Storage
         assignment_url = upload_file(file_assignment.read(), assignment_filename)
         jawaban_url = upload_file(file_jawaban.read(), jawaban_filename)
 
-        # Simpan ke database
-        conn = get_postgres_conn()
-        cur = conn.cursor()
-        cur.execute(
-            """
-            INSERT INTO assignments (judul, deskripsi, deadline, file_path, jawaban_path, kelas_id, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id
-            """,
-            (judul, deskripsi, deadline, assignment_url, jawaban_url, kelas_id, datetime.datetime.now())
-        )
-        row = cur.fetchone()
-        assignment_id_from_db = row[0] if row and len(row) > 0 else None
-        conn.commit()
-        cur.close()
-        conn.close()
+        with get_engine().begin() as txn:
+            row = txn.execute(
+                text("""
+                    INSERT INTO assignments
+                        (judul, deskripsi, deadline, file_path, jawaban_path, kelas_id, created_at)
+                    VALUES
+                        (:judul, :deskripsi, :deadline, :file_path, :jawaban_path, :kelas_id, :created_at)
+                    RETURNING id
+                """),
+                {
+                    "judul": judul,
+                    "deskripsi": deskripsi,
+                    "deadline": deadline,
+                    "file_path": assignment_url,
+                    "jawaban_path": jawaban_url,
+                    "kelas_id": kelas_id,
+                    "created_at": datetime.datetime.now(),
+                },
+            ).fetchone()
+            assignment_id_from_db = row[0] if row else None
 
-        return jsonify({
-            "success": True,
-            "message": "Assignment berhasil ditambahkan",
-            "assignment_id": assignment_id_from_db
-        })
-
-    except Exception as e:
-        print(f"Error adding assignment: {e}")
+    except SupabaseStorageError:
+        logger.exception("Error uploading assignment files")
+        return jsonify({"error": "Gagal mengupload file ke storage"}), 500
+    except Exception:
+        logger.exception("Error adding assignment")
         return jsonify({"error": "Terjadi kesalahan saat menambahkan assignment"}), 500
+
+    return jsonify({
+        "success": True,
+        "message": "Assignment berhasil ditambahkan",
+        "assignment_id": assignment_id_from_db,
+    })
+
 
 @app.route('/api/assignments/<kode_kelas>', methods=['GET'])
 def api_get_assignments_by_kode_kelas(kode_kelas):
     if 'user_id' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-        
+
+    conn = get_db()
     try:
-        conn = get_postgres_conn()
-        cur = conn.cursor()
-        
-        # Dapatkan kelas_id dari kode_kelas
-        cur.execute("SELECT id FROM classes WHERE kode_kelas = %s", (kode_kelas,))
-        kelas_info = cur.fetchone()
+        kelas_info = conn.execute(
+            text("SELECT id FROM classes WHERE kode_kelas = :kode"), {"kode": kode_kelas}
+        ).fetchone()
         if not kelas_info:
-            cur.close()
-            conn.close()
             return jsonify({"error": "Class not found"}), 404
-        
+
         kelas_id = kelas_info[0]
-        user_id = session['user_id'] # Dapatkan user_id dari sesi
-        
-        cur.execute(
-            """
-            SELECT
-                a.id,
-                a.judul,
-                a.deskripsi,
-                a.deadline,
-                a.file_path,
-                a.jawaban_path,
-                a.created_at,
-                EXISTS(SELECT 1 FROM hasil_penilaian hp WHERE hp.assignment_id = a.id AND hp.user_id = %s) as is_submitted
-            FROM assignments a
-            WHERE a.kelas_id = %s
-            ORDER BY a.created_at DESC
-            """,
-            (user_id, kelas_id,) # Pass user_id sebagai parameter untuk EXISTS
-        )
-        assignments = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        return jsonify([{
-            "id": a[0],
-            "judul": a[1],
-            "deskripsi": a[2],
-            "deadline": a[3].strftime("%Y-%m-%d %H:%M") if a[3] else None,
-            "file_path": a[4],
-            "jawaban_path": a[5],
-            "created_at": a[6].strftime("%Y-%m-%d %H:%M"),
-            "is_submitted": a[7] # Tambahkan is_submitted ke respons JSON
-        } for a in assignments])
-        
-    except Exception as e:
-        print(f"Error fetching assignments: {e}")
+        user_id = session['user_id']
+
+        assignments = conn.execute(
+            text("""
+                SELECT
+                    a.id,
+                    a.judul,
+                    a.deskripsi,
+                    a.deadline,
+                    a.file_path,
+                    a.jawaban_path,
+                    a.created_at,
+                    EXISTS(
+                        SELECT 1 FROM hasil_penilaian hp
+                        WHERE hp.assignment_id = a.id AND hp.user_id = :uid
+                    ) as is_submitted
+                FROM assignments a
+                WHERE a.kelas_id = :kid
+                ORDER BY a.created_at DESC
+            """),
+            {"uid": user_id, "kid": kelas_id},
+        ).fetchall()
+    except Exception:
+        logger.exception("Error fetching assignments")
         return jsonify({"error": "Terjadi kesalahan saat mengambil data assignment"}), 500
+
+    return jsonify([{
+        "id": a[0],
+        "judul": a[1],
+        "deskripsi": a[2],
+        "deadline": a[3].strftime("%Y-%m-%d %H:%M") if a[3] else None,
+        "file_path": a[4],
+        "jawaban_path": a[5],
+        "created_at": a[6].strftime("%Y-%m-%d %H:%M"),
+        "is_submitted": a[7],
+    } for a in assignments])
+
 
 @app.route('/api/assignments/<int:assignment_id>', methods=['DELETE'])
 def api_delete_assignment(assignment_id):
     if 'user_id' not in session or session.get('role') != 'Teacher':
         return jsonify({"error": "Unauthorized"}), 401
-        
+
+    conn = get_db()
     try:
-        conn = get_postgres_conn()
-        cur = conn.cursor()
-        
-        # Ambil file_path sebelum menghapus
-        cur.execute("SELECT file_path, jawaban_path FROM assignments WHERE id = %s", (assignment_id,))
-        result = cur.fetchone()
+        result = conn.execute(
+            text("SELECT file_path, jawaban_path FROM assignments WHERE id = :id"),
+            {"id": assignment_id},
+        ).fetchone()
         if not result:
             return jsonify({"error": "Assignment tidak ditemukan"}), 404
-            
-        file_path, jawaban_path = result
-        
-        # Hapus dari database
-        cur.execute("DELETE FROM assignments WHERE id = %s", (assignment_id,))
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        # Hapus file fisik jika ada
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        if os.path.exists(jawaban_path):
-            os.remove(jawaban_path)
-            
-        return jsonify({"success": True, "message": "Assignment berhasil dihapus"})
-        
-    except Exception as e:
-        print(f"Error deleting assignment: {e}")
+
+        file_url, jawaban_url = result
+
+        with get_engine().begin() as txn:
+            txn.execute(
+                text("DELETE FROM assignments WHERE id = :id"), {"id": assignment_id}
+            )
+
+        # Hapus file dari Supabase Storage
+        supabase_client = _get_supabase()
+        for url in [file_url, jawaban_url]:
+            if url:
+                storage_path = get_public_path(url)
+                if storage_path:
+                    try:
+                        supabase_client.storage.from_('uploads').remove([storage_path])
+                    except Exception:
+                        logger.warning("Gagal hapus file dari storage: %s", storage_path)
+
+    except Exception:
+        logger.exception("Error deleting assignment")
         return jsonify({"error": "Terjadi kesalahan saat menghapus assignment"}), 500
+
+    return jsonify({"success": True, "message": "Assignment berhasil dihapus"})
+
 
 @app.route('/api/results/assignment/<int:assignment_id>', methods=['GET'])
 def api_results_by_assignment(assignment_id):
     if 'user_id' not in session:
         return jsonify([]), 401
-        
+
     try:
         results = fetch_results_by_assignment_id(assignment_id)
         return jsonify(results)
-    except Exception as e:
-        print(f"Error fetching results by assignment ID: {e}")
+    except Exception:
+        logger.exception("Error fetching results by assignment ID")
         return jsonify({"error": "Terjadi kesalahan saat mengambil hasil upload"}), 500
+
 
 @app.route('/api/assignments/upload/<int:assignment_id>', methods=['POST'])
 def api_upload_student_answer(assignment_id):
@@ -808,38 +882,36 @@ def api_upload_student_answer(assignment_id):
     if student_file.filename == '':
         return jsonify({"error": "File tidak dipilih."}), 400
 
-    conn = get_postgres_conn()
-    cur = conn.cursor()
-    guru_jawaban_path = None
-    kelas_id = None
-    nama_kelas = None
-    judul_assignment = None
+    conn = get_db()
     try:
-        cur.execute("SELECT kelas_id, jawaban_path, judul FROM assignments WHERE id = %s", (assignment_id,))
-        assignment_info = cur.fetchone()
+        assignment_info = conn.execute(
+            text("SELECT kelas_id, jawaban_path, judul FROM assignments WHERE id = :id"),
+            {"id": assignment_id},
+        ).fetchone()
         if not assignment_info:
             return jsonify({"error": "Assignment tidak ditemukan."}), 404
+
         kelas_id, guru_jawaban_url, judul_assignment = assignment_info
 
-        cur.execute("SELECT nama_kelas FROM classes WHERE id = %s", (kelas_id,))
-        kelas_row = cur.fetchone()
-        nama_kelas = kelas_row[0] if kelas_row and len(kelas_row) > 0 and kelas_row[0] is not None else "kelas"
-    finally:
-        cur.close()
-        conn.close()
+        kelas_row = conn.execute(
+            text("SELECT nama_kelas FROM classes WHERE id = :kid"), {"kid": kelas_id}
+        ).fetchone()
+        nama_kelas = kelas_row[0] if kelas_row and kelas_row[0] else "kelas"
+    except Exception:
+        logger.exception("Error fetching assignment info")
+        return jsonify({"error": "Gagal mengambil info assignment"}), 500
 
     nama_user = session.get('username', 'user')
-    # student_file.filename should be present by earlier checks
-    ext = os.path.splitext(student_file.filename or "")[ -1]
+    ext = os.path.splitext(student_file.filename or "")[-1]
     student_filename = f"answers/student/{kelas_id}_{assignment_id}_{nama_user}_jawaban{ext}".replace(" ", "_")
 
     # Upload file murid ke Supabase Storage
-    murid_url = upload_file(student_file.read(), student_filename)
+    try:
+        murid_url = upload_file(student_file.read(), student_filename)
+    except SupabaseStorageError:
+        logger.exception("Error uploading student file")
+        return jsonify({"error": "Gagal mengupload file jawaban"}), 500
 
-    # Download file guru dan murid ke lokal sementara untuk LSA
-    import tempfile
-
-    # Guard external URLs before deriving extensions / paths
     if not guru_jawaban_url:
         return jsonify({"error": "Guru jawaban url tidak tersedia"}), 500
     if not murid_url:
@@ -848,38 +920,28 @@ def api_upload_student_answer(assignment_id):
     guru_ext = get_clean_ext(guru_jawaban_url)
     murid_ext = get_clean_ext(murid_url)
 
-    # Ambil path file dari URL public
-    _ = get_public_path(guru_jawaban_url)
-    _ = get_public_path(murid_url)
-
     with tempfile.NamedTemporaryFile(delete=False, suffix=guru_ext) as tmp_guru, \
          tempfile.NamedTemporaryFile(delete=False, suffix=murid_ext) as tmp_murid:
-        # Download file guru dari Supabase Storage via helper
         try:
             guru_bytes = download_file(guru_jawaban_url, client=_get_supabase())
-        except SupabaseDownloadError as e:
-            print(f"Failed to download guru file: {e}")
+        except SupabaseDownloadError:
+            logger.exception("Failed to download guru file")
             return jsonify({"error": "Gagal mendownload file guru dari storage"}), 500
         tmp_guru.write(guru_bytes)
         tmp_guru.flush()
-        # Download file murid dari Supabase Storage via helper
+
         try:
             murid_bytes = download_file(murid_url, client=_get_supabase())
-        except SupabaseDownloadError as e:
-            print(f"Failed to download murid file: {e}")
+        except SupabaseDownloadError:
+            logger.exception("Failed to download murid file")
             return jsonify({"error": "Gagal mendownload file murid dari storage"}), 500
         tmp_murid.write(murid_bytes)
         tmp_murid.flush()
 
-        print("Guru temp file:", tmp_guru.name)
-        print("Murid temp file:", tmp_murid.name)
-
-        # Proses scoring via scorer interface
         guru_text = extract_text_from_any(tmp_guru.name)
         murid_text = extract_text_from_any(tmp_murid.name)
 
         if not guru_text or not murid_text:
-            print("Format tidak didukung atau file kosong")
             return jsonify({"error": "Format tidak didukung atau file kosong"}), 400
 
         scoring_engine = os.getenv("SCORING_ENGINE", "legacy").lower()
@@ -888,12 +950,12 @@ def api_upload_student_answer(assignment_id):
                 score_res = embedding_score_submission(guru_text, murid_text)
                 avg_similarity = score_res["avg_similarity"]
                 grade = score_res["grade"]
-            except Exception as e:
-                print(f"Embedding scoring failed: {e}")
-                return jsonify({"error": "Gagal memproses penilaian dengan AI. Silakan coba lagi nanti atau hubungi admin."}), 502
+            except Exception:
+                logger.exception("Embedding scoring failed")
+                return jsonify({"error": "Gagal memproses penilaian dengan AI. Silakan coba lagi nanti."}), 502
         else:
             avg_similarity, grade = lsa_similarity(guru_text, murid_text)
-        
+
         similarity = avg_similarity
 
     result_to_save = {
@@ -903,49 +965,33 @@ def api_upload_student_answer(assignment_id):
         "user_id": session['user_id'],
         "kelas_id": kelas_id,
         "assignment_id": assignment_id,
-        "file_path": murid_url
+        "file_path": murid_url,
     }
 
     try:
         simpan_ke_postgres([result_to_save])
-        print(f"Student submission saved to hasil_penilaian: {result_to_save}")
-    except Exception as e:
-        print(f"Error saving student submission to PostgreSQL: {e}")
+    except Exception:
+        logger.exception("Error saving student submission")
         return jsonify({"error": "Gagal menyimpan hasil unggahan siswa."}), 500
-    
-    try:
-        os.remove(tmp_guru.name)
-    except Exception as e:
-        print(f"Gagal hapus file temp guru: {e}")
-    try:
-        os.remove(tmp_murid.name)
-    except Exception as e:
-        print(f"Gagal hapus file temp murid: {e}")
+
+    # Hapus file temp
+    for tmp_path in [tmp_guru.name, tmp_murid.name]:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            logger.warning("Gagal hapus file temp: %s", tmp_path)
 
     return jsonify({
         "success": True,
         "message": "Unggahan berhasil diproses!",
         "grade": grade,
-        "similarity": similarity
+        "similarity": similarity,
     })
 
-def upload_to_supabase_storage(file_storage, dest_path: str) -> str:
-    file_bytes = file_storage.read()
-    file_storage.seek(0)
-    try:
-        public_url = upload_file(file_bytes, dest_path, client=_get_supabase())
-        return public_url
-    except SupabaseStorageError as e:
-        print(f"Supabase upload error for {dest_path}: {e}")
-        raise
 
-def get_clean_ext(url: str) -> str:
-    path = urlparse(url).path  # hanya path, tanpa query string
-    ext = os.path.splitext(path)[-1]
-    # fallback ke .pdf jika tidak ada ekstensi
-    if ext.lower() not in [".pdf", ".docx", ".txt"]:
-        return ".pdf"
-    return ext
+# ---------------------------------------------------------------------------
+# CSV download
+# ---------------------------------------------------------------------------
 
 @app.route('/api/assignments/<int:assignment_id>/download-csv', methods=['GET'])
 def download_assignment_csv(assignment_id):
@@ -956,7 +1002,6 @@ def download_assignment_csv(assignment_id):
     if not results:
         return jsonify({"error": "No results found"}), 404
 
-    # Buat CSV di memory
     output = StringIO()
     writer = csv.writer(output)
     writer.writerow(['Student Name', 'Grade', 'Similarity', 'Upload Time'])
@@ -965,21 +1010,21 @@ def download_assignment_csv(assignment_id):
             row.get('nama_murid', '-'),
             row.get('nilai', row.get('grade', '-')),
             row.get('similarity', '-'),
-            row.get('created_at', '-')
+            row.get('created_at', '-'),
         ])
-    # Encode ke bytes
+
     mem = BytesIO()
     mem.write(output.getvalue().encode('utf-8'))
     mem.seek(0)
 
     filename = f"assignment_{assignment_id}_results.csv"
-    return send_file(
-        mem,
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name=filename
-    )
+    return send_file(mem, mimetype='text/csv', as_attachment=True, download_name=filename)
+
+
+# ---------------------------------------------------------------------------
+# App entry point
+# ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000)) # Railway akan menyediakan 'PORT'
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
