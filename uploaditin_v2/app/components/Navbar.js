@@ -43,8 +43,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: "How It Works", href: "#how-it-works" },
-    { name: "Testimonials", href: "#testimonials" },
-    { name: "Contact", href: "#contact" },
+    { name: "Features", href: "#features" },
   ];
 
   return (
@@ -58,7 +57,7 @@ export default function Navbar() {
     >
       <div className="container mx-auto px-6 flex items-center justify-between">
         <Link href="/" className="text-2xl font-extrabold text-foreground flex items-center font-headline tracking-tight">
-          Upload<span className="text-primary">ItIn</span>
+          Scova<span className="text-primary">.ai</span>
         </Link>
 
         {/* Desktop Menu */}
