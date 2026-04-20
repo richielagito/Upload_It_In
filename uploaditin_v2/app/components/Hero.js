@@ -9,14 +9,21 @@ function AnimatedScore() {
     const [blink, setBlink] = useState(true);
 
     useEffect(() => {
+        let timeout;
+
         const interval = setInterval(() => {
             const nextScore = Math.floor(Math.random() * (100 - 80 + 1)) + 80;
             setScore(nextScore);
             setBlink(false);
-            setTimeout(() => setBlink(true), 100);
+
+            clearTimeout(timeout);
+            timeout = setTimeout(() => setBlink(true), 100);
         }, 3000);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            clearTimeout(timeout);
+        };
     }, []);
 
     return (
