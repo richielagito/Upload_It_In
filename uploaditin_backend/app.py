@@ -33,7 +33,7 @@ from uploaditin_backend.utils.supabase_helpers import (
     get_server_supabase_client,
     upload_file,
 )
-from uploaditin_backend.utils.LSA import (
+from utils.LSA import (
     extract_text_from_any,
     lsa_similarity,
 )
