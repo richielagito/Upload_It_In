@@ -15,8 +15,8 @@ import csv
 from io import StringIO, BytesIO
 from flask import send_file
 
-from uploaditin_backend.utils.db import get_postgres_conn
-from uploaditin_backend.utils.supabase_helpers import (
+from utils.db import get_postgres_conn
+from utils.supabase_helpers import (
     get_server_supabase_client,
     upload_file,
     download_file,
@@ -24,12 +24,12 @@ from uploaditin_backend.utils.supabase_helpers import (
     SupabaseStorageError,
     SupabaseDownloadError,
 )
-from uploaditin_backend.utils.LSA import (
+from utils.LSA import (
     extract_text_from_any,
     lsa_similarity,
 )
-from uploaditin_backend.utils.embedding_scorer import embedding_score_submission
-from uploaditin_backend.utils.db import (
+from utils.embedding_scorer import embedding_score_submission
+from utils.db import (
     simpan_ke_postgres,
     fetch_all_results,
     fetch_results_by_kelas,

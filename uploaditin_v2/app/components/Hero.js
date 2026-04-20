@@ -1,135 +1,118 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, Play, CheckCircle, Smartphone } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 import { motion } from "framer-motion";
+
+function AnimatedScore() {
+    const [score, setScore] = useState(95);
+    const [blink, setBlink] = useState(true);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const nextScore = Math.floor(Math.random() * (100 - 80 + 1)) + 80;
+            setScore(nextScore);
+            setBlink(false);
+            setTimeout(() => setBlink(true), 100);
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <motion.tspan 
+            animate={{ opacity: blink ? 1 : 0 }} 
+            transition={{ duration: 0.1 }}
+        >
+            {score}
+        </motion.tspan>
+    );
+}
 
 export default function Hero() {
     return (
-        <section className="relative pt-32 pb-24 lg:pt-56 lg:pb-40 overflow-hidden bg-background">
-            {/* Background Orbs */}
+        <section className="relative pt-24 pb-16 lg:pt-36 lg:pb-20 overflow-hidden bg-background">
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />
 
             <div className="container mx-auto px-6 relative z-10">
-                <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
-                    {/* Text Content - Intentional Asymmetry */}
+                <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
                     <div className="flex-[1.2] text-left">
-                        <motion.div 
-                            initial={{ opacity: 0, x: -20 }} 
-                            animate={{ opacity: 1, x: 0 }} 
-                            transition={{ duration: 0.8 }}
-                        >
-                            <h1 className="text-5xl lg:text-8xl font-extrabold text-foreground leading-[1.1] mb-8 font-headline tracking-tighter max-w-4xl">
-                                Revolutionize how you <span className="text-transparent bg-clip-text bg-gradient-to-br from-primary to-primary-container">Grade Essays</span>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
+                            <h1 className="text-5xl lg:text-7xl font-extrabold text-foreground leading-tight mb-6 font-headline tracking-tighter max-w-2xl">
+                                Smarter Essay <br /> <span className="text-primary italic pr-2">Grading</span>{" "}with Scova
                             </h1>
                         </motion.div>
 
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }} 
-                            animate={{ opacity: 1, y: 0 }} 
-                            transition={{ duration: 0.6, delay: 0.2 }}
-                            className="max-w-xl mb-12"
-                        >
-                            <p className="text-xl text-slate-600 leading-relaxed font-sans font-medium">
-                                Leverage AI for speed and reliability. UploadItIn transforms how you evaluate essays — making the process faster, smarter, and more objective than ever.
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="max-w-xl mb-10">
+                            <p className="text-lg text-slate-500 leading-relaxed font-sans font-medium">
+                                Fast, objective, and rubric-based evaluations powered by Gemini 2.0. Scale your feedback without losing the human touch.
                             </p>
                         </motion.div>
 
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }} 
-                            animate={{ opacity: 1, y: 0 }} 
-                            transition={{ duration: 0.6, delay: 0.3 }} 
-                            className="flex flex-wrap gap-5"
-                        >
-                            <Link href="/login-register" className="px-10 py-5 rounded-[1.5rem] bg-gradient-to-br from-primary to-primary-container text-white font-bold text-xl hover:shadow-[0_20px_40px_-10px_rgba(0,61,155,0.3)] transition-all flex items-center gap-3">
-                                Start Now <ArrowRight size={24} />
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex items-center gap-4">
+                            <Link href="/login-register" className="px-8 py-4 rounded-xl bg-gradient-to-r from-primary to-primary-container text-white font-bold transition-all duration-200 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-0.5 flex items-center gap-2">
+                                Start Now <ArrowRight size={20} />
                             </Link>
-                            <Link href="#how-it-works" className="px-10 py-5 rounded-[1.5rem] bg-surface-lowest text-slate-700 font-bold text-xl shadow-sm hover:shadow-xl transition-all flex items-center gap-3">
-                                <Play size={24} className="fill-current text-primary" /> How It Works
+                            <Link href="#how-it-works" className="px-8 py-4 rounded-xl bg-white text-slate-700 font-bold border border-slate-200 transition-all duration-200 hover:bg-slate-50 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2">
+                                <Play size={20} className="fill-current text-primary" /> How It Works
                             </Link>
-                        </motion.div>
-
-                        {/* Stats - Tonal Layering */}
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }} 
-                            animate={{ opacity: 1, y: 0 }} 
-                            transition={{ duration: 0.6, delay: 0.4 }} 
-                            className="grid grid-cols-3 gap-6 mt-20 max-w-2xl"
-                        >
-                            <div className="p-6 rounded-3xl bg-surface-low/50">
-                                <div className="text-3xl lg:text-4xl font-black text-foreground font-headline tracking-tight">1000+</div>
-                                <div className="text-sm text-slate-500 font-sans font-bold uppercase tracking-wider mt-1">Essays</div>
-                            </div>
-                            <div className="p-6 rounded-3xl bg-surface-low/50">
-                                <div className="text-3xl lg:text-4xl font-black text-foreground font-headline tracking-tight">500+</div>
-                                <div className="text-sm text-slate-500 font-sans font-bold uppercase tracking-wider mt-1">Users</div>
-                            </div>
-                            <div className="p-6 rounded-3xl bg-surface-low/50">
-                                <div className="text-3xl lg:text-4xl font-black text-foreground font-headline tracking-tight">98%</div>
-                                <div className="text-sm text-slate-500 font-sans font-bold uppercase tracking-wider mt-1">Satisfied</div>
-                            </div>
                         </motion.div>
                     </div>
 
-                    {/* Visual/Illustration */}
-                    <div className="flex-1 w-full max-w-[600px] lg:max-w-none relative">
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.9, rotate: 2 }} 
-                            animate={{ opacity: 1, scale: 1, rotate: 0 }} 
-                            transition={{ duration: 1 }} 
-                            className="relative aspect-square"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-[100px] opacity-60" />
-                            
-                            <div className="relative z-10 bg-surface-lowest rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.1)] p-12 overflow-hidden h-full flex flex-col justify-between">
-                                <div className="space-y-6">
-                                    <div className="w-2/3 h-4 rounded-full bg-surface-low" />
-                                    <div className="w-1/2 h-4 rounded-full bg-surface-low" />
-                                    <div className="space-y-3 pt-8">
-                                        <div className="w-full h-2 rounded-full bg-surface-low/60" />
-                                        <div className="w-full h-2 rounded-full bg-surface-low/60" />
-                                        <div className="w-4/5 h-2 rounded-full bg-surface-low/60" />
-                                        <div className="w-full h-2 rounded-full bg-surface-low/60" />
-                                    </div>
-                                </div>
+                    <div className="flex-1 w-full max-w-[500px] lg:max-w-none relative">
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }} className="relative">
+                            <div className="absolute inset-0 bg-primary/10 rounded-full blur-[80px] opacity-40 translate-y-8" />
 
-                                <div className="flex items-end justify-between">
-                                     <div className="space-y-4">
-                                         <div className="flex gap-2">
-                                             <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600">
-                                                 <CheckCircle size={16} />
-                                             </div>
-                                             <div className="w-24 h-4 rounded-full bg-surface-low mt-2" />
-                                         </div>
-                                         <div className="flex gap-2">
-                                             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                                 <Smartphone size={16} />
-                                             </div>
-                                             <div className="w-32 h-4 rounded-full bg-surface-low mt-2" />
-                                         </div>
-                                     </div>
-                                     
-                                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center shadow-2xl shadow-primary/40 group">
-                                         <span className="text-5xl font-black text-white font-headline">95</span>
-                                     </div>
-                                </div>
-                            </div>
+                            <svg viewBox="0 0 480 420" className="w-full h-auto drop-shadow-2xl relative z-10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <clipPath id="paper-clip">
+                                        <rect x="60" y="30" width="320" height="360" rx="32" />
+                                    </clipPath>
+                                    <filter id="shadow-box" x="220" y="10" width="230" height="110" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                                        <feDropShadow dx="0" dy="8" stdDeviation="8" floodOpacity="0.1" />
+                                    </filter>
+                                    <filter id="shadow-circle" x="245" y="235" width="150" height="150" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+                                        <feDropShadow dx="0" dy="16" stdDeviation="16" floodColor="#0052CC" floodOpacity="0.3" />
+                                    </filter>
+                                    <linearGradient id="gradient-line" x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="0%" stopColor="#0052CC" stopOpacity="0" />
+                                        <stop offset="50%" stopColor="#0052CC" stopOpacity="1" />
+                                        <stop offset="100%" stopColor="#0052CC" stopOpacity="0" />
+                                    </linearGradient>
+                                </defs>
 
-                            {/* Floating Card - AI Intelligence */}
-                            <motion.div 
-                                animate={{ y: [0, -20, 0], x: [0, 5, 0] }} 
-                                transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }} 
-                                className="absolute -top-8 -right-8 p-6 bg-white/80 backdrop-blur-2xl rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex items-center gap-5 z-20"
-                            >
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white shadow-lg">
-                                    <CheckCircle size={28} />
-                                </div>
-                                <div>
-                                    <div className="font-black text-foreground font-headline text-lg">AI Logic</div>
-                                    <div className="text-sm text-slate-500 font-sans font-medium italic">Highly Accurate</div>
-                                </div>
-                            </motion.div>
+                                <rect x="60" y="30" width="320" height="360" rx="32" fill="white" />
+                                <rect x="60" y="30" width="320" height="360" rx="32" stroke="#E2E8F0" strokeWidth="1.5" />
+
+                                <motion.rect initial={{ width: 0 }} animate={{ width: 200 }} transition={{ duration: 1, delay: 0.1 }} x="100" y="80" height="8" rx="4" fill="#F1F5F9" />
+                                <motion.rect initial={{ width: 0 }} animate={{ width: 140 }} transition={{ duration: 1, delay: 0.2 }} x="100" y="108" height="8" rx="4" fill="#F1F5F9" />
+                                <motion.rect initial={{ width: 0 }} animate={{ width: 240 }} transition={{ duration: 1, delay: 0.3 }} x="100" y="170" height="5" rx="2.5" fill="#F8FAFC" />
+                                <motion.rect initial={{ width: 0 }} animate={{ width: 220 }} transition={{ duration: 1, delay: 0.4 }} x="100" y="192" height="5" rx="2.5" fill="#F8FAFC" />
+                                <motion.rect initial={{ width: 0 }} animate={{ width: 240 }} transition={{ duration: 1, delay: 0.5 }} x="100" y="214" height="5" rx="2.5" fill="#F8FAFC" />
+
+                                <motion.rect
+                                    clipPath="url(#paper-clip)"
+                                    animate={{ y: [40, 340, 40] }}
+                                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                                    x="70" y="40" width="300" height="4" fill="url(#gradient-line)"
+                                />
+
+                                <motion.g animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}>
+                                    <rect x="240" y="20" width="190" height="70" rx="16" fill="white" filter="url(#shadow-box)" />
+                                    <circle cx="272" cy="55" r="17" fill="#0052CC" />
+                                    <path d="M266 55L270 59L279 50" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                    <text x="298" y="50" fontFamily="Inter, sans-serif" fontSize="13" fontWeight="900" fill="#1E293B">AI Scoring</text>
+                                    <text x="298" y="66" fontFamily="Inter, sans-serif" fontSize="10" fontStyle="italic" fill="#64748B">Gemini 2.0 Enabled</text>
+                                </motion.g>
+
+                                <motion.g initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ scale: { type: "spring" } }}>
+                                    <circle cx="320" cy="310" r="55" fill="#0052CC" />
+                                    <text x="320" y="325" fontFamily="Inter, sans-serif" fontSize="48" fontWeight="900" textAnchor="middle" fill="white">
+                                        <AnimatedScore />
+                                    </text>
+                                </motion.g>
+                            </svg>
                         </motion.div>
                     </div>
                 </div>
