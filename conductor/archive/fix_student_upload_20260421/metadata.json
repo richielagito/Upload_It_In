@@ -1,0 +1,8 @@
+{
+  "track_id": "fix_student_upload_20260421",
+  "type": "bug",
+  "status": "new",
+  "created_at": "2026-04-21T10:00:00Z",
+  "updated_at": "2026-04-21T10:00:00Z",
+  "description": "Fix TypeError: Cannot read properties of undefined (reading 'files') in student upload."
+}
