@@ -1,0 +1,8 @@
+{
+  "track_id": "manual_review_20260421",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-04-21T00:00:00Z",
+  "updated_at": "2026-04-21T00:00:00Z",
+  "description": "Manual review & override — guru lihat hasil AI, bisa edit skor atau tambah komentar sebelum dikirim ke siswa. CoGrader berfungsi sebagai asisten virtual yang menyusun draft feedback dan saran nilai awal, yang membantu menghemat waktu sambil tetap memberi guru kontrol penuh."
+}
