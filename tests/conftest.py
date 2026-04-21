@@ -199,4 +199,9 @@ def patch_extract_text_and_score(monkeypatch):
 
     monkeypatch.setattr(app_module, 'extract_text_from_any', fake_extract)
     monkeypatch.setattr(app_module, 'lsa_similarity', fake_score)
+    
+    # Mock feedback generator to avoid real API calls during tests
+    monkeypatch.setattr(app_module, 'generate_pedagogical_feedback', 
+                       lambda t, s, sc: "Mocked pedagogical feedback")
+    
     return calls

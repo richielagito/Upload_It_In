@@ -38,6 +38,7 @@ from utils.LSA import (
     lsa_similarity,
 )
 from utils.embedding_scorer import embedding_score_submission
+from utils.feedback_generator import generate_pedagogical_feedback
 from sqlalchemy import text
 
 load_dotenv()
@@ -955,7 +956,6 @@ def api_upload_student_answer(assignment_id):
 
         scoring_engine = os.getenv("SCORING_ENGINE", "legacy").lower()
         sub_criteria_scores = None
-        feedback = "AI Draft Feedback"
 
         if scoring_engine == "embeddings":
             try:
@@ -971,6 +971,13 @@ def api_upload_student_answer(assignment_id):
             sub_criteria_scores = per_question
 
         similarity = avg_similarity
+
+        # Generate Pedagogical Feedback using Gemini
+        try:
+            feedback = generate_pedagogical_feedback(guru_text, murid_text, grade)
+        except Exception:
+            logger.exception("Feedback generation failed")
+            feedback = "Gagal menghasilkan feedback otomatis."
 
     result_to_save = {
         "name": nama_user,

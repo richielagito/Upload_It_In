@@ -1,17 +1,16 @@
 # Implementation Plan: Implement Automated Pedagogical Feedback Generation using Gemini
 
 ## Phase 1: Backend Integration & Feedback Generation
-- [ ] Task: Backend - Research and Prototype Feedback Prompting
-    - [ ] Research optimal prompting strategies for pedagogical feedback using Gemini.
-    - [ ] Prototype a feedback generation function in a Jupyter notebook or standalone script.
-- [ ] Task: Backend - Update Database Schema
-    - [ ] Create a migration or update the Supabase schema to include a `feedback` field in the submissions/grades table.
-- [ ] Task: Backend - Implement Feedback Generation Service
-    - [ ] Write tests for the feedback generation service.
-    - [ ] Implement the service using the Google GenAI SDK.
-    - [ ] Integrate the service into the existing grading workflow in `app.py`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
-
+- [x] Task: Backend - Research and Prototype Feedback Prompting
+    - [x] Research optimal prompting strategies for pedagogical feedback using Gemini.
+    - [x] Prototype a feedback generation function in a Jupyter notebook or standalone script.
+- [x] Task: Backend - Update Database Schema
+    - [x] Create a migration or update the Supabase schema to include a `feedback` field in the submissions/grades table.
+- [x] Task: Backend - Implement Feedback Generation Service
+    - [x] Write tests for the feedback generation service.
+    - [x] Implement the service using the Google GenAI SDK.
+    - [x] Integrate the service into the existing grading workflow in `app.py`.    
+- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 ## Phase 2: Frontend Display & User Experience
 - [ ] Task: Frontend - Update API Client
     - [ ] Update the frontend API client to fetch the new `feedback` field.
