@@ -226,6 +226,20 @@ export default function ClassDetailsStudent() {
             {assignments.length === 0 && <div className="col-span-full text-center py-10 text-slate-500">No assignments active.</div>}
         </div>
 
+        {showFeedback && activeAssignment && (
+            <FeedbackPanel 
+                assignment={activeAssignment}
+                result={activeResult}
+                onClose={() => setShowFeedback(false)}
+                onReupload={() => {
+                    setTimeout(() => {
+                        document.getElementById(`file-input-${activeAssignment.id}`)?.click();
+                    }, 100);
+                }}
+                isDeadlineOpen={activeAssignment.deadline ? new Date() < new Date(activeAssignment.deadline.replace(' ', 'T')) : true}
+            />
+        )}
+
         {/* My Grades */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-100">
