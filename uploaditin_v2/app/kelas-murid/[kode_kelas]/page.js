@@ -240,56 +240,6 @@ export default function ClassDetailsStudent() {
             />
         )}
 
-        {/* My Grades */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100">
-                <h3 className="text-xl font-bold text-slate-900">My Grades</h3>
-            </div>
-            <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                    <thead className="bg-slate-50">
-                        <tr>
-                            <th className="px-6 py-4 text-sm font-semibold text-slate-600">Assignment</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-slate-600">Grade</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-slate-600">Similarity</th>
-                            <th className="px-6 py-4 text-sm font-semibold text-slate-600">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                        {assignments.filter(a => a.is_submitted && !myResults.some(r => r.assignment_id === a.id)).map((ass, idx) => (
-                             <tr key={`pending-${idx}`} className="bg-slate-50/30">
-                                 <td className="px-6 py-4 font-medium text-slate-400">{ass.judul || "-"}</td>
-                                 <td className="px-6 py-4 font-bold text-slate-400">-</td>
-                                 <td className="px-6 py-4 text-slate-400">-</td>
-                                 <td className="px-6 py-4">
-                                     <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100 uppercase tracking-wider">
-                                        Pending Review
-                                     </span>
-                                 </td>
-                             </tr>
-                        ))}
-                        {myResults.map((res, idx) => (
-                             <tr key={idx} className="hover:bg-slate-50">
-                                 <td className="px-6 py-4 font-medium text-slate-500">{res.judul_assignment || "-"}</td>
-                                 <td className="px-6 py-4 font-bold text-slate-500">{res.nilai || res.grade || "-"}</td>
-                                 <td className="px-6 py-4 text-slate-500">{res.similarity || "-"}</td>
-                                 <td className="px-6 py-4">
-                                     <span className={cn(
-                                        "px-2 py-1 rounded text-xs font-bold",
-                                        parseFloat(res.nilai) >= 80 ? "bg-green-100 text-green-700" :
-                                        parseFloat(res.nilai) >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
-                                     )}>
-                                        {parseFloat(res.nilai) >= 80 ? 'A' : parseFloat(res.nilai) >= 60 ? 'B/C' : parseFloat(res.nilai) < 60 ? 'D/E' : '-'}
-                                     </span>
-                                 </td>
-                             </tr>
-                        ))}
-                         {myResults.length === 0 && <tr><td colSpan="4" className="px-6 py-8 text-center text-slate-500">No grades yet.</td></tr>}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
     </DashboardShell>
   );
 }
