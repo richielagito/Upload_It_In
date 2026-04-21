@@ -120,29 +120,42 @@ export default function ClassDetailsStudent() {
             {assignments.map(ass => {
                  const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
                  const isClosed = deadlineDate && new Date() > deadlineDate;
+                 const result = myResults.find(r => r.assignment_id === ass.id);
+                 const isGraded = !!result;
+                 const isPending = ass.is_submitted && !isGraded;
 
                  return (
-                    <div key={ass.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition">
+                    <div key={ass.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col h-full">
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-bold text-slate-900">{ass.judul}</h3>
-                            {ass.is_submitted && (
-                                <span className={cn(
-                                    "px-2 py-1 text-xs font-bold rounded flex items-center gap-1",
-                                    myResults.some(r => r.assignment_id === ass.id) 
-                                        ? "bg-green-100 text-green-700" 
-                                        : "bg-amber-100 text-amber-700"
-                                )}>
-                                    {myResults.some(r => r.assignment_id === ass.id) ? (
-                                        <><CheckCircle size={12}/> Graded</>
-                                    ) : (
-                                        <><Clock size={12}/> Pending Review</>
-                                    )}
-                                </span>
-                            )}
                         </div>
-                        <p className="text-slate-600 mb-6 text-sm leading-relaxed">{ass.deskripsi}</p>
+                        <p className="text-slate-600 mb-6 text-sm leading-relaxed flex-1">{ass.deskripsi}</p>
                         
-                        <div className="space-y-2 mb-4">
+                        {/* Grade Summary (if graded) */}
+                        {isGraded && (
+                            <div className="mb-6 p-4 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Score</span>
+                                    <span className="text-xl font-black text-slate-900">{result.nilai || result.grade}</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Grade</span>
+                                    <span className={cn(
+                                        "px-2 py-0.5 rounded text-xs font-bold mt-0.5",
+                                        parseFloat(result.nilai) >= 80 ? "bg-green-100 text-green-700" :
+                                        parseFloat(result.nilai) >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                                    )}>
+                                        {parseFloat(result.nilai) >= 80 ? 'A' : parseFloat(result.nilai) >= 60 ? 'B/C' : parseFloat(result.nilai) < 60 ? 'D/E' : '-'}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Similarity</span>
+                                    <span className="text-sm font-bold text-slate-700">{result.similarity || "0%"}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2 mb-6">
                             <div className="flex items-center gap-2 text-sm text-slate-500">
                                 <Clock size={16} /> 
                                 <span className={isClosed ? "text-red-500 font-bold" : ""}>
@@ -159,61 +172,52 @@ export default function ClassDetailsStudent() {
                             )}
                         </div>
 
-                        <div className="border-t border-slate-150">
-                            {isClosed ? (
+                        <div className="border-t border-slate-150 pt-4 mt-auto">
+                            {isGraded ? (
+                                <button 
+                                    onClick={() => {
+                                        setActiveAssignment(ass);
+                                        setActiveResult(result);
+                                        setShowFeedback(true);
+                                    }}
+                                    className="w-full py-3 border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2"
+                                >
+                                    <FileText size={18} /> View Detail
+                                </button>
+                            ) : isPending ? (
+                                <button 
+                                    disabled
+                                    className="w-full py-3 bg-slate-100 text-slate-400 rounded-xl font-bold flex items-center justify-center gap-2 cursor-not-allowed"
+                                >
+                                    <Clock size={18} /> Pending Review
+                                </button>
+                            ) : isClosed ? (
                                 <div className="flex items-center gap-2 text-red-500 bg-red-50 p-3 rounded-lg text-sm font-bold justify-center">
                                     <AlertCircle size={18} /> Assignment Closed
                                 </div>
                             ) : (
-                                <form onSubmit={(e) => handleUploadAnswer(e, ass.id)} className="space-y-4 pt-4">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">
-                                            Upload Answer
-                                        </label>
-                                        <div className="relative group">
-                                            <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center text-center transition-colors group-hover:bg-slate-50 group-hover:border-blue-400 bg-slate-50/50">
-                                                <input 
-                                                    type="file" 
-                                                    name="file" 
-                                                    required 
-                                                    onChange={(e) => {
-                                                        const fileName = e.target.files[0]?.name;
-                                                        setSelectedFiles(prev => ({...prev, [ass.id]: fileName}));
-                                                    }}
-                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                                                />
-                                                <UploadCloud className={cn("mb-2 transition-colors", selectedFiles[ass.id] ? "text-blue-600" : "text-slate-400 group-hover:text-blue-500")} size={32} />
-                                                
-                                                {selectedFiles[ass.id] ? (
-                                                    <div>
-                                                        <p className="text-sm font-bold text-blue-700 break-all">{selectedFiles[ass.id]}</p>
-                                                        <p className="text-xs text-slate-400 mt-1">Click to change file</p>
-                                                    </div>
-                                                ) : (
-                                                    <div>
-                                                        <p className="text-sm font-medium text-slate-600">
-                                                            <span className="text-blue-600 font-bold">Click to upload</span> or drag and drop
-                                                        </p>
-                                                        <p className="text-xs text-slate-400 mt-1">PDF, DOCX up to 10MB</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
+                                <div className="space-y-3">
+                                    <input 
+                                        type="file" 
+                                        id={`file-input-${ass.id}`}
+                                        className="hidden" 
+                                        onChange={(e) => handleUploadAnswer(e, ass.id)}
+                                    />
                                     <button 
-                                        type="submit" 
+                                        onClick={() => document.getElementById(`file-input-${ass.id}`).click()}
                                         disabled={uploadingId === ass.id}
                                         className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
                                         {uploadingId === ass.id ? "Uploading..." : (
                                             <>
-                                                {ass.is_submitted ? <UploadCloud size={18} /> : <Upload size={18} />} 
-                                                {ass.is_submitted ? "Upload Again" : "Submit Answer"}
+                                                <Upload size={18} /> Submit Answer
                                             </>
                                         )}
                                     </button>
-                                </form>
+                                    {selectedFiles[ass.id] && (
+                                        <p className="text-center text-xs text-slate-400">Selected: {selectedFiles[ass.id]}</p>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>
