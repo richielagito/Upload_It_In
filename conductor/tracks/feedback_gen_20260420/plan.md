@@ -12,12 +12,12 @@
     - [x] Integrate the service into the existing grading workflow in `app.py`.    
 - [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 ## Phase 2: Frontend Display & User Experience
-- [ ] Task: Frontend - Update API Client
-    - [ ] Update the frontend API client to fetch the new `feedback` field.
-- [ ] Task: Frontend - Implement Student Feedback View
-    - [ ] Design and implement the feedback display component in the student dashboard.
-    - [ ] Write tests for the feedback display component.
-- [ ] Task: Frontend - Implement Teacher Feedback Review
-    - [ ] Update the teacher dashboard to allow teachers to review and potentially edit the automated feedback.
-    - [ ] Write tests for the teacher review component.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [x] Task: Frontend - Update API Client
+    - [x] Update the frontend API client to fetch the new `feedback` field.        
+- [x] Task: Frontend - Implement Student Feedback View
+    - [x] Design and implement the feedback display component in the student dashboard.
+    - [x] Write tests for the feedback display component.
+- [x] Task: Frontend - Implement Teacher Feedback Review
+    - [x] Update the teacher dashboard to allow teachers to review and potentially edit the automated feedback.
+    - [x] Write tests for the teacher review component.
+- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
