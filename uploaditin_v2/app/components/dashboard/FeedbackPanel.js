@@ -9,12 +9,18 @@ export default function FeedbackPanel({ assignment, result, onClose, onReupload,
   const similarity = result?.similarity || "0%";
   const feedback = result?.feedback || "No feedback provided yet.";
 
-  // Mock Criteria Breakdown
-  const criteria = [
-    { name: "Content Accuracy", score: score > 0 ? Math.min(100, parseInt(score) + 5) : "-", weight: "40%" },
-    { name: "Grammar & Structure", score: score > 0 ? Math.max(0, parseInt(score) - 5) : "-", weight: "30%" },
-    { name: "Relevance to Prompt", score: score || "-", weight: "30%" }
-  ];
+  // Use real sub-criteria scores if available, otherwise fallback to mock
+  const criteria = result?.sub_criteria_scores && Array.isArray(result.sub_criteria_scores)
+    ? result.sub_criteria_scores.map(s => ({
+        name: `Question ${s.question}`,
+        score: s.grade,
+        weight: "Score"
+      }))
+    : [
+        { name: "Content Accuracy", score: score > 0 ? Math.min(100, parseInt(score) + 5) : "-", weight: "40%" },
+        { name: "Grammar & Structure", score: score > 0 ? Math.max(0, parseInt(score) - 5) : "-", weight: "30%" },
+        { name: "Relevance to Prompt", score: score || "-", weight: "30%" }
+      ];
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-end">
