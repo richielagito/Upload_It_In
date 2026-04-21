@@ -4,11 +4,11 @@ Automated essay grading system for teachers and students using Gemini embeddings
 # Product Guide
 
 ## Mission
-SCOVA is an intelligent, full-stack web application designed to automate essay grading. By leveraging advanced Google Gemini text embeddings and a supplementary LSA engine, the platform reduces grading overhead for teachers and provides immediate, objective feedback to students.
+SCOVA is an intelligent, full-stack web application designed to assist in essay grading through a "CoGrader" workflow. By leveraging advanced Google Gemini text embeddings and a supplementary LSA engine, the platform generates draft feedback and score suggestions that teachers can review, modify, and finalize before they are shared with students.
 
 ## Target Audience
-- **Teachers:** Empowered with tools to quickly create classes, manage assignments, and review automated grades.
-- **Students:** Provided with a seamless experience to submit assignments in various formats (PDF, DOCX, TXT) and view their results clearly.
+- **Teachers:** Empowered with tools to quickly create classes, manage assignments, and act as the final authority in the grading process by reviewing and overriding AI-generated suggestions.
+- **Students:** Provided with a seamless experience to submit assignments in various formats (PDF, DOCX, TXT) and view their results clearly once published by their teacher.
 
 ## Core Focus (Current Phase)
 The primary objective of the current development phase is **Feature Expansion**, focusing on introducing new capabilities to augment the grading process, such as automated detailed feedback generation and potentially plagiarism detection, to provide a richer experience beyond basic scoring.
