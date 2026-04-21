@@ -17,7 +17,7 @@ from flask import Flask, g, jsonify, redirect, render_template, request, send_fi
 from flask_cors import CORS
 import requests
 
-from uploaditin_backend.utils.db import (
+from utils.db import (
     fetch_all_results,
     fetch_results_by_assignment_id,
     fetch_results_by_kelas,
@@ -25,7 +25,7 @@ from uploaditin_backend.utils.db import (
     get_engine,
     simpan_ke_postgres,
 )
-from uploaditin_backend.utils.supabase_helpers import (
+from utils.supabase_helpers import (
     SupabaseDownloadError,
     SupabaseStorageError,
     download_file,
@@ -33,11 +33,11 @@ from uploaditin_backend.utils.supabase_helpers import (
     get_server_supabase_client,
     upload_file,
 )
-from uploaditin_backend.utils.LSA import (
+from utils.LSA import (
     extract_text_from_any,
     lsa_similarity,
 )
-from uploaditin_backend.utils.embedding_scorer import embedding_score_submission
+from utils.embedding_scorer import embedding_score_submission
 from sqlalchemy import text
 
 load_dotenv()
