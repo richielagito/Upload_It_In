@@ -75,7 +75,7 @@ export default function ClassDetailsStudent() {
 
   const handleUploadAnswer = async (e, assignmentId) => {
       e.preventDefault();
-      const file = e.target.file.files[0];
+      const file = e.target.files?.[0];
       if (!file) return;
 
       setUploadingId(assignmentId);
