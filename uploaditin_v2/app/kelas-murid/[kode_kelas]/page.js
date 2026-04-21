@@ -116,7 +116,7 @@ export default function ClassDetailsStudent() {
             <p className="text-slate-500">View assignments and your grades</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        <div className="columns-1 md:columns-2 gap-8 space-y-8 mb-12">
             {assignments.map(ass => {
                  const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
                  const isClosed = deadlineDate && new Date() > deadlineDate;
@@ -125,7 +125,7 @@ export default function ClassDetailsStudent() {
                  const isPending = ass.is_submitted && !isGraded;
 
                  return (
-                    <div key={ass.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col h-full">
+                    <div key={ass.id} className="break-inside-avoid-column bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col mb-8 last:mb-0">
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-bold text-slate-900">{ass.judul}</h3>
                         </div>
@@ -180,7 +180,7 @@ export default function ClassDetailsStudent() {
                                         setActiveResult(result);
                                         setShowFeedback(true);
                                     }}
-                                    className="w-full py-3 border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition flex items-center justify-center gap-2"
+                                    className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm"
                                 >
                                     <FileText size={18} /> View Detail
                                 </button>
