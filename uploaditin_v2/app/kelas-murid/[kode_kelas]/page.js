@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, FileText, Upload, Download, CheckCircle, Clock, AlertCircle, UploadCloud } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import DashboardShell from '@/app/components/dashboard/DashboardShell';
+import FeedbackPanel from '@/app/components/dashboard/FeedbackPanel';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -20,6 +21,11 @@ export default function ClassDetailsStudent() {
   const [loading, setLoading] = useState(true);
     const [uploadingId, setUploadingId] = useState(null);
     const [selectedFiles, setSelectedFiles] = useState({});
+
+  // Feedback Panel State
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [activeAssignment, setActiveAssignment] = useState(null);
+  const [activeResult, setActiveResult] = useState(null);
 
   useEffect(() => {
     const init = async () => {
