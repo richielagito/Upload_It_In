@@ -19,6 +19,8 @@
 
 ## Machine Learning & NLP
 - **Primary Grading:** Google Gemini Embeddings (`gemini-embedding-2-preview`)
-- **Fallback Grading:** Latent Semantic Analysis (LSA) using TF-IDF + SVD
+- **Feedback Generation:** Google Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite-preview`)
+- **Fallback Grading:** Latent Semantic Analysis (LSA) using TF-IDF + SVD    
+
 - **Indonesian NLP:** Sastrawi (Stemming and Stopword removal)
 - **Embeddings/Similarity:** Semantic similarity computed via cosine similarity.

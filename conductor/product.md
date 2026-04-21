@@ -11,7 +11,7 @@ SCOVA is an intelligent, full-stack web application designed to assist in essay 
 - **Students:** Provided with a seamless experience to submit assignments in various formats (PDF, DOCX, TXT) and view their results clearly once published by their teacher.
 
 ## Core Focus (Current Phase)
-The primary objective of the current development phase is **Feature Expansion**, focusing on introducing new capabilities to augment the grading process, such as automated detailed feedback generation and potentially plagiarism detection, to provide a richer experience beyond basic scoring.
+The primary objective of the current development phase is **Feature Expansion**, focusing on introducing new capabilities to augment the grading process, such as plagiarism detection, to provide a richer experience beyond basic scoring. Automated detailed pedagogical feedback generation is now a core feature of the platform.
 
 ## Grading Architecture Strategy
 While the Google Gemini embedding model drives the primary grading engine via semantic similarity, the legacy TF-IDF + Latent Semantic Analysis (LSA) engine with Sastrawi support is being actively maintained and improved. The long-term vision is to elevate the LSA engine's accuracy so it can serve as a robust, viable alternative for specific grading scenarios or resource-constrained environments.
