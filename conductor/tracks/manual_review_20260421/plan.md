@@ -39,3 +39,5 @@
     - [ ] Verify that the student dashboard correctly handles and hides submissions that are still in 'draft' status
     - [ ] Update UI to indicate "Pending Teacher Review" for submitted but ungraded/draft assignments
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Frontend Updates - Student Dashboard (Next.js)' (Protocol in workflow.md)
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions f06a705
