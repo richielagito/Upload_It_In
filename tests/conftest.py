@@ -8,36 +8,36 @@ os.environ.setdefault('password', 'test_password')
 os.environ.setdefault('host', 'localhost')
 os.environ.setdefault('port', '5432')
 os.environ.setdefault('dbname', 'test_db')
+os.environ['SCORING_ENGINE'] = 'legacy'
 
 import uploaditin_backend.app as app_module
 
 
-class FakeCursor:
-    def __init__(self, fetchone_results):
-        # list of values to return on successive fetchone() calls
-        self._results = list(fetchone_results)
-        # initialize for type checkers: may be set by execute()
-        self._last_query = None
-
-    def execute(self, *args, **kwargs):
-        # no-op for tests
-        self._last_query = args[0] if args else None
+class FakeResult:
+    def __init__(self, results):
+        self._results = [tuple(r) if isinstance(r, (list, tuple)) else (r,) for r in results]
 
     def fetchone(self):
         if not self._results:
             return None
         return self._results.pop(0)
 
-    def close(self):
-        return
+    def scalar(self):
+        val = self.fetchone()
+        return val[0] if val else None
+
+    def fetchall(self):
+        res = self._results
+        self._results = []
+        return res
 
 
 class FakeConn:
     def __init__(self, fetchone_results):
-        self._cursor = FakeCursor(fetchone_results)
+        self.results = fetchone_results
 
-    def cursor(self):
-        return self._cursor
+    def execute(self, *args, **kwargs):
+        return FakeResult(self.results)
 
     def close(self):
         return
@@ -68,10 +68,26 @@ def make_fake_db(monkeypatch):
     def _make(fetchone_results):
         conn = FakeConn(fetchone_results)
 
-        def _get_conn():
+        def _get_db():
             return conn
 
-        monkeypatch.setattr(app_module, 'get_postgres_conn', _get_conn)
+        class FakeEngine:
+            def connect(self):
+                return conn
+            def begin(self):
+                from contextlib import contextmanager
+                @contextmanager
+                def _begin():
+                    yield conn
+                return _begin()
+
+        fake_engine = FakeEngine()
+
+        def _get_engine():
+            return fake_engine
+
+        monkeypatch.setattr(app_module, 'get_db', _get_db)
+        monkeypatch.setattr(app_module, 'get_engine', _get_engine)
         return conn
 
     return _make
@@ -176,7 +192,10 @@ def patch_extract_text_and_score(monkeypatch):
         return 'murid student text'
 
     def fake_score(ref, stu):
-        return (0.823, 82)
+        per_question = [
+            {"question": 1, "similarity": 0.823, "grade": 82}
+        ]
+        return (0.823, 82, per_question)
 
     monkeypatch.setattr(app_module, 'extract_text_from_any', fake_extract)
     monkeypatch.setattr(app_module, 'lsa_similarity', fake_score)

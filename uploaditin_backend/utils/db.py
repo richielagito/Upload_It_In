@@ -1,6 +1,7 @@
 import logging
 import os
 import traceback
+import json
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
@@ -47,15 +48,18 @@ def simpan_ke_postgres(results):
                 conn.execute(
                     text("""
                         INSERT INTO hasil_penilaian
-                            (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path)
+                            (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores)
                         VALUES
-                            (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path)
+                            (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores)
                         ON CONFLICT (user_id, assignment_id)
                         DO UPDATE SET
                             nama_murid  = EXCLUDED.nama_murid,
                             similarity  = EXCLUDED.similarity,
                             nilai       = EXCLUDED.nilai,
                             file_path   = EXCLUDED.file_path,
+                            status      = EXCLUDED.status,
+                            feedback    = EXCLUDED.feedback,
+                            sub_criteria_scores = EXCLUDED.sub_criteria_scores,
                             updated_at  = NOW()
                     """),
                     {
@@ -66,6 +70,9 @@ def simpan_ke_postgres(results):
                         "kelas_id": r["kelas_id"],
                         "assignment_id": r.get("assignment_id"),
                         "file_path": r["file_path"],
+                        "status": r.get("status", "draft"),
+                        "feedback": r.get("feedback"),
+                        "sub_criteria_scores": json.dumps(r.get("sub_criteria_scores")) if r.get("sub_criteria_scores") else None,
                     },
                 )
     except Exception:
@@ -74,15 +81,16 @@ def simpan_ke_postgres(results):
         raise
 
 
-def fetch_all_results(user_id):
+def fetch_all_results(user_id, status=None):
     try:
         with get_engine().connect() as conn:
-            result = conn.execute(
-                text(
-                    "SELECT * FROM public.hasil_penilaian WHERE user_id = :user_id ORDER BY nama_murid"
-                ),
-                {"user_id": user_id},
-            )
+            query = "SELECT * FROM public.hasil_penilaian WHERE user_id = :user_id"
+            params = {"user_id": user_id}
+            if status:
+                query += " AND status = :status"
+                params["status"] = status
+            query += " ORDER BY nama_murid"
+            result = conn.execute(text(query), params)
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
@@ -92,15 +100,16 @@ def fetch_all_results(user_id):
         return []
 
 
-def fetch_results_by_kelas(kelas_id):
+def fetch_results_by_kelas(kelas_id, status=None):
     try:
         with get_engine().connect() as conn:
-            result = conn.execute(
-                text(
-                    "SELECT * FROM public.hasil_penilaian WHERE kelas_id = :kelas_id ORDER BY nama_murid"
-                ),
-                {"kelas_id": kelas_id},
-            )
+            query = "SELECT * FROM public.hasil_penilaian WHERE kelas_id = :kelas_id"
+            params = {"kelas_id": kelas_id}
+            if status:
+                query += " AND status = :status"
+                params["status"] = status
+            query += " ORDER BY nama_murid"
+            result = conn.execute(text(query), params)
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
@@ -110,7 +119,7 @@ def fetch_results_by_kelas(kelas_id):
         return []
 
 
-def fetch_results_by_kode_kelas(kode_kelas, user_id):
+def fetch_results_by_kode_kelas(kode_kelas, user_id, status=None):
     try:
         with get_engine().connect() as conn:
             kelas_result = conn.execute(
@@ -126,16 +135,19 @@ def fetch_results_by_kode_kelas(kode_kelas, user_id):
                 return []
             kelas_id = kelas_row[0]
 
-            result = conn.execute(
-                text("""
-                    SELECT hp.*, a.judul AS judul_assignment
-                    FROM public.hasil_penilaian hp
-                    JOIN assignments a ON hp.assignment_id = a.id
-                    WHERE hp.kelas_id = :kelas_id AND hp.user_id = :user_id
-                    ORDER BY hp.nama_murid
-                """),
-                {"kelas_id": kelas_id, "user_id": user_id},
-            )
+            query = """
+                SELECT hp.*, a.judul AS judul_assignment
+                FROM public.hasil_penilaian hp
+                JOIN assignments a ON hp.assignment_id = a.id
+                WHERE hp.kelas_id = :kelas_id AND hp.user_id = :user_id
+            """
+            params = {"kelas_id": kelas_id, "user_id": user_id}
+            if status:
+                query += " AND hp.status = :status"
+                params["status"] = status
+            query += " ORDER BY hp.nama_murid"
+
+            result = conn.execute(text(query), params)
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
@@ -145,21 +157,29 @@ def fetch_results_by_kode_kelas(kode_kelas, user_id):
         return []
 
 
-def fetch_results_by_assignment_id(assignment_id):
+def fetch_results_by_assignment_id(assignment_id, status=None):
     try:
         with get_engine().connect() as conn:
-            result = conn.execute(
-                text(
-                    "SELECT id, nama_murid, similarity, nilai, created_at "
-                    "FROM public.hasil_penilaian "
-                    "WHERE assignment_id = :assignment_id "
-                    "ORDER BY created_at DESC"
-                ),
-                {"assignment_id": assignment_id},
-            )
+            query = """
+                SELECT id, nama_murid, similarity, nilai, status, feedback, sub_criteria_scores, created_at
+                FROM public.hasil_penilaian
+                WHERE assignment_id = :assignment_id
+            """
+            params = {"assignment_id": assignment_id}
+            if status:
+                query += " AND status = :status"
+                params["status"] = status
+            query += " ORDER BY created_at DESC"
+
+            result = conn.execute(text(query), params)
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
+                if r.get("sub_criteria_scores") and isinstance(r["sub_criteria_scores"], str):
+                    try:
+                        r["sub_criteria_scores"] = json.loads(r["sub_criteria_scores"])
+                    except Exception:
+                        pass
             return results
     except Exception:
         logger.exception("Gagal fetch data dari PostgreSQL (by assignment_id)")

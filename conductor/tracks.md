@@ -9,5 +9,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Manual review & override — guru lihat hasil AI, bisa edit skor atau tambah komentar sebelum dikirim ke siswa.**
+- [x] **Track: Manual review & override â€” guru lihat hasil AI, bisa edit skor atau tambah komentar sebelum dikirim ke siswa.**
 *Link: [./tracks/manual_review_20260421/](./tracks/manual_review_20260421/)*

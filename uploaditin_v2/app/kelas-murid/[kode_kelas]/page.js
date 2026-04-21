@@ -119,7 +119,20 @@ export default function ClassDetailsStudent() {
                     <div key={ass.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition">
                         <div className="flex justify-between items-start mb-4">
                             <h3 className="text-xl font-bold text-slate-900">{ass.judul}</h3>
-                            {ass.is_submitted && <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded flex items-center gap-1"><CheckCircle size={12}/> Submitted</span>}
+                            {ass.is_submitted && (
+                                <span className={cn(
+                                    "px-2 py-1 text-xs font-bold rounded flex items-center gap-1",
+                                    myResults.some(r => r.assignment_id === ass.id) 
+                                        ? "bg-green-100 text-green-700" 
+                                        : "bg-amber-100 text-amber-700"
+                                )}>
+                                    {myResults.some(r => r.assignment_id === ass.id) ? (
+                                        <><CheckCircle size={12}/> Graded</>
+                                    ) : (
+                                        <><Clock size={12}/> Pending Review</>
+                                    )}
+                                </span>
+                            )}
                         </div>
                         <p className="text-slate-600 mb-6 text-sm leading-relaxed">{ass.deskripsi}</p>
                         
@@ -219,6 +232,18 @@ export default function ClassDetailsStudent() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
+                        {assignments.filter(a => a.is_submitted && !myResults.some(r => r.assignment_id === a.id)).map((ass, idx) => (
+                             <tr key={`pending-${idx}`} className="bg-slate-50/30">
+                                 <td className="px-6 py-4 font-medium text-slate-400">{ass.judul || "-"}</td>
+                                 <td className="px-6 py-4 font-bold text-slate-400">-</td>
+                                 <td className="px-6 py-4 text-slate-400">-</td>
+                                 <td className="px-6 py-4">
+                                     <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-100 uppercase tracking-wider">
+                                        Pending Review
+                                     </span>
+                                 </td>
+                             </tr>
+                        ))}
                         {myResults.map((res, idx) => (
                              <tr key={idx} className="hover:bg-slate-50">
                                  <td className="px-6 py-4 font-medium text-slate-500">{res.judul_assignment || "-"}</td>

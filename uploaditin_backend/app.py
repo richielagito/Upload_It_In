@@ -33,7 +33,7 @@ from uploaditin_backend.utils.supabase_helpers import (
     get_server_supabase_client,
     upload_file,
 )
-from utils.LSA import (
+from uploaditin_backend.utils.LSA import (
     extract_text_from_any,
     lsa_similarity,
 )
@@ -526,7 +526,10 @@ def api_delete_class():
 def api_results():
     if 'user_id' not in session:
         return jsonify([]), 401
-    results = fetch_all_results(session['user_id'])
+    
+    role = session.get('role')
+    status = 'published' if role == 'Student' else None
+    results = fetch_all_results(session['user_id'], status=status)
     return jsonify(results)
 
 
@@ -534,7 +537,10 @@ def api_results():
 def api_results_by_kelas(kelas_id):
     if 'user_id' not in session:
         return jsonify([]), 401
-    results = fetch_results_by_kelas(kelas_id)
+    
+    role = session.get('role')
+    status = 'published' if role == 'Student' else None
+    results = fetch_results_by_kelas(kelas_id, status=status)
     return jsonify(results)
 
 
@@ -542,7 +548,10 @@ def api_results_by_kelas(kelas_id):
 def api_results_by_kode_kelas(kode_kelas):
     if 'user_id' not in session:
         return jsonify([]), 401
-    results = fetch_results_by_kode_kelas(kode_kelas, session['user_id'])
+    
+    role = session.get('role')
+    status = 'published' if role == 'Student' else None
+    results = fetch_results_by_kode_kelas(kode_kelas, session['user_id'], status=status)
     return jsonify(results)
 
 
@@ -945,16 +954,21 @@ def api_upload_student_answer(assignment_id):
             return jsonify({"error": "Format tidak didukung atau file kosong"}), 400
 
         scoring_engine = os.getenv("SCORING_ENGINE", "legacy").lower()
+        sub_criteria_scores = None
+        feedback = "AI Draft Feedback"
+
         if scoring_engine == "embeddings":
             try:
                 score_res = embedding_score_submission(guru_text, murid_text)
                 avg_similarity = score_res["avg_similarity"]
                 grade = score_res["grade"]
+                sub_criteria_scores = score_res.get("per_question")
             except Exception:
                 logger.exception("Embedding scoring failed")
                 return jsonify({"error": "Gagal memproses penilaian dengan AI. Silakan coba lagi nanti."}), 502
         else:
-            avg_similarity, grade = lsa_similarity(guru_text, murid_text)
+            avg_similarity, grade, per_question = lsa_similarity(guru_text, murid_text)
+            sub_criteria_scores = per_question
 
         similarity = avg_similarity
 
@@ -966,6 +980,9 @@ def api_upload_student_answer(assignment_id):
         "kelas_id": kelas_id,
         "assignment_id": assignment_id,
         "file_path": murid_url,
+        "status": "draft",
+        "feedback": feedback,
+        "sub_criteria_scores": sub_criteria_scores
     }
 
     try:
@@ -1019,6 +1036,48 @@ def download_assignment_csv(assignment_id):
 
     filename = f"assignment_{assignment_id}_results.csv"
     return send_file(mem, mimetype='text/csv', as_attachment=True, download_name=filename)
+
+
+@app.route('/api/results/override', methods=['POST'])
+def api_override_result():
+    if 'user_id' not in session or session.get('role') not in ['Teacher', 'Admin']:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    result_id = data.get('id')
+    new_grade = data.get('grade')
+    new_feedback = data.get('feedback')
+    new_sub_scores = data.get('sub_criteria_scores')
+    new_status = data.get('status', 'published')
+
+    if not result_id:
+        return jsonify({"error": "Missing result ID"}), 400
+
+    try:
+        with get_engine().begin() as txn:
+            txn.execute(
+                text("""
+                    UPDATE hasil_penilaian
+                    SET nilai = :grade,
+                        feedback = :feedback,
+                        sub_criteria_scores = :sub_scores,
+                        status = :status,
+                        updated_at = NOW()
+                    WHERE id = :id
+                """),
+                {
+                    "grade": new_grade,
+                    "feedback": new_feedback,
+                    "sub_scores": json.dumps(new_sub_scores) if new_sub_scores else None,
+                    "status": new_status,
+                    "id": result_id
+                }
+            )
+    except Exception:
+        logger.exception("Error overriding result")
+        return jsonify({"error": "Gagal menyimpan perubahan"}), 500
+
+    return jsonify({"success": True})
 
 
 # ---------------------------------------------------------------------------
