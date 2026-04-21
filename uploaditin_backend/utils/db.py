@@ -1,10 +1,13 @@
 import traceback
 import os
+import logging
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 import psycopg2
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 USER = os.getenv("DB_USER")
 PASSWORD = os.getenv("DB_PASSWORD")
@@ -14,11 +17,16 @@ DBNAME = os.getenv("DB_NAME")
 
 DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
 
+_engine = None
+
 
 def get_engine():
-    if not all([USER, PASSWORD, HOST, PORT, DBNAME]):
-        raise ValueError("Missing DB configuration for SQLAlchemy engine")
-    return create_engine(DATABASE_URL)
+    global _engine
+    if _engine is None:
+        if not all([USER, PASSWORD, HOST, PORT, DBNAME]):
+            raise ValueError("Missing DB configuration for SQLAlchemy engine")
+        _engine = create_engine(DATABASE_URL)
+    return _engine
 
 def simpan_ke_postgres(results):
     try:
@@ -58,8 +66,9 @@ def simpan_ke_postgres(results):
                         }
                     )
     except Exception as e:
-        print("Gagal menyimpan ke PostgreSQL:", e)
+        logger.error("Gagal menyimpan ke PostgreSQL: %s", e)
         traceback.print_exc()
+        raise
 
 def fetch_all_results(user_id):
     try:
@@ -73,7 +82,7 @@ def fetch_all_results(user_id):
                 r['similarity'] = float(r['similarity'])
             return results
     except Exception as e:
-        print("Gagal fetch data dari PostgreSQL:", e)
+        logger.error("Gagal fetch data dari PostgreSQL: %s", e)
         return []
     
 def get_postgres_conn():
@@ -98,7 +107,7 @@ def fetch_results_by_kelas(kelas_id):
                 r['similarity'] = float(r['similarity'])
             return results
     except Exception as e:
-        print("Gagal fetch data dari PostgreSQL (by kelas):", e)
+        logger.error("Gagal fetch data dari PostgreSQL (by kelas): %s", e)
         return []
 
 def fetch_results_by_kode_kelas(kode_kelas, user_id):
@@ -130,7 +139,7 @@ def fetch_results_by_kode_kelas(kode_kelas, user_id):
                 r['similarity'] = float(r['similarity'])
             return results
     except Exception as e:
-        print("Gagal fetch data dari PostgreSQL (by kode_kelas):", e)
+        logger.error("Gagal fetch data dari PostgreSQL (by kode_kelas): %s", e)
         return []
 
 def fetch_results_by_assignment_id(assignment_id):
@@ -145,5 +154,5 @@ def fetch_results_by_assignment_id(assignment_id):
                 r['similarity'] = float(r['similarity'])
             return results
     except Exception as e:
-        print(f"Gagal fetch data dari PostgreSQL (by assignment_id): {e}")
+        logger.error("Gagal fetch data dari PostgreSQL (by assignment_id): %s", e)
         return []
