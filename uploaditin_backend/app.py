@@ -868,8 +868,8 @@ def api_delete_assignment(assignment_id):
 
 @app.route('/api/results/assignment/<int:assignment_id>', methods=['GET'])
 def api_results_by_assignment(assignment_id):
-    if 'user_id' not in session:
-        return jsonify([]), 401
+    if 'user_id' not in session or session.get('role') not in ['Teacher', 'Admin']:
+        return jsonify({"error": "Unauthorized"}), 401
 
     try:
         results = fetch_results_by_assignment_id(assignment_id)
