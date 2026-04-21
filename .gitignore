@@ -9,3 +9,7 @@ tests/__pycache__/
 
 #docs
 docs
+
+#env
+.env
+.env.*
