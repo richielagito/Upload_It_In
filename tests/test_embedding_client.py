@@ -22,7 +22,6 @@ class _StatusError(Exception):
 def test_get_embeddings_success_preserves_order(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "dummy-key")
     monkeypatch.setenv("EMBEDDING_NORMALIZE", "false")
-    monkeypatch.setitem(embedding_client._client_cache, "dummy-key", None)
     embedding_client._client_cache.clear()
 
     class FakeModels:

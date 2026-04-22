@@ -5,9 +5,11 @@ import datetime
 import json
 import logging
 import os
+import pathlib
 import random
 import re
 import string
+import sys
 import tempfile
 from io import BytesIO, StringIO
 from urllib.parse import urlparse
@@ -17,52 +19,35 @@ from flask import Flask, g, jsonify, redirect, render_template, request, send_fi
 from flask_cors import CORS
 import requests
 
-try:
-    from utils.db import (
-        fetch_all_results,
-        fetch_results_by_assignment_id,
-        fetch_results_by_kelas,
-        fetch_results_by_kode_kelas,
-        get_engine,
-        simpan_ke_postgres,
-    )
-    from utils.supabase_helpers import (
-        SupabaseDownloadError,
-        SupabaseStorageError,
-        download_file,
-        get_public_path,
-        get_server_supabase_client,
-        upload_file,
-    )
-    from utils.LSA import (
-        extract_text_from_any,
-        lsa_similarity,
-    )
-    from utils.embedding_scorer import embedding_score_submission
-    from utils.feedback_generator import generate_pedagogical_feedback
-except ModuleNotFoundError:
-    from uploaditin_backend.utils.db import (
-        fetch_all_results,
-        fetch_results_by_assignment_id,
-        fetch_results_by_kelas,
-        fetch_results_by_kode_kelas,
-        get_engine,
-        simpan_ke_postgres,
-    )
-    from uploaditin_backend.utils.supabase_helpers import (
-        SupabaseDownloadError,
-        SupabaseStorageError,
-        download_file,
-        get_public_path,
-        get_server_supabase_client,
-        upload_file,
-    )
-    from uploaditin_backend.utils.LSA import (
-        extract_text_from_any,
-        lsa_similarity,
-    )
-    from uploaditin_backend.utils.embedding_scorer import embedding_score_submission
-    from uploaditin_backend.utils.feedback_generator import generate_pedagogical_feedback
+# Ensure the package's own directory is on sys.path so that `utils.*` imports
+# work both when running directly (python app.py / gunicorn app:app from within
+# uploaditin_backend/) and when imported as a sub-package from the project root.
+_here = pathlib.Path(__file__).resolve().parent
+if str(_here) not in sys.path:
+    sys.path.insert(0, str(_here))
+
+from utils.db import (
+    fetch_all_results,
+    fetch_results_by_assignment_id,
+    fetch_results_by_kelas,
+    fetch_results_by_kode_kelas,
+    get_engine,
+    simpan_ke_postgres,
+)
+from utils.supabase_helpers import (
+    SupabaseDownloadError,
+    SupabaseStorageError,
+    download_file,
+    get_public_path,
+    get_server_supabase_client,
+    upload_file,
+)
+from utils.LSA import (
+    extract_text_from_any,
+    lsa_similarity,
+)
+from utils.embedding_scorer import embedding_score_submission
+from utils.feedback_generator import generate_pedagogical_feedback
 from sqlalchemy import text
 
 load_dotenv()
