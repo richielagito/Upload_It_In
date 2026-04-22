@@ -1,27 +1,27 @@
 # docker-compose.yml
+# Development: Only backend runs in Docker.
+# Frontend runs locally with `npm run dev` for instant hot reload.
+
 services:
   backend:
     build:
       context: ./uploaditin_backend
     ports:
       - "5000:5000"
-    env_file: .env
+    env_file:
+      - ./uploaditin_backend/.env
+    environment:
+      - PORT=5000
     volumes:
       - ./uploaditin_backend/uploads:/app/uploads
       - ./uploaditin_backend/data:/app/data
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/login_register')\""]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
-  frontend:
-    build:
-      context: ./uploaditin_v2
-    ports:
-      - "3000:3000"
-    env_file: .env
-    depends_on:
-      backend:
-        condition: service_healthy
+  # frontend:
+  #   build:
+  #     context: ./uploaditin_v2
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - BACKEND_URL=http://backend:5000
+  #   depends_on:
+  #     - backend

@@ -1,5 +1,5 @@
-#tests folder
-tests
+#tests folder cache
+tests/__pycache__/
 
 #sisyphus
 .sisyphus
@@ -9,3 +9,7 @@ tests
 
 #docs
 docs
+
+#env
+.env
+.env.*

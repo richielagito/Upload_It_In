@@ -35,8 +35,9 @@ def test_happy_path(client, tmp_file, make_fake_db, patch_upload_and_download, p
     saved = capture_simpan['args'][0]
     assert isinstance(saved, list) and len(saved) == 1
     item = saved[0]
-    for key in ['name', 'similarity', 'grade', 'user_id', 'kelas_id', 'assignment_id', 'file_path']:
+    for key in ['name', 'similarity', 'grade', 'user_id', 'kelas_id', 'assignment_id', 'file_path', 'feedback']:
         assert key in item
+    assert item['feedback'] == "Mocked pedagogical feedback"
 
 
 def test_storage_download_failure(client, tmp_file, make_fake_db, patch_upload_and_download, patch_extract_text_and_score, monkeypatch):

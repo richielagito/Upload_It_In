@@ -146,4 +146,9 @@ def lsa_similarity(guru_text, siswa_text):
     avg_similarity = (total_similarity / jumlah_soal) if jumlah_soal > 0 else 0
     skor_akhir = round(avg_similarity * 100)  
 
-    return avg_similarity, skor_akhir
+    per_question = [
+        {"question": int(q) if q.isdigit() else q, "similarity": sim, "grade": round(sim * 100)}
+        for q, sim in results.items()
+    ]
+
+    return avg_similarity, skor_akhir, per_question

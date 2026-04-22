@@ -29,6 +29,55 @@ export default function ClassDetailsTeacher() {
   const [isEditClassOpen, setIsEditClassOpen] = useState(false);
   const [editClassName, setEditClassName] = useState('');
 
+  // Review Modal State
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewingResult, setReviewingResult] = useState(null);
+  const [reviewForm, setReviewReviewForm] = useState({
+      grade: 0,
+      feedback: '',
+      sub_criteria_scores: []
+  });
+
+  const handleOpenReview = (res) => {
+      setReviewingResult(res);
+      setReviewReviewForm({
+          grade: res.nilai || res.grade || 0,
+          feedback: res.feedback || '',
+          sub_criteria_scores: res.sub_criteria_scores || []
+      });
+      setIsReviewOpen(true);
+  };
+
+  const handleSaveReview = async (status = 'published') => {
+      setSubmitting(true);
+      try {
+          const res = await fetch('/api/results/override', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  id: reviewingResult.id,
+                  grade: reviewForm.grade,
+                  feedback: reviewForm.feedback,
+                  sub_criteria_scores: reviewForm.sub_criteria_scores,
+                  status: status
+              })
+          });
+
+          if (res.ok) {
+              toast.success(status === 'published' ? 'Result published!' : 'Draft saved!');
+              setIsReviewOpen(false);
+              fetchResults(selectedAssignmentId);
+          } else {
+              toast.error('Failed to save changes');
+          }
+      } catch (e) {
+          console.error(e);
+          toast.error('Error saving review');
+      } finally {
+          setSubmitting(false);
+      }
+  };
+
   // Form State
   const [newAssignment, setNewAssignment] = useState({
       judul: '',
@@ -338,23 +387,40 @@ export default function ClassDetailsTeacher() {
                                             <tr key={res.id || idx} className="hover:bg-slate-50 transition-colors">
                                                 <td className="px-6 py-4 font-medium text-slate-900">{res.nama_murid || res.name}</td>
                                                 <td className="px-6 py-4">
-                                                    <span className={cn(
-                                                        "px-2 py-1 rounded text-xs font-bold",
-                                                        parseFloat(res.nilai) >= 80 ? "bg-green-100 text-green-700" :
-                                                        parseFloat(res.nilai) >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
-                                                    )}>
-                                                        {res.nilai || res.grade}
-                                                    </span>
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className={cn(
+                                                            "px-2 py-1 rounded text-xs font-bold w-fit",
+                                                            parseFloat(res.nilai) >= 80 ? "bg-green-100 text-green-700" :
+                                                            parseFloat(res.nilai) >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                                                        )}>
+                                                            {res.nilai || res.grade}
+                                                        </span>
+                                                        <span className={cn(
+                                                            "text-[10px] uppercase tracking-wider font-bold",
+                                                            res.status === 'published' ? "text-green-500" : "text-amber-500"
+                                                        )}>
+                                                            {res.status || 'draft'}
+                                                        </span>
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-slate-600 text-sm">{res.similarity || '-'}</td>
                                                 <td className="px-6 py-4">
-                                                     <button 
-                                                        onClick={() => handleDeleteResult(res.id)}
-                                                        className="p-2 text-slate-400 cursor-pointer hover:text-red-600 transition-colors"
-                                                        title="Delete Submission"
-                                                     >
-                                                         <Trash2 size={16} />
-                                                     </button>
+                                                     <div className="flex items-center gap-1">
+                                                        <button 
+                                                            onClick={() => handleOpenReview(res)}
+                                                            className="p-2 text-blue-600 cursor-pointer hover:bg-blue-50 rounded-lg transition-colors"
+                                                            title="Review & Override"
+                                                        >
+                                                            <Edit size={16} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDeleteResult(res.id)}
+                                                            className="p-2 text-slate-400 cursor-pointer hover:text-red-600 rounded-lg transition-colors"
+                                                            title="Delete Submission"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                     </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -466,6 +532,104 @@ export default function ClassDetailsTeacher() {
                      </form>
                  </div>
              </div>
+        )}
+
+        {/* Manual Review Modal */}
+        {isReviewOpen && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <div>
+                            <h3 className="text-xl text-slate-800 font-bold">Manual Review: {reviewingResult?.nama_murid || reviewingResult?.name}</h3>
+                            <p className="text-sm text-slate-500">Assignment: {assignments.find(a => a.id === selectedAssignmentId)?.judul}</p>
+                        </div>
+                        <button onClick={() => setIsReviewOpen(false)}><X size={24} className="text-slate-400 cursor-pointer hover:text-slate-600" /></button>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {/* Overall Score */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                                <label className="block text-blue-800 text-sm font-bold mb-2 uppercase tracking-wider">Final Score</label>
+                                <div className="flex items-center gap-4">
+                                    <input 
+                                        type="number" 
+                                        min="0" max="100" 
+                                        value={reviewForm.grade} 
+                                        onChange={e => setReviewReviewForm({...reviewForm, grade: parseInt(e.target.value) || 0})}
+                                        className="w-24 text-2xl font-bold bg-white border border-blue-200 rounded-lg px-3 py-2 text-blue-700 focus:ring-4 focus:ring-blue-500/10 outline-none"
+                                    />
+                                    <div className="text-slate-400 font-medium">/ 100</div>
+                                </div>
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-center">
+                                <div className="text-center">
+                                    <div className="text-xs text-slate-500 font-bold uppercase mb-1">AI Similarity</div>
+                                    <div className="text-2xl font-mono font-bold text-slate-700">{(reviewingResult?.similarity * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sub-criteria Scores */}
+                        {reviewForm.sub_criteria_scores && reviewForm.sub_criteria_scores.length > 0 && (
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                    <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
+                                    Per-Question Scores
+                                </h4>
+                                <div className="space-y-3">
+                                    {reviewForm.sub_criteria_scores.map((sub, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl hover:border-blue-200 transition-colors">
+                                            <span className="text-slate-600 font-medium text-sm">Question {sub.question}</span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-[10px] text-slate-400 font-mono">Sim: {(sub.similarity * 100).toFixed(0)}%</div>
+                                                <input 
+                                                    type="number"
+                                                    value={sub.grade}
+                                                    onChange={e => {
+                                                        const newScores = [...reviewForm.sub_criteria_scores];
+                                                        newScores[idx].grade = parseInt(e.target.value) || 0;
+                                                        setReviewReviewForm({...reviewForm, sub_criteria_scores: newScores});
+                                                    }}
+                                                    className="w-16 text-right border border-slate-200 text-slate-600 rounded-lg px-2 py-1 text-sm font-bold focus:border-blue-500 outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Overall Feedback */}
+                        <div>
+                            <label className="block text-slate-700 text-sm font-bold mb-2 uppercase tracking-wider">Overall Feedback</label>
+                            <textarea 
+                                value={reviewForm.feedback}
+                                onChange={e => setReviewReviewForm({...reviewForm, feedback: e.target.value})}
+                                placeholder="Add comments for the student..."
+                                className="w-full border border-slate-200 text-slate-600 rounded-xl px-4 py-3 min-h-[120px] focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-3">
+                        <button 
+                            disabled={submitting}
+                            onClick={() => handleSaveReview('draft')}
+                            className="flex-1 py-3 px-4 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all disabled:opacity-50"
+                        >
+                            Save as Draft
+                        </button>
+                        <button 
+                            disabled={submitting}
+                            onClick={() => handleSaveReview('published')}
+                            className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
+                        >
+                            {submitting ? 'Processing...' : 'Publish to Student'}
+                        </button>
+                    </div>
+                </div>
+            </div>
         )}
     </DashboardShell>
   );

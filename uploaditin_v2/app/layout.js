@@ -6,7 +6,7 @@ import { Toaster } from "sonner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "UploadItIn - AI Essay Grader",
+  title: "Scova - AI Essay Grader",
   description: "Revolutionize the way you grade essays with AI.",
 };
 
