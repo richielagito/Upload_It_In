@@ -236,7 +236,10 @@ export default function ClassDetailsStudent() {
                             setViewMode('list');
                             setStagedFile(null);
                         }}
-                        onStage={() => document.getElementById(`file-stage-input`)?.click()}
+                        onStage={(val) => {
+                            if (val === null) setStagedFile(null);
+                            else document.getElementById(`file-stage-input`)?.click();
+                        }}
                         onTurnIn={handleTurnIn}
                         isDeadlineOpen={activeAssignment.deadline ? new Date() < new Date(activeAssignment.deadline.replace(' ', 'T')) : true}
                     />

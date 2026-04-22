@@ -65,20 +65,20 @@ export default function FeedbackPanel({
             </div>
 
             {/* Right: Grade Overview */}
-            <div className="w-full lg:w-80 grid grid-cols-1 gap-4">
-              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 text-center shadow-sm">
+            <div className="w-full lg:w-[400px] flex flex-col gap-4">
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 text-center shadow-sm flex flex-col justify-center min-h-[140px]">
                 <p className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-2">Final Score</p>
-                <p className="text-4xl font-black text-blue-900">{score}</p>
+                <p className="text-5xl font-black text-blue-900">{score}</p>
               </div>
-              <div className="flex gap-4">
-                <div className="flex-1 bg-purple-50 border border-purple-100 rounded-2xl p-4 text-center shadow-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-purple-50 border border-purple-100 rounded-2xl p-5 text-center shadow-sm flex flex-col justify-center min-h-[110px]">
                   <p className="text-purple-600 text-[10px] font-bold uppercase tracking-wider mb-1">Similarity</p>
-                  <p className="text-xl font-black text-purple-900">{similarity}</p>
+                  <p className="text-2xl font-black text-purple-900">{similarity}</p>
                 </div>
-                <div className="flex-1 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center flex flex-col items-center justify-center shadow-sm">
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 text-center flex flex-col items-center justify-center shadow-sm min-h-[110px]">
                   <p className="text-emerald-600 text-[10px] font-bold uppercase tracking-wider mb-1">Grade</p>
                   <span className={cn(
-                    "px-3 py-0.5 rounded-full text-xs font-bold",
+                    "px-4 py-1 rounded-full text-sm font-bold mt-1",
                     parseFloat(score) >= 80 ? "bg-emerald-200 text-emerald-800" :
                     parseFloat(score) >= 60 ? "bg-yellow-200 text-yellow-800" : "bg-red-200 text-red-800"
                   )}>
@@ -89,15 +89,15 @@ export default function FeedbackPanel({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
             {/* Teacher Feedback */}
-            <div className="space-y-4">
+            <div className="flex flex-col space-y-4">
               <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <FileText className="text-blue-600" size={24} />
                 Teacher&apos;s Feedback
               </h3>
               <div className={cn(
-                "rounded-2xl p-8 border italic leading-relaxed text-lg shadow-inner",
+                "flex-1 rounded-2xl p-8 border italic leading-relaxed text-lg shadow-sm flex flex-col justify-center",
                 result ? "bg-slate-50 border-slate-200 text-slate-700" : "bg-slate-50 border-slate-100 text-slate-400"
               )}>
                 &quot;{feedback}&quot;
@@ -105,14 +105,14 @@ export default function FeedbackPanel({
             </div>
 
             {/* Criteria Breakdown */}
-            <div className="space-y-4">
+            <div className="flex flex-col space-y-4">
               <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <CheckCircle className="text-emerald-600" size={24} />
                 Criteria Breakdown
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-4 flex-1">
                 {criteria.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-colors">
+                  <div key={i} className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-all duration-300">
                     <div>
                       <p className="font-bold text-slate-800 text-lg">{c.name}</p>
                       <p className="text-sm text-slate-400 font-medium tracking-wide">Weight: {c.weight}</p>
@@ -132,9 +132,9 @@ export default function FeedbackPanel({
               <Clock className={cn(stagedFile ? "text-blue-600" : "text-amber-600")} size={24} />
               Your Work
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-wrap gap-6">
               {result?.file_path && (
-                <div className="space-y-2">
+                <div className="space-y-2 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Submitted Version</p>
                   <FileCard 
                     filename={getFilenameFromUrl(result.file_path)}
@@ -144,7 +144,7 @@ export default function FeedbackPanel({
                 </div>
               )}
               {stagedFile && (
-                <div className="space-y-2">
+                <div className="space-y-2 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
                   <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest ml-1">Staged for Turn In</p>
                   <FileCard 
                     filename={stagedFile.name}
@@ -153,13 +153,15 @@ export default function FeedbackPanel({
                       const url = URL.createObjectURL(stagedFile);
                       window.open(url, '_blank');
                     }}
+                    onRemove={() => onStage(null)} // Assuming onStage handles clearing if null passed, or I'll need a clear callback
+                    onChangeFile={onStage}
                   />
                 </div>
               )}
               {!result?.file_path && !stagedFile && !isStaging && (
                 <button 
                   onClick={onStage}
-                  className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all flex flex-col items-center justify-center gap-3 group"
+                  className="w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all flex flex-col items-center justify-center gap-3 group h-[110px]"
                 >
                   <UploadCloud size={32} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
                   <p className="text-slate-400 font-bold group-hover:text-blue-600">Click to upload your work</p>
@@ -170,28 +172,23 @@ export default function FeedbackPanel({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row gap-4">
+        <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
           <button 
             onClick={onClose}
-            className="flex-1 py-4 border border-slate-200 bg-white text-slate-700 rounded-2xl font-bold hover:bg-slate-100 transition shadow-sm"
+            className="w-full md:w-auto px-8 py-4 border border-slate-200 bg-white text-slate-700 rounded-2xl font-bold hover:bg-slate-100 transition shadow-sm"
           >
             Back to List
           </button>
+          
           {isDeadlineOpen && (
-            <div className="flex-1 flex gap-4">
-              {(result || stagedFile) && (
-                <button 
-                  onClick={onStage}
-                  disabled={isStaging || isUploading}
-                  className="flex-1 py-4 border border-blue-200 bg-blue-50 text-blue-700 rounded-2xl font-bold hover:bg-blue-100 transition shadow-sm disabled:opacity-50"
-                >
-                  {result ? 'Upload New' : 'Change File'}
-                </button>
-              )}
+            <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4">
               <button 
                 onClick={onTurnIn}
                 disabled={!stagedFile || isStaging || isUploading}
-                className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-slate-400"
+                className={cn(
+                    "px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-slate-400 min-w-[200px]",
+                    !result && "px-16"
+                )}
               >
                 {isUploading ? (
                   <>
