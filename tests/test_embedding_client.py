@@ -22,6 +22,8 @@ class _StatusError(Exception):
 def test_get_embeddings_success_preserves_order(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "dummy-key")
     monkeypatch.setenv("EMBEDDING_NORMALIZE", "false")
+    monkeypatch.setitem(embedding_client._client_cache, "dummy-key", None)
+    embedding_client._client_cache.clear()
 
     class FakeModels:
         @staticmethod
@@ -51,6 +53,7 @@ def test_get_embeddings_retries_transient_429_then_succeeds(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "dummy-key")
     monkeypatch.setattr(embedding_client, "DEFAULT_MAX_ATTEMPTS", 3)
     monkeypatch.setattr(embedding_client, "DEFAULT_BACKOFF_SECONDS", 0.01)
+    embedding_client._client_cache.clear()
 
     calls = {"count": 0}
     sleeps = []

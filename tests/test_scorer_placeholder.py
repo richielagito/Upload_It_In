@@ -10,6 +10,7 @@ def test_legacy_lsa_returns_similarity_and_grade():
     os.environ.pop('SCORING_ENGINE', None)
     ref = "jawaban 1 = ini adalah jawaban guru\n"
     stu = "jawaban 1 = ini adalah jawaban murid\n"
-    avg_similarity, grade = lsa_similarity(ref, stu)
+    avg_similarity, grade, per_question = lsa_similarity(ref, stu)
     assert isinstance(avg_similarity, float)
     assert isinstance(grade, int)
+    assert isinstance(per_question, list)
