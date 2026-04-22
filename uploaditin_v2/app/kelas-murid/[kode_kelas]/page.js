@@ -141,8 +141,11 @@ export default function ClassDetailsStudent() {
     <DashboardShell role="Student" username={user?.user_metadata?.username}>
         <div className="mb-8">
             {viewMode === 'list' ? (
-                <Link href="/dashboard" className="text-slate-500 hover:text-blue-600 flex items-center gap-1 mb-4 text-sm font-medium transition-colors">
-                    <ArrowLeft size={16} /> Back to Dashboard
+                <Link href="/dashboard" className="text-slate-500 hover:text-primary flex items-center gap-2 mb-6 text-sm font-bold font-sans transition-colors group">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <ArrowLeft size={16} />
+                    </div>
+                    Back to Dashboard
                 </Link>
             ) : (
                 <button 
@@ -151,18 +154,21 @@ export default function ClassDetailsStudent() {
                         setIsEditing(false);
                         setStagedFile(null);
                     }}
-                    className="text-slate-500 hover:text-blue-600 flex items-center gap-1 mb-4 text-sm font-medium transition-colors"
+                    className="text-slate-500 hover:text-primary flex items-center gap-2 mb-6 text-sm font-bold font-sans transition-colors group"
                 >
-                    <ArrowLeft size={16} /> Back to {classInfo?.nama_kelas || 'Class'}
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <ArrowLeft size={16} />
+                    </div>
+                    Back to {classInfo?.nama_kelas || 'Class'}
                 </button>
             )}
-            <div className="flex justify-between items-start">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm shadow-primary/5">
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-slate-900 mb-1">
+                    <h1 className="text-3xl font-extrabold text-foreground mb-2 font-headline tracking-tight">
                         {viewMode === 'detail' && activeAssignment ? activeAssignment.judul : classInfo?.nama_kelas}
                     </h1>
-                    <p className="text-slate-500">
-                        {viewMode === 'detail' ? 'Assignment Details & Feedback' : 'View assignments and your grades'}
+                    <p className="text-slate-500 font-sans font-medium">
+                        {viewMode === 'detail' ? 'Assignment Details & Feedback' : 'View assignments and your performance'}
                     </p>
                 </div>
                 
@@ -171,13 +177,13 @@ export default function ClassDetailsStudent() {
                         {activeResult && !isEditing ? (
                             <>
                                 <div className="flex flex-col items-end">
-                                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Status</span>
-                                    <span className="text-sm font-bold text-slate-900">Pending Review</span>
+                                    <span className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest font-sans">Status</span>
+                                    <span className="text-sm font-extrabold text-slate-900 font-headline">Pending Review</span>
                                 </div>
                                 <div className="flex gap-2">
                                     <button 
                                         disabled
-                                        className="px-8 py-3 bg-slate-100 text-slate-400 rounded-xl font-bold cursor-not-allowed flex items-center gap-2"
+                                        className="px-8 py-3 bg-surface-low text-slate-400 rounded-2xl font-bold cursor-not-allowed flex items-center gap-2 border border-slate-100"
                                     >
                                         <CheckCircle size={18} />
                                         Turned In
@@ -185,7 +191,7 @@ export default function ClassDetailsStudent() {
                                     <button 
                                         onClick={handleUnTurnIn}
                                         disabled={!isActiveDeadlineOpen}
-                                        className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="px-6 py-3 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 hover:border-primary/20 hover:text-primary transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed font-headline"
                                     >
                                         Un Turn In
                                     </button>
@@ -196,18 +202,18 @@ export default function ClassDetailsStudent() {
                                 onClick={handleTurnIn}
                                 disabled={!stagedFile || isStaging || uploadingId === activeAssignment.id || !isActiveDeadlineOpen}
                                 className={cn(
-                                    "px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-slate-400 min-w-[160px]",
-                                    !activeResult && "px-10"
+                                    "px-10 py-4 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl font-extrabold hover:shadow-xl hover:shadow-primary/30 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:from-slate-400 disabled:to-slate-500 min-w-[180px] font-headline",
+                                    !activeResult && "px-12"
                                 )}
                             >
                                 {uploadingId === activeAssignment.id ? (
                                     <>
-                                        <Clock className="animate-spin" size={18} />
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                         Turning in...
                                     </>
                                 ) : (
                                     <>
-                                        <CheckCircle size={18} />
+                                        <CheckCircle size={20} />
                                         {activeResult ? 'Turn In Again' : 'Turn In'}
                                     </>
                                 )}
@@ -228,46 +234,46 @@ export default function ClassDetailsStudent() {
                     const isPending = ass.is_submitted && !isGraded;
 
                     return (
-                        <div key={ass.id} className="break-inside-avoid-column bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col mb-8 last:mb-0">
+                        <div key={ass.id} className="break-inside-avoid-column bg-white rounded-[2rem] border-2 border-slate-100 p-8 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all flex flex-col mb-8 last:mb-0 group">
                             <div className="flex justify-between items-start mb-4">
-                                <h3 className="text-xl font-bold text-slate-900">{ass.judul}</h3>
+                                <h3 className="text-2xl font-extrabold text-foreground font-headline group-hover:text-primary transition-colors">{ass.judul}</h3>
                             </div>
-                            <p className="text-slate-600 mb-6 text-sm leading-relaxed flex-1">{ass.deskripsi}</p>
+                            <p className="text-slate-600 mb-8 text-sm leading-relaxed flex-1 font-sans font-medium line-clamp-3">{ass.deskripsi}</p>
                             
                             {/* Grade Summary (if graded) */}
                             {isGraded && (
-                                <div className="mb-6 p-4 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between">
+                                <div className="mb-8 p-5 bg-surface-low border border-primary/10 rounded-[1.5rem] flex items-center justify-between shadow-inner">
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Score</span>
-                                        <span className="text-xl font-black text-slate-900">{result.nilai || result.grade}</span>
+                                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans mb-1">Score</span>
+                                        <span className="text-2xl font-black text-primary font-headline">{result.nilai || result.grade}</span>
                                     </div>
                                     <div className="flex flex-col items-center">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Grade</span>
+                                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center font-sans mb-1">Grade</span>
                                         <span className={cn(
-                                            "px-2 py-0.5 rounded text-xs font-bold mt-0.5",
-                                            parseFloat(result.nilai) >= 80 ? "bg-green-100 text-green-700" :
-                                            parseFloat(result.nilai) >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
+                                            "px-3 py-1 rounded-lg text-xs font-black shadow-sm",
+                                            parseFloat(result.nilai) >= 80 ? "bg-green-100 text-green-700 border border-green-200" :
+                                            parseFloat(result.nilai) >= 60 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" : "bg-red-100 text-red-700 border border-red-200"
                                         )}>
                                             {parseFloat(result.nilai) >= 80 ? 'A' : parseFloat(result.nilai) >= 60 ? 'B/C' : parseFloat(result.nilai) < 60 ? 'D/E' : '-'}
                                         </span>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Similarity</span>
-                                        <span className="text-sm font-bold text-slate-700">{result.similarity || "0%"}</span>
+                                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans mb-1">Similarity</span>
+                                        <span className="text-sm font-black text-slate-700 font-mono">{(result.similarity * 100).toFixed(0)}%</span>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="space-y-2 mb-6 text-sm text-slate-500">
-                                <div className="flex items-center gap-2">
-                                    <Clock size={16} /> 
-                                    <span className={isClosed ? "text-red-500 font-bold" : ""}>
+                            <div className="space-y-3 mb-8 text-sm font-bold font-sans uppercase tracking-widest text-slate-400">
+                                <div className="flex items-center gap-3">
+                                    <Clock size={16} className="text-primary" /> 
+                                    <span className={isClosed ? "text-red-500" : "text-slate-500"}>
                                         Deadline: {ass.deadline} {isClosed && "(Closed)"}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="border-t border-slate-150 pt-4 mt-auto">
+                            <div className="pt-6 border-t border-slate-100 mt-auto">
                                 <button 
                                     onClick={() => {
                                         setActiveAssignment(ass);
@@ -276,15 +282,22 @@ export default function ClassDetailsStudent() {
                                         setStagedFile(null);
                                         setIsEditing(false);
                                     }}
-                                    className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm"
+                                    className="w-full py-4 bg-primary text-white rounded-2xl font-extrabold hover:bg-primary-container transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 font-headline"
                                 >
-                                    <FileText size={18} /> View Detail
+                                    <FileText size={20} /> View Detail & Feedback
                                 </button>
                             </div>
                         </div>
                     );
                 })}
-                {assignments.length === 0 && <div className="col-span-full text-center py-10 text-slate-500">No assignments active.</div>}
+                {assignments.length === 0 && (
+                    <div className="col-span-full text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                        <div className="w-16 h-16 bg-surface-low rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle size={32} className="text-slate-300" />
+                        </div>
+                        <p className="text-slate-500 font-bold font-headline">No assignments active at the moment.</p>
+                    </div>
+                )}
             </div>
         ) : (
             activeAssignment && (

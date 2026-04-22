@@ -98,7 +98,7 @@ export default function LoginRegister() {
             <h2 className="text-4xl font-bold mb-4">
               {isLogin ? "Welcome Back!" : "Join Us Today"}
             </h2>
-            <p className="text-blue-100 text-lg leading-relaxed">
+            <p className="text-primary-container/80 text-lg leading-relaxed">
               {isLogin
                 ? "Log in to access your dashboard, analyze essays, and track your progress."
                 : "Create an account to start grading essays with the power of AI."}
@@ -178,7 +178,7 @@ export default function LoginRegister() {
 
             {!isLogin && (
               <div className="relative">
-                <div 
+                <div
                   className={`w-full text-left pl-12 pr-4 py-3 rounded-xl border ${isRoleDropdownOpen ? 'border-primary ring-4 ring-primary/10' : 'border-slate-200'} cursor-pointer flex items-center justify-between transition-all bg-white`}
                   onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
                 >
@@ -191,14 +191,14 @@ export default function LoginRegister() {
 
                 <AnimatePresence>
                   {isRoleDropdownOpen && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
                       className="absolute z-20 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden"
                     >
-                      <div 
+                      <div
                         className={`px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors flex items-center justify-between ${role === 'Student' ? 'bg-primary/5 text-primary font-bold' : 'text-slate-700'}`}
                         onClick={() => { setRole('Student'); setIsRoleDropdownOpen(false); }}
                       >
@@ -208,7 +208,7 @@ export default function LoginRegister() {
                         </div>
                         {role === 'Student' && <div className="w-2 h-2 rounded-full bg-primary" />}
                       </div>
-                      <div 
+                      <div
                         className={`px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors flex items-center justify-between ${role === 'Teacher' ? 'bg-primary/5 text-primary font-bold' : 'text-slate-700'}`}
                         onClick={() => { setRole('Teacher'); setIsRoleDropdownOpen(false); }}
                       >
