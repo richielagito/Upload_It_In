@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileText, UploadCloud, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { X, FileText, UploadCloud, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileCard from './FileCard';
 
@@ -94,13 +94,13 @@ export default function FeedbackPanel({
             <div className="space-y-4">
               <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                 <FileText className="text-blue-600" size={24} />
-                Teacher's Feedback
+                Teacher&apos;s Feedback
               </h3>
               <div className={cn(
                 "rounded-2xl p-8 border italic leading-relaxed text-lg shadow-inner",
                 result ? "bg-slate-50 border-slate-200 text-slate-700" : "bg-slate-50 border-slate-100 text-slate-400"
               )}>
-                "{feedback}"
+                &quot;{feedback}&quot;
               </div>
             </div>
 
