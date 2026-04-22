@@ -8,10 +8,10 @@ export default function FeedbackPanel({
   result, 
   stagedFile, 
   isStaging, 
+  isEditing,
   isUploading, 
   onClose, 
   onStage, 
-  onTurnIn, 
   isDeadlineOpen 
 }) {
   if (!assignment) return null;
@@ -38,91 +38,120 @@ export default function FeedbackPanel({
     return url.split('/').pop().split('?')[0];
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+        const parts = dateStr.includes(' ') ? dateStr.split(' ') : [dateStr];
+        const dateParts = parts[0].split('-');
+        let formattedDate = "";
+        
+        if (dateParts.length === 3) {
+            if (dateParts[0].length === 4) formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+            else formattedDate = `${dateParts[0]}/${dateParts[1]}/${dateParts[2]}`;
+        } else {
+            formattedDate = dateStr;
+        }
+
+        if (parts.length > 1) {
+            const timeParts = parts[1].split(':');
+            formattedDate += ` ${timeParts[0]}:${timeParts[1]}`;
+        }
+        
+        return formattedDate;
+    } catch (e) { return dateStr; }
+  };
+
   return (
-    <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col">
         {/* Content */}
         <div className="p-8 space-y-10">
           {/* Top Section: Assignment File & Grade Summary */}
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-10">
             {/* Left: Assignment Info & File */}
             <div className="flex-1 space-y-6">
               <div>
+                {assignment.deadline && (
+                  <div className="flex items-center gap-1.5 text-[11px] font-black text-black uppercase tracking-widest mb-2">
+                    <Clock size={12} />
+                    Due {formatDate(assignment.deadline)}
+                  </div>
+                )}
                 <h3 className="text-xl font-bold text-slate-900 mb-2">Assignment Details</h3>
                 <p className="text-slate-600 leading-relaxed">{assignment.deskripsi}</p>
               </div>
 
               {assignment.file_path && (
                 <div className="space-y-3">
-                  <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Reference Material</p>
-                  <FileCard 
-                    filename={getFilenameFromUrl(assignment.file_path)}
-                    fileUrl={assignment.file_path}
-                    onPreview={() => window.open(assignment.file_path, '_blank')}
-                  />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reference Material</p>
+                  <div className="max-w-md">
+                    <FileCard 
+                      filename={getFilenameFromUrl(assignment.file_path)}
+                      fileUrl={assignment.file_path}
+                      onPreview={() => window.open(assignment.file_path, '_blank')}
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Right: Grade Overview */}
-            <div className="w-full lg:w-[400px] flex flex-col gap-4">
-              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 text-center shadow-sm flex flex-col justify-center min-h-[140px]">
-                <p className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-2">Final Score</p>
-                <p className="text-5xl font-black text-blue-900">{score}</p>
+            {/* Right: Grade Overview - 1 Column Stack */}
+            <div className="w-full lg:w-64 flex flex-col gap-4">
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-center shadow-sm">
+                <p className="text-blue-600 text-[10px] font-bold uppercase tracking-wider mb-1">Final Score</p>
+                <p className="text-4xl font-black text-blue-900">{score}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-purple-50 border border-purple-100 rounded-2xl p-5 text-center shadow-sm flex flex-col justify-center min-h-[110px]">
-                  <p className="text-purple-600 text-[10px] font-bold uppercase tracking-wider mb-1">Similarity</p>
-                  <p className="text-2xl font-black text-purple-900">{similarity}</p>
-                </div>
-                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 text-center flex flex-col items-center justify-center shadow-sm min-h-[110px]">
-                  <p className="text-emerald-600 text-[10px] font-bold uppercase tracking-wider mb-1">Grade</p>
-                  <span className={cn(
-                    "px-4 py-1 rounded-full text-sm font-bold mt-1",
-                    parseFloat(score) >= 80 ? "bg-emerald-200 text-emerald-800" :
-                    parseFloat(score) >= 60 ? "bg-yellow-200 text-yellow-800" : "bg-red-200 text-red-800"
-                  )}>
-                    {parseFloat(score) >= 80 ? 'A' : parseFloat(score) >= 60 ? 'B/C' : parseFloat(score) < 60 ? 'D/E' : '-'}
-                  </span>
-                </div>
+              
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center flex items-center justify-between shadow-sm px-6">
+                <p className="text-emerald-600 text-[10px] font-bold uppercase tracking-wider">Grade</p>
+                <span className={cn(
+                  "px-3 py-0.5 rounded-full text-xs font-bold",
+                  parseFloat(score) >= 80 ? "bg-emerald-200 text-emerald-800" :
+                  parseFloat(score) >= 60 ? "bg-yellow-200 text-yellow-800" : "bg-red-200 text-red-800"
+                )}>
+                  {parseFloat(score) >= 80 ? 'A' : parseFloat(score) >= 60 ? 'B/C' : parseFloat(score) < 60 ? 'D/E' : '-'}
+                </span>
+              </div>
+
+              <div className="bg-purple-50 border border-purple-100 rounded-2xl p-4 text-center flex items-center justify-between shadow-sm px-6">
+                <p className="text-purple-600 text-[10px] font-bold uppercase tracking-wider">Similarity</p>
+                <p className="text-lg font-black text-purple-900">{similarity}</p>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
-            {/* Teacher Feedback */}
-            <div className="flex flex-col space-y-4">
-              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <FileText className="text-blue-600" size={24} />
-                Teacher&apos;s Feedback
-              </h3>
-              <div className={cn(
-                "flex-1 rounded-2xl p-8 border italic leading-relaxed text-lg shadow-sm flex flex-col justify-center",
-                result ? "bg-slate-50 border-slate-200 text-slate-700" : "bg-slate-50 border-slate-100 text-slate-400"
-              )}>
-                &quot;{feedback}&quot;
-              </div>
+          {/* Teacher Feedback - Full Width Row */}
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <FileText className="text-blue-600" size={24} />
+              Teacher&apos;s Feedback
+            </h3>
+            <div className={cn(
+              "w-full rounded-2xl p-8 border italic leading-relaxed text-lg shadow-sm",
+              result ? "bg-slate-50 border-slate-200 text-slate-700" : "bg-slate-50 border-slate-100 text-slate-400"
+            )}>
+              &quot;{feedback}&quot;
             </div>
+          </div>
 
-            {/* Criteria Breakdown */}
-            <div className="flex flex-col space-y-4">
-              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <CheckCircle className="text-emerald-600" size={24} />
-                Criteria Breakdown
-              </h3>
-              <div className="space-y-4 flex-1">
-                {criteria.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-all duration-300">
-                    <div>
-                      <p className="font-bold text-slate-800 text-lg">{c.name}</p>
-                      <p className="text-sm text-slate-400 font-medium tracking-wide">Weight: {c.weight}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-black text-slate-900">{c.score}</p>
-                    </div>
+          {/* Criteria Breakdown - Full Width Row */}
+          <div className="flex flex-col space-y-4">
+            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <CheckCircle className="text-emerald-600" size={24} />
+              Criteria Breakdown
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+              {criteria.map((c, i) => (
+                <div key={i} className="flex items-center justify-between p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-blue-200 transition-all duration-300">
+                  <div>
+                    <p className="font-bold text-slate-800 text-lg">{c.name}</p>
+                    <p className="text-sm text-slate-400 font-medium tracking-wide">Weight: {c.weight}</p>
                   </div>
-                ))}
-              </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-slate-900">{c.score}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -140,6 +169,8 @@ export default function FeedbackPanel({
                     filename={getFilenameFromUrl(result.file_path)}
                     fileUrl={result.file_path}
                     onPreview={() => window.open(result.file_path, '_blank')}
+                    onChangeFile={isEditing ? onStage : null}
+                    onRemove={isEditing ? () => onStage(null) : null}
                   />
                 </div>
               )}
@@ -153,57 +184,23 @@ export default function FeedbackPanel({
                       const url = URL.createObjectURL(stagedFile);
                       window.open(url, '_blank');
                     }}
-                    onRemove={() => onStage(null)} // Assuming onStage handles clearing if null passed, or I'll need a clear callback
+                    onRemove={() => onStage(null)}
                     onChangeFile={onStage}
                   />
                 </div>
               )}
-              {!result?.file_path && !stagedFile && !isStaging && (
+              {(!result || isEditing) && !stagedFile && !isStaging && (
                 <button 
                   onClick={onStage}
-                  className="w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all flex flex-col items-center justify-center gap-3 group h-[110px]"
+                  disabled={!isDeadlineOpen}
+                  className="flex items-center gap-2 px-6 py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-blue-400 hover:bg-blue-50/30 hover:text-blue-600 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <UploadCloud size={32} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
-                  <p className="text-slate-400 font-bold group-hover:text-blue-600">Click to upload your work</p>
+                  <UploadCloud size={24} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                  Attach File
                 </button>
               )}
             </div>
           </div>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
-          <button 
-            onClick={onClose}
-            className="w-full md:w-auto px-8 py-4 border border-slate-200 bg-white text-slate-700 rounded-2xl font-bold hover:bg-slate-100 transition shadow-sm"
-          >
-            Back to List
-          </button>
-          
-          {isDeadlineOpen && (
-            <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4">
-              <button 
-                onClick={onTurnIn}
-                disabled={!stagedFile || isStaging || isUploading}
-                className={cn(
-                    "px-12 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-slate-400 min-w-[200px]",
-                    !result && "px-16"
-                )}
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin" />
-                    Turning in...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={20} />
-                    {result ? 'Turn In Again' : 'Turn In'}
-                  </>
-                )}
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

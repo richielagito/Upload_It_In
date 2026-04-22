@@ -28,6 +28,7 @@ export default function ClassDetailsStudent() {
   const [activeResult, setActiveResult] = useState(null);
   const [stagedFile, setStagedFile] = useState(null);
   const [isStaging, setIsStaging] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -76,7 +77,7 @@ export default function ClassDetailsStudent() {
   };
 
   const handleStageFile = async (e, assignmentId) => {
-      const file = e.target.files?.[0];
+      const file = e.target?.files?.[0];
       if (!file) return;
 
       setIsStaging(true);
@@ -87,6 +88,11 @@ export default function ClassDetailsStudent() {
           setIsStaging(false);
           toast.info(`${file.name} is ready to turn in.`);
       }, 1500);
+  };
+
+  const handleUnTurnIn = () => {
+      setIsEditing(true);
+      toast.info("You can now change your submission.");
   };
 
   const handleTurnIn = async () => {
@@ -105,6 +111,7 @@ export default function ClassDetailsStudent() {
           if (res.ok && data.success) {
               toast.success('Assignment turned in successfully!');
               setStagedFile(null);
+              setIsEditing(false);
               await Promise.all([fetchAssignments(), fetchMyResults()]);
               
               // Find the new result to update the view
@@ -127,6 +134,9 @@ export default function ClassDetailsStudent() {
 
   if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
 
+  const activeDeadlineDate = activeAssignment?.deadline ? new Date(activeAssignment.deadline.replace(' ', 'T')) : null;
+  const isActiveDeadlineOpen = !activeDeadlineDate || new Date() < activeDeadlineDate;
+
   return (
     <DashboardShell role="Student" username={user?.user_metadata?.username}>
         <div className="mb-8">
@@ -136,18 +146,76 @@ export default function ClassDetailsStudent() {
                 </Link>
             ) : (
                 <button 
-                    onClick={() => setViewMode('list')}
+                    onClick={() => {
+                        setViewMode('list');
+                        setIsEditing(false);
+                        setStagedFile(null);
+                    }}
                     className="text-slate-500 hover:text-blue-600 flex items-center gap-1 mb-4 text-sm font-medium transition-colors"
                 >
                     <ArrowLeft size={16} /> Back to {classInfo?.nama_kelas || 'Class'}
                 </button>
             )}
-            <h1 className="text-3xl font-bold text-slate-900 mb-1">
-                {viewMode === 'detail' && activeAssignment ? activeAssignment.judul : classInfo?.nama_kelas}
-            </h1>
-            <p className="text-slate-500">
-                {viewMode === 'detail' ? 'Assignment Details & Feedback' : 'View assignments and your grades'}
-            </p>
+            <div className="flex justify-between items-start">
+                <div className="flex-1">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-1">
+                        {viewMode === 'detail' && activeAssignment ? activeAssignment.judul : classInfo?.nama_kelas}
+                    </h1>
+                    <p className="text-slate-500">
+                        {viewMode === 'detail' ? 'Assignment Details & Feedback' : 'View assignments and your grades'}
+                    </p>
+                </div>
+                
+                {viewMode === 'detail' && activeAssignment && (
+                    <div className="flex items-center gap-4">
+                        {activeResult && !isEditing ? (
+                            <>
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Status</span>
+                                    <span className="text-sm font-bold text-slate-900">Pending Review</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button 
+                                        disabled
+                                        className="px-8 py-3 bg-slate-100 text-slate-400 rounded-xl font-bold cursor-not-allowed flex items-center gap-2"
+                                    >
+                                        <CheckCircle size={18} />
+                                        Turned In
+                                    </button>
+                                    <button 
+                                        onClick={handleUnTurnIn}
+                                        disabled={!isActiveDeadlineOpen}
+                                        className="px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Un Turn In
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <button 
+                                onClick={handleTurnIn}
+                                disabled={!stagedFile || isStaging || uploadingId === activeAssignment.id || !isActiveDeadlineOpen}
+                                className={cn(
+                                    "px-8 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-slate-400 min-w-[160px]",
+                                    !activeResult && "px-10"
+                                )}
+                            >
+                                {uploadingId === activeAssignment.id ? (
+                                    <>
+                                        <Clock className="animate-spin" size={18} />
+                                        Turning in...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle size={18} />
+                                        {activeResult ? 'Turn In Again' : 'Turn In'}
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
 
         {viewMode === 'list' ? (
@@ -206,6 +274,7 @@ export default function ClassDetailsStudent() {
                                         setActiveResult(result);
                                         setViewMode('detail');
                                         setStagedFile(null);
+                                        setIsEditing(false);
                                     }}
                                     className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm"
                                 >
@@ -231,17 +300,18 @@ export default function ClassDetailsStudent() {
                         result={activeResult}
                         stagedFile={stagedFile}
                         isStaging={isStaging}
+                        isEditing={isEditing}
                         isUploading={uploadingId === activeAssignment.id}
                         onClose={() => {
                             setViewMode('list');
                             setStagedFile(null);
+                            setIsEditing(false);
                         }}
                         onStage={(val) => {
                             if (val === null) setStagedFile(null);
                             else document.getElementById(`file-stage-input`)?.click();
                         }}
-                        onTurnIn={handleTurnIn}
-                        isDeadlineOpen={activeAssignment.deadline ? new Date() < new Date(activeAssignment.deadline.replace(' ', 'T')) : true}
+                        isDeadlineOpen={isActiveDeadlineOpen}
                     />
                 </>
             )
