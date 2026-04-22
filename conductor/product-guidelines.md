@@ -7,6 +7,7 @@
 
 ## Design & UX
 - **Aesthetic:** Minimalist. Prioritize clean layouts with significant whitespace to minimize distractions and focus on the content (essays and feedback).
+- **Theme:** Professional Unified Blue. Rely on the primary color system (`--primary`, `--primary-container`) for all interactive elements, logos, and state indicators to ensure a cohesive and trustworthy brand identity.
 - **Navigation:** Intuitive and straightforward, ensuring teachers and students can complete their primary workflows with minimal clicks.
 - **Accessibility:** Follow standard accessibility best practices to ensure the platform is usable across common devices and browsers.
 
