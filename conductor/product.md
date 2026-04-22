@@ -18,5 +18,6 @@ While the Google Gemini embedding model drives the primary grading engine via se
 
 ## Value Proposition
 - **Efficiency:** Drastically cuts down the time teachers spend grading essays.
+- **Immersive Student Experience:** A focused, full-page assignment detail view with interactive file cards for a more professional and streamlined workflow.
 - **Flexibility:** Supports multiple file formats and Indonesian language nuances.
 - **Scalability:** Built on a containerized, decoupled architecture (Next.js & Flask) with a reliable Supabase backend.
