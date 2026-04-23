@@ -39,6 +39,7 @@ from utils.LSA import (
 )
 from utils.embedding_scorer import embedding_score_submission
 from utils.feedback_generator import generate_pedagogical_feedback
+from utils.highlight_helper import extract_highlights
 from sqlalchemy import text
 
 load_dotenv()
@@ -976,7 +977,9 @@ def api_upload_student_answer(assignment_id):
         try:
             feedback_data = generate_pedagogical_feedback(guru_text, murid_text, grade)
             feedback = feedback_data.get("feedback", "Gagal menghasilkan feedback otomatis.")
-            highlights = feedback_data.get("highlights", [])
+            raw_highlights = feedback_data.get("highlights", [])
+            # Extract actual spans in student text
+            highlights = extract_highlights(murid_text, raw_highlights)
         except Exception:
             logger.exception("Feedback generation failed")
             feedback = "Gagal menghasilkan feedback otomatis."
