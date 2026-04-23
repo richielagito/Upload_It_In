@@ -48,3 +48,30 @@ h1, h2, h3, h4, h5, h6 {
 .animate-loading-bar {
   animation: loading-bar 1.5s infinite linear;
 }
+
+/* Essay Highlights */
+.hl {
+  border-radius: 4px;
+  padding: 2px 0;
+  cursor: help;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.hl-strong {
+  background-color: rgba(34, 197, 94, 0.2);
+  border-bottom: 2px solid rgba(34, 197, 94, 0.4);
+}
+
+.hl-strong:hover {
+  background-color: rgba(34, 197, 94, 0.3);
+}
+
+.hl-weak {
+  background-color: rgba(239, 68, 68, 0.2);
+  border-bottom: 2px solid rgba(239, 68, 68, 0.4);
+}
+
+.hl-weak:hover {
+  background-color: rgba(239, 68, 68, 0.3);
+}

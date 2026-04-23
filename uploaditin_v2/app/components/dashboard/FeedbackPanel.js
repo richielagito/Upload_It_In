@@ -1,6 +1,6 @@
 import React from 'react';
-import { X, FileText, UploadCloud, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { X, FileText, UploadCloud, CheckCircle, Clock, AlertCircle, Loader2, BookOpen } from 'lucide-react';
+import { cn, renderHighlightedEssay } from '@/lib/utils';
 import FileCard from './FileCard';
 
 export default function FeedbackPanel({ 
@@ -136,6 +136,32 @@ export default function FeedbackPanel({
               &quot;{feedback}&quot;
             </div>
           </div>
+
+          {/* Essay Analysis - Highlighted Text */}
+          {result?.essay_text && (
+            <div className="flex flex-col space-y-4">
+              <h3 className="text-xl font-extrabold text-foreground flex items-center gap-3 font-headline">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                      <BookOpen size={20} />
+                  </div>
+                Essay Analysis
+              </h3>
+              <div className="w-full rounded-3xl p-8 bg-white border-2 border-slate-100 shadow-sm font-sans text-lg leading-relaxed text-slate-700 whitespace-pre-wrap">
+                {renderHighlightedEssay(result.essay_text, result.highlights)}
+              </div>
+              <div className="flex gap-4 px-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500/30 border border-green-500/50"></div>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Strengths</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500/30 border border-red-500/50"></div>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Improvements</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-medium italic ml-auto">* Hover over highlights to see detailed feedback</span>
+              </div>
+            </div>
+          )}
 
           {/* Criteria Breakdown - Full Width Row */}
           <div className="flex flex-col space-y-4">
