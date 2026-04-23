@@ -974,10 +974,13 @@ def api_upload_student_answer(assignment_id):
 
         # Generate Pedagogical Feedback using Gemini
         try:
-            feedback = generate_pedagogical_feedback(guru_text, murid_text, grade)
+            feedback_data = generate_pedagogical_feedback(guru_text, murid_text, grade)
+            feedback = feedback_data.get("feedback", "Gagal menghasilkan feedback otomatis.")
+            highlights = feedback_data.get("highlights", [])
         except Exception:
             logger.exception("Feedback generation failed")
             feedback = "Gagal menghasilkan feedback otomatis."
+            highlights = []
 
     result_to_save = {
         "name": nama_user,
@@ -989,7 +992,8 @@ def api_upload_student_answer(assignment_id):
         "file_path": murid_url,
         "status": "draft",
         "feedback": feedback,
-        "sub_criteria_scores": sub_criteria_scores
+        "sub_criteria_scores": sub_criteria_scores,
+        "highlights": highlights
     }
 
     try:

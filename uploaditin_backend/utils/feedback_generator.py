@@ -1,5 +1,7 @@
 import os
 import logging
+import json
+import re
 from google import genai
 
 logger = logging.getLogger(__name__)
@@ -9,7 +11,7 @@ DEFAULT_MODEL = "gemini-3.1-flash-lite-preview"
 def _create_genai_client(api_key: str):
     return genai.Client(api_key=api_key)
 
-def generate_pedagogical_feedback(teacher_answer: str, student_answer: str, score: int) -> str:
+def generate_pedagogical_feedback(teacher_answer: str, student_answer: str, score: int) -> dict:
     """Generate pedagogical feedback using Gemini.
     
     Args:
@@ -18,7 +20,7 @@ def generate_pedagogical_feedback(teacher_answer: str, student_answer: str, scor
         score: The calculated similarity score (0-100).
         
     Returns:
-        A string containing the feedback in Indonesian.
+        A dictionary containing the feedback and highlights.
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -38,23 +40,58 @@ def generate_pedagogical_feedback(teacher_answer: str, student_answer: str, scor
     Calculated Similarity Score: {score}/100
     
     Instructions:
-    1. Start with a positive opening that acknowledges the student's effort.
-    2. Identify specific strengths in the student's answer (what they got right or expressed well).
-    3. Identify specific areas for improvement, referring to the teacher's reference answer for missing key points or concepts.
-    4. Provide actionable advice on how the student can improve their writing or understanding.
-    5. Maintain a supportive, pedagogical tone. Use "you" to address the student directly.
-    6. Keep the feedback concise but meaningful (around 100-150 words).
-    7. Language: Indonesian.
+    1. Identify specific strengths and areas for improvement.
+    2. Extract exact quotes from the student's answer for highlighting.
+    3. Categorize highlights as "strong" (good points) or "weak" (errors or needs improvement).
+    4. "missing" points (things the student forgot but are in the teacher's answer) should be mentioned in the general feedback, NOT as highlights.
+    5. Maintain a supportive, pedagogical tone in Indonesian.
+    6. Return the response strictly in JSON format.
     
-    Feedback:
+    Output Format:
+    {{
+        "feedback": "Your general feedback string here...",
+        "highlights": [
+            {{
+                "quote": "exact quote from student answer",
+                "category": "strong" or "weak",
+                "reason": "short explanation"
+            }}
+        ]
+    }}
+    
+    Feedback (JSON):
     """
     
     try:
         response = client.models.generate_content(
             model=DEFAULT_MODEL,
-            contents=prompt
+            contents=prompt,
+            config={
+                'response_mime_type': 'application/json'
+            }
         )
-        return response.text
+        
+        # Parse response text
+        text = response.text
+        # Cleanup potential markdown code blocks
+        if "```json" in text:
+            text = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL).group(1)
+        elif "```" in text:
+            text = re.search(r"```\s*(.*?)\s*```", text, re.DOTALL).group(1)
+            
+        data = json.loads(text)
+        
+        # Ensure required keys exist
+        if "feedback" not in data:
+            data["feedback"] = "Bagus! Teruskan belajarmu."
+        if "highlights" not in data or not isinstance(data["highlights"], list):
+            data["highlights"] = []
+            
+        return data
+        
     except Exception as e:
         logger.error(f"Error generating feedback: {e}")
-        return "Maaf, terjadi kesalahan saat menghasilkan feedback otomatis."
+        return {
+            "feedback": "Maaf, terjadi kesalahan saat menghasilkan feedback otomatis.",
+            "highlights": []
+        }

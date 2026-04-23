@@ -202,6 +202,6 @@ def patch_extract_text_and_score(monkeypatch):
     
     # Mock feedback generator to avoid real API calls during tests
     monkeypatch.setattr(app_module, 'generate_pedagogical_feedback', 
-                       lambda t, s, sc: "Mocked pedagogical feedback")
+                       lambda t, s, sc: {"feedback": "Mocked pedagogical feedback", "highlights": []})
     
     return calls

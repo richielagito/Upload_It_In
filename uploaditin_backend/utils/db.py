@@ -48,9 +48,9 @@ def simpan_ke_postgres(results):
                 conn.execute(
                     text("""
                         INSERT INTO hasil_penilaian
-                            (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores)
+                            (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores, highlights)
                         VALUES
-                            (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores)
+                            (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores, :highlights)
                         ON CONFLICT (user_id, assignment_id)
                         DO UPDATE SET
                             nama_murid  = EXCLUDED.nama_murid,
@@ -60,6 +60,7 @@ def simpan_ke_postgres(results):
                             status      = EXCLUDED.status,
                             feedback    = EXCLUDED.feedback,
                             sub_criteria_scores = EXCLUDED.sub_criteria_scores,
+                            highlights  = EXCLUDED.highlights,
                             updated_at  = NOW()
                     """),
                     {
@@ -73,6 +74,7 @@ def simpan_ke_postgres(results):
                         "status": r.get("status", "draft"),
                         "feedback": r.get("feedback"),
                         "sub_criteria_scores": json.dumps(r.get("sub_criteria_scores")) if r.get("sub_criteria_scores") else None,
+                        "highlights": json.dumps(r.get("highlights")) if r.get("highlights") else None,
                     },
                 )
     except Exception:
@@ -94,6 +96,11 @@ def fetch_all_results(user_id, status=None):
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
+                if r.get("highlights") and isinstance(r["highlights"], str):
+                    try:
+                        r["highlights"] = json.loads(r["highlights"])
+                    except Exception:
+                        pass
             return results
     except Exception:
         logger.exception("Gagal fetch data dari PostgreSQL")
@@ -113,6 +120,11 @@ def fetch_results_by_kelas(kelas_id, status=None):
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
+                if r.get("highlights") and isinstance(r["highlights"], str):
+                    try:
+                        r["highlights"] = json.loads(r["highlights"])
+                    except Exception:
+                        pass
             return results
     except Exception:
         logger.exception("Gagal fetch data dari PostgreSQL (by kelas)")
@@ -151,6 +163,11 @@ def fetch_results_by_kode_kelas(kode_kelas, user_id, status=None):
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
+                if r.get("highlights") and isinstance(r["highlights"], str):
+                    try:
+                        r["highlights"] = json.loads(r["highlights"])
+                    except Exception:
+                        pass
             return results
     except Exception:
         logger.exception("Gagal fetch data dari PostgreSQL (by kode_kelas)")
@@ -161,7 +178,7 @@ def fetch_results_by_assignment_id(assignment_id, status=None):
     try:
         with get_engine().connect() as conn:
             query = """
-                SELECT id, nama_murid, similarity, nilai, status, feedback, sub_criteria_scores, created_at
+                SELECT id, nama_murid, similarity, nilai, status, feedback, sub_criteria_scores, highlights, created_at
                 FROM public.hasil_penilaian
                 WHERE assignment_id = :assignment_id
             """
@@ -178,6 +195,11 @@ def fetch_results_by_assignment_id(assignment_id, status=None):
                 if r.get("sub_criteria_scores") and isinstance(r["sub_criteria_scores"], str):
                     try:
                         r["sub_criteria_scores"] = json.loads(r["sub_criteria_scores"])
+                    except Exception:
+                        pass
+                if r.get("highlights") and isinstance(r["highlights"], str):
+                    try:
+                        r["highlights"] = json.loads(r["highlights"])
                     except Exception:
                         pass
             return results
