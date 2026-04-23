@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Essay Grader — Manual Review Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a18; font-size: 14px; }
+
+  .topbar { background: #fff; border-bottom: 1px solid #e8e6df; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar-title { font-size: 15px; font-weight: 600; color: #1a1a18; }
+  .topbar-sub { font-size: 12px; color: #888; margin-top: 1px; }
+  .topbar-right { display: flex; gap: 8px; }
+  .btn { padding: 7px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; border: none; font-weight: 500; }
+  .btn-ghost { background: transparent; border: 1px solid #d4d2c8; color: #444; }
+  .btn-ghost:hover { background: #f0ede6; }
+  .btn-primary { background: #1a1a18; color: #fff; }
+  .btn-primary:hover { background: #333; }
+  .btn-success { background: #1D9E75; color: #fff; }
+  .btn-success:hover { background: #158f68; }
+
+  .layout { display: grid; grid-template-columns: 1fr 320px; height: calc(100vh - 57px); overflow: hidden; }
+
+  .essay-panel { padding: 24px; overflow-y: auto; background: #fff; border-right: 1px solid #e8e6df; }
+  .essay-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .student-info { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #E1F5EE; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #0F6E56; }
+  .student-name { font-size: 14px; font-weight: 600; }
+  .student-meta { font-size: 12px; color: #888; }
+  .nav-btns { display: flex; gap: 6px; }
+  .nav-btn { padding: 5px 10px; border: 1px solid #d4d2c8; border-radius: 6px; background: #fff; cursor: pointer; font-size: 12px; color: #555; }
+  .nav-btn:hover { background: #f5f5f0; }
+
+  .essay-question { background: #f5f5f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #555; line-height: 1.6; border-left: 3px solid #888; }
+  .essay-question strong { color: #1a1a18; display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .essay-body { font-size: 14px; line-height: 1.85; color: #1a1a18; }
+  .essay-body p { margin-bottom: 14px; }
+
+  .highlight { border-radius: 3px; padding: 1px 2px; cursor: pointer; position: relative; }
+  .hl-good { background: #d4f0e4; border-bottom: 2px solid #1D9E75; }
+  .hl-weak { background: #fde8d8; border-bottom: 2px solid #D85A30; }
+  .hl-neutral { background: #e8e6ff; border-bottom: 2px solid #7F77DD; }
+
+  .tooltip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1a1a18; color: #fff; font-size: 12px; padding: 6px 10px; border-radius: 6px; white-space: nowrap; z-index: 100; pointer-events: none; }
+  .highlight:hover .tooltip { display: block; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 20px; padding: 10px 14px; background: #f9f8f4; border-radius: 8px; border: 1px solid #e8e6df; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
+  .legend-dot { width: 12px; height: 8px; border-radius: 2px; }
+
+  .sidebar { padding: 20px; overflow-y: auto; background: #fafaf7; }
+  .sidebar-section { margin-bottom: 20px; }
+  .sidebar-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+
+  .score-main { text-align: center; padding: 16px; background: #fff; border: 1px solid #e8e6df; border-radius: 12px; margin-bottom: 16px; }
+  .score-big { font-size: 42px; font-weight: 700; color: #1D9E75; line-height: 1; }
+  .score-denom { font-size: 16px; color: #aaa; font-weight: 400; }
+  .score-label { font-size: 12px; color: #888; margin-top: 4px; }
+  .score-ai-badge { display: inline-block; background: #E1F5EE; color: #0F6E56; font-size: 11px; padding: 2px 8px; border-radius: 20px; margin-top: 6px; }
+
+  .aspect-list { display: flex; flex-direction: column; gap: 8px; }
+  .aspect-item { background: #fff; border: 1px solid #e8e6df; border-radius: 8px; padding: 10px 12px; }
+  .aspect-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .aspect-name { font-size: 13px; font-weight: 500; }
+  .aspect-score { font-size: 13px; font-weight: 600; }
+  .aspect-bar-bg { height: 4px; background: #f0ede6; border-radius: 2px; overflow: hidden; }
+  .aspect-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+  .aspect-note { font-size: 11px; color: #888; margin-top: 5px; }
+
+  .override-section { background: #fff; border: 1px solid #e8e6df; border-radius: 10px; padding: 14px; }
+  .override-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .override-name { font-size: 13px; }
+  .override-input { width: 64px; padding: 5px 8px; border: 1px solid #d4d2c8; border-radius: 6px; font-size: 13px; text-align: center; font-weight: 600; }
+  .override-input:focus { outline: none; border-color: #7F77DD; }
+  .override-divider { border: none; border-top: 1px solid #f0ede6; margin: 10px 0; }
+
+  .comment-box { width: 100%; border: 1px solid #d4d2c8; border-radius: 8px; padding: 10px; font-size: 13px; font-family: inherit; resize: vertical; min-height: 80px; background: #fff; color: #1a1a18; }
+  .comment-box:focus { outline: none; border-color: #7F77DD; }
+  .comment-box::placeholder { color: #bbb; }
+
+  .ai-summary { background: #f0eeff; border-radius: 8px; padding: 12px; border: 1px solid #d4cffa; font-size: 13px; color: #3C3489; line-height: 1.6; }
+  .ai-summary strong { display: block; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #7F77DD; }
+
+  .mode-toggle { display: flex; gap: 6px; margin-bottom: 16px; background: #f0ede6; border-radius: 8px; padding: 4px; }
+  .mode-btn { flex: 1; padding: 6px; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; background: transparent; color: #666; font-weight: 500; transition: all 0.15s; }
+  .mode-btn.active { background: #fff; color: #1a1a18; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .pill-good { background: #E1F5EE; color: #0F6E56; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .pill-weak { background: #FAECE7; color: #993C1D; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Manual Review — UTS Bahasa Indonesia</div>
+    <div class="topbar-sub">Kelas XII IPA 2 &nbsp;·&nbsp; 28 siswa &nbsp;·&nbsp; 14 sudah di-review</div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-ghost">Lewati</button>
+    <button class="btn btn-success" onclick="alert('Nilai disimpan dan dikirim ke siswa!')">Approve & Kirim ke Siswa</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="essay-panel">
+    <div class="essay-panel-header">
+      <div class="student-info">
+        <div class="avatar">AR</div>
+        <div>
+          <div class="student-name">Andi Ramadhan</div>
+          <div class="student-meta">Siswa #15 dari 28 &nbsp;·&nbsp; Dikumpulkan 2 jam lalu</div>
+        </div>
+      </div>
+      <div class="nav-btns">
+        <button class="nav-btn">← Sebelumnya</button>
+        <button class="nav-btn">Berikutnya →</button>
+      </div>
+    </div>
+
+    <div class="essay-question">
+      <strong>Soal Essay</strong>
+      Jelaskan dampak revolusi industri 4.0 terhadap dunia ketenagakerjaan di Indonesia, serta bagaimana strategi yang tepat untuk menghadapinya. Berikan argumen yang didukung dengan contoh konkret.
+    </div>
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" onclick="setMode('highlight')">Tampilan highlight</button>
+      <button class="mode-btn" onclick="setMode('plain')">Tampilan biasa</button>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#d4f0e4;border-bottom:2px solid #1D9E75;"></div> Argumen kuat</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fde8d8;border-bottom:2px solid #D85A30;"></div> Perlu perbaikan</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e8e6ff;border-bottom:2px solid #7F77DD;"></div> Klaim tanpa bukti</div>
+    </div>
+
+    <div id="essay-highlight" class="tab-content active">
+      <div class="essay-body">
+        <p>Revolusi industri 4.0 membawa perubahan besar dalam berbagai sektor kehidupan, termasuk dunia ketenagakerjaan. <span class="highlight hl-weak">Di Indonesia, dampak ini sangat terasa karena banyak pekerjaan yang mulai digantikan oleh mesin dan teknologi canggih.<span class="tooltip">Klaim terlalu umum — butuh data/contoh spesifik</span></span> Hal ini tentu menimbulkan kekhawatiran tersendiri bagi masyarakat yang menggantungkan hidupnya pada sektor-sektor tradisional.</p>
+
+        <p><span class="highlight hl-good">Salah satu contoh nyata adalah di sektor manufaktur, di mana penggunaan robot otomatis di pabrik-pabrik tekstil di Jawa Barat telah mengurangi kebutuhan tenaga kerja manual hingga 30-40% dalam lima tahun terakhir.<span class="tooltip">Contoh konkret dengan data — sangat baik</span></span> Fenomena ini menunjukkan bahwa ancaman pengangguran struktural akibat otomasi bukan lagi sekadar wacana, melainkan realita yang sudah terjadi.</p>
+
+        <p>Namun di sisi lain, <span class="highlight hl-good">revolusi industri 4.0 juga membuka lapangan kerja baru yang sebelumnya tidak ada, seperti data scientist, UI/UX designer, digital marketer, dan content creator.<span class="tooltip">Menyebut jenis pekerjaan baru — relevan dan spesifik</span></span> <span class="highlight hl-neutral">Pekerjaan-pekerjaan ini membutuhkan keterampilan digital yang tinggi, yang sayangnya belum merata dimiliki oleh seluruh angkatan kerja Indonesia.<span class="tooltip">Perlu bukti: data kesenjangan literasi digital</span></span></p>
+
+        <p>Untuk menghadapi tantangan ini, <span class="highlight hl-good">pemerintah perlu memperkuat program reskilling dan upskilling melalui kolaborasi dengan industri, seperti program Kartu Prakerja yang telah membantu jutaan pekerja terdampak pandemi mendapatkan keterampilan baru.<span class="tooltip">Referensi kebijakan nyata — menunjukkan pemahaman konteks</span></span></p>
+
+        <p><span class="highlight hl-weak">Selain itu, dunia pendidikan juga harus berbenah agar lulusan siap menghadapi era digital.<span class="tooltip">Terlalu generik — tidak ada solusi konkret yang dijelaskan</span></span> Kurikulum sekolah dan universitas perlu diperbarui agar relevan dengan kebutuhan industri masa kini. <span class="highlight hl-neutral">Dengan langkah-langkah tersebut, Indonesia dapat bertransformasi menjadi negara yang adaptif dan kompetitif di era revolusi industri 4.0.<span class="tooltip">Kesimpulan kurang spesifik — tidak terikat argumen sebelumnya</span></span></p>
+      </div>
+    </div>
+
+    <div id="essay-plain" class="tab-content">
+      <div class="essay-body">
+        <p>Revolusi industri 4.0 membawa perubahan besar dalam berbagai sektor kehidupan, termasuk dunia ketenagakerjaan. Di Indonesia, dampak ini sangat terasa karena banyak pekerjaan yang mulai digantikan oleh mesin dan teknologi canggih. Hal ini tentu menimbulkan kekhawatiran tersendiri bagi masyarakat yang menggantungkan hidupnya pada sektor-sektor tradisional.</p>
+        <p>Salah satu contoh nyata adalah di sektor manufaktur, di mana penggunaan robot otomatis di pabrik-pabrik tekstil di Jawa Barat telah mengurangi kebutuhan tenaga kerja manual hingga 30-40% dalam lima tahun terakhir. Fenomena ini menunjukkan bahwa ancaman pengangguran struktural akibat otomasi bukan lagi sekadar wacana, melainkan realita yang sudah terjadi.</p>
+        <p>Namun di sisi lain, revolusi industri 4.0 juga membuka lapangan kerja baru yang sebelumnya tidak ada, seperti data scientist, UI/UX designer, digital marketer, dan content creator. Pekerjaan-pekerjaan ini membutuhkan keterampilan digital yang tinggi, yang sayangnya belum merata dimiliki oleh seluruh angkatan kerja Indonesia.</p>
+        <p>Untuk menghadapi tantangan ini, pemerintah perlu memperkuat program reskilling dan upskilling melalui kolaborasi dengan industri, seperti program Kartu Prakerja yang telah membantu jutaan pekerja terdampak pandemi mendapatkan keterampilan baru.</p>
+        <p>Selain itu, dunia pendidikan juga harus berbenah agar lulusan siap menghadapi era digital. Kurikulum sekolah dan universitas perlu diperbarui agar relevan dengan kebutuhan industri masa kini. Dengan langkah-langkah tersebut, Indonesia dapat bertransformasi menjadi negara yang adaptif dan kompetitif di era revolusi industri 4.0.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="score-main">
+        <div class="score-big">78<span class="score-denom">/100</span></div>
+        <div class="score-label">Skor AI</div>
+        <div><span class="score-ai-badge">Gemini Embedding 2</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Breakdown per aspek</div>
+      <div class="aspect-list">
+        <div class="aspect-item">
+          <div class="aspect-top">
+            <span class="aspect-name">Relevansi argumen</span>
+            <span class="aspect-score" style="color:#1D9E75;">22/25</span>
+          </div>
+          <div class="aspect-bar-bg"><div class="aspect-bar-fill" style="width:88%;background:#1D9E75;"></div></div>
+          <div class="aspect-note">Argumen utama sesuai pertanyaan</div>
+        </div>
+        <div class="aspect-item">
+          <div class="aspect-top">
+            <span class="aspect-name">Bukti & contoh</span>
+            <span class="aspect-score" style="color:#D85A30;">18/25</span>
+          </div>
+          <div class="aspect-bar-bg"><div class="aspect-bar-fill" style="width:72%;background:#D85A30;"></div></div>
+          <div class="aspect-note">Beberapa klaim tanpa data pendukung</div>
+        </div>
+        <div class="aspect-item">
+          <div class="aspect-top">
+            <span class="aspect-name">Struktur & koherensi</span>
+            <span class="aspect-score" style="color:#BA7517;">20/25</span>
+          </div>
+          <div class="aspect-bar-bg"><div class="aspect-bar-fill" style="width:80%;background:#BA7517;"></div></div>
+          <div class="aspect-note">Kesimpulan kurang terikat argumen</div>
+        </div>
+        <div class="aspect-item">
+          <div class="aspect-top">
+            <span class="aspect-name">Kualitas bahasa</span>
+            <span class="aspect-score" style="color:#1D9E75;">18/25</span>
+          </div>
+          <div class="aspect-bar-bg"><div class="aspect-bar-fill" style="width:72%;background:#1D9E75;"></div></div>
+          <div class="aspect-note">Diksi baik, tata bahasa bersih</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">AI Summary</div>
+      <div class="ai-summary">
+        <strong>Ringkasan otomatis</strong>
+        Esai menunjukkan pemahaman yang baik tentang dampak otomasi. Kekuatan utama ada pada contoh konkret di sektor manufaktur dan referensi kebijakan Kartu Prakerja. Area yang perlu diperkuat: solusi di bidang pendidikan terlalu generik dan kesimpulan tidak terikat langsung dengan argumen sebelumnya.
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Override skor (opsional)</div>
+      <div class="override-section">
+        <div class="override-row">
+          <span class="override-name">Relevansi argumen</span>
+          <input class="override-input" type="number" value="22" min="0" max="25">
+        </div>
+        <div class="override-row">
+          <span class="override-name">Bukti & contoh</span>
+          <input class="override-input" type="number" value="18" min="0" max="25">
+        </div>
+        <div class="override-row">
+          <span class="override-name">Struktur</span>
+          <input class="override-input" type="number" value="20" min="0" max="25">
+        </div>
+        <div class="override-row">
+          <span class="override-name">Kualitas bahasa</span>
+          <input class="override-input" type="number" value="18" min="0" max="25">
+        </div>
+        <hr class="override-divider">
+        <div class="override-row">
+          <span class="override-name" style="font-weight:600;">Total</span>
+          <span style="font-size:16px;font-weight:700;color:#1D9E75;">78/100</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Komentar tambahan ke siswa</div>
+      <textarea class="comment-box" placeholder="Tambahkan catatan personal untuk siswa ini...">Andi, esaimu menunjukkan pemahaman yang solid. Coba perkuat bagian solusi pendidikan dengan contoh program konkret seperti SMK berbasis industri atau bootcamp coding.</textarea>
+    </div>
+  </div>
+</div>
+
+<script>
+function setMode(mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('essay-' + mode).classList.add('active');
+}
+</script>
+</body>
+</html>

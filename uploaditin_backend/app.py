@@ -996,7 +996,8 @@ def api_upload_student_answer(assignment_id):
         "status": "draft",
         "feedback": feedback,
         "sub_criteria_scores": sub_criteria_scores,
-        "highlights": highlights
+        "highlights": highlights,
+        "essay_text": murid_text
     }
 
     try:
