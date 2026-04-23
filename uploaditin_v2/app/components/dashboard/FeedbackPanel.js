@@ -226,7 +226,7 @@ export default function FeedbackPanel({
                 <button 
                   onClick={onStage}
                   disabled={!isDeadlineOpen}
-                  className="flex flex-col items-center justify-center gap-3 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] h-32 border-3 border-dashed border-slate-100 rounded-[2rem] text-slate-400 font-extrabold hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all group disabled:opacity-50 disabled:cursor-not-allowed font-headline"
+                  className="flex flex-col items-center justify-center gap-3 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] h-32 border-3 border-dashed border-slate-100 rounded-4xl text-slate-400 font-extrabold hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all group disabled:opacity-50 disabled:cursor-not-allowed font-headline"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-surface-low flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
                     <UploadCloud size={28} className="transition-transform group-hover:scale-110" />
