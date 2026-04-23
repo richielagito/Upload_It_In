@@ -13,7 +13,7 @@
 
 ## Feedback Principles
 - **Depth:** Actionable. Automated feedback must go beyond a simple score.
-- **Structure:** Provide specific tips and guidance on how a student can improve their essay. Feedback should highlight both strengths and areas for improvement, linked directly to the semantic analysis performed by the embedding and LSA models.
+- **Structure:** Provide specific tips and guidance on how a student can improve their essay. Feedback should highlight both strengths and areas for improvement using **visual text highlighting**, linked directly to the AI analysis.
 
 ## Branding
 - **Name:** SCOVA (The primary brand name for the platform).
