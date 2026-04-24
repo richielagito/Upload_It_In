@@ -79,28 +79,34 @@ h1, h2, h3, h4, h5, h6 {
 .hl::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: 125%;
+  bottom: 100%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(-10px);
   background-color: #1e293b;
   color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
   font-family: var(--font-sans);
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.5;
   width: max-content;
-  max-width: 250px;
-  z-index: 100;
+  max-width: 300px;
+  z-index: 9999;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s, visibility 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  border: 1px solid rgba(255,255,255,0.1);
+  text-align: left;
+  white-space: normal;
 }
 
 .hl:hover::after {
   opacity: 1;
   visibility: visible;
+  transform: translateX(-50%) translateY(-15px);
 }
+
 
