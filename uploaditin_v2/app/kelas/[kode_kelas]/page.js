@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import DashboardShell from '@/app/components/dashboard/DashboardShell';
+import ManualReview from '@/app/components/dashboard/ManualReview';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import Swal from 'sweetalert2';
@@ -48,7 +49,7 @@ export default function ClassDetailsTeacher() {
       setIsReviewOpen(true);
   };
 
-  const handleSaveReview = async (status = 'published') => {
+  const handleSaveReview = async (formData, status = 'published') => {
       setSubmitting(true);
       try {
           const res = await fetch('/api/results/override', {
@@ -56,9 +57,9 @@ export default function ClassDetailsTeacher() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                   id: reviewingResult.id,
-                  grade: reviewForm.grade,
-                  feedback: reviewForm.feedback,
-                  sub_criteria_scores: reviewForm.sub_criteria_scores,
+                  grade: formData.grade,
+                  feedback: formData.feedback,
+                  sub_criteria_scores: formData.sub_criteria_scores,
                   status: status
               })
           });
@@ -588,114 +589,17 @@ export default function ClassDetailsTeacher() {
              </div>
         )}
 
-        {/* Manual Review Modal */}
+        {/* Manual Review Overlay - Full screen implementation */}
         {isReviewOpen && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-md">
-                <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col border border-slate-100">
-                    <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-surface-low/30">
-                        <div>
-                            <h3 className="text-2xl text-foreground font-extrabold font-headline tracking-tight">{reviewingResult?.nama_murid || reviewingResult?.name}</h3>
-                            <p className="text-sm text-slate-500 font-sans font-medium flex items-center gap-2 mt-1">
-                                <FileText size={16} className="text-primary" />
-                                {assignments.find(a => a.id === selectedAssignmentId)?.judul}
-                            </p>
-                        </div>
-                        <button onClick={() => setIsReviewOpen(false)} className="w-12 h-12 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all">
-                            <X size={28} className="cursor-pointer" />
-                        </button>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                        {/* Overall Score */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-primary/5 p-6 rounded-3xl border border-primary/10 shadow-sm">
-                                <label className="block text-primary text-[10px] font-extrabold mb-3 uppercase tracking-[0.2em] font-sans">Final Score</label>
-                                <div className="flex items-center gap-4">
-                                    <input 
-                                        type="number" 
-                                        min="0" max="100" 
-                                        value={reviewForm.grade} 
-                                        onChange={e => setReviewReviewForm({...reviewForm, grade: parseInt(e.target.value) || 0})}
-                                        className="w-28 text-4xl font-extrabold bg-white border-2 border-primary/20 rounded-2xl px-4 py-3 text-primary focus:ring-8 focus:ring-primary/10 focus:border-primary outline-none transition-all shadow-inner"
-                                    />
-                                    <div className="text-slate-400 font-extrabold text-xl font-headline">/ 100</div>
-                                </div>
-                            </div>
-                            <div className="bg-surface-low/50 p-6 rounded-3xl border border-slate-100 flex items-center justify-center">
-                                <div className="text-center">
-                                    <div className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mb-2 font-sans">AI Similarity</div>
-                                    <div className="text-4xl font-mono font-extrabold text-foreground tracking-tight">{(reviewingResult?.similarity * 100).toFixed(1)}<span className="text-primary text-2xl">%</span></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Sub-criteria Scores */}
-                        {reviewForm.sub_criteria_scores && reviewForm.sub_criteria_scores.length > 0 && (
-                            <div>
-                                <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-3 font-sans">
-                                    <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                                    Detailed Question Analysis
-                                </h4>
-                                <div className="space-y-3">
-                                    {reviewForm.sub_criteria_scores.map((sub, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 bg-white border-2 border-slate-50 rounded-2xl hover:border-primary/20 transition-all group">
-                                            <span className="text-slate-700 font-bold font-headline">Question {sub.question}</span>
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex flex-col items-end">
-                                                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Similarity</div>
-                                                    <div className="text-xs text-primary font-mono font-bold">{(sub.similarity * 100).toFixed(0)}%</div>
-                                                </div>
-                                                <input 
-                                                    type="number"
-                                                    value={sub.grade}
-                                                    onChange={e => {
-                                                        const newScores = [...reviewForm.sub_criteria_scores];
-                                                        newScores[idx].grade = parseInt(e.target.value) || 0;
-                                                        setReviewReviewForm({...reviewForm, sub_criteria_scores: newScores});
-                                                    }}
-                                                    className="w-20 text-right border-2 border-slate-100 text-primary rounded-xl px-3 py-2 text-base font-extrabold focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all shadow-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Overall Feedback */}
-                        <div>
-                            <label className="block text-slate-700 text-[10px] font-extrabold mb-3 uppercase tracking-[0.2em] font-sans">Teacher Feedback & Guidance</label>
-                            <textarea 
-                                value={reviewForm.feedback}
-                                onChange={e => setReviewReviewForm({...reviewForm, feedback: e.target.value})}
-                                placeholder="Add professional feedback for the student..."
-                                className="w-full border-2 border-slate-100 text-slate-600 rounded-3xl px-6 py-5 min-h-[160px] focus:border-primary focus:ring-8 focus:ring-primary/5 outline-none transition-all font-sans font-medium text-base shadow-sm"
-                            ></textarea>
-                        </div>
-                    </div>
-
-                    <div className="p-8 border-t border-slate-100 bg-surface-low/30 flex flex-col sm:flex-row gap-4">
-                        <button 
-                            disabled={submitting}
-                            onClick={() => handleSaveReview('draft')}
-                            className="flex-1 py-4 px-6 bg-white border-2 border-slate-100 text-slate-700 rounded-2xl font-bold font-headline hover:bg-slate-50 hover:border-slate-200 transition-all disabled:opacity-50"
-                        >
-                            Save as Draft
-                        </button>
-                        <button 
-                            disabled={submitting}
-                            onClick={() => handleSaveReview('published')}
-                            className="flex-1 py-4 px-6 bg-primary text-white rounded-2xl font-bold font-headline hover:bg-primary-container shadow-xl shadow-primary/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                            {submitting ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <>Publish Result <ArrowRight size={20} /></>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <ManualReview 
+                result={reviewingResult}
+                assignment={{
+                    ...assignments.find(a => a.id === selectedAssignmentId),
+                    class_name: classInfo?.nama_kelas
+                }}
+                onClose={() => setIsReviewOpen(false)}
+                onSave={handleSaveReview}
+            />
         )}
     </DashboardShell>
   );

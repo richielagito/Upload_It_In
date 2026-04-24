@@ -75,3 +75,32 @@ h1, h2, h3, h4, h5, h6 {
 .hl-weak:hover {
   background-color: rgba(239, 68, 68, 0.3);
 }
+
+.hl::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1e293b;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  width: max-content;
+  max-width: 250px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.hl:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
