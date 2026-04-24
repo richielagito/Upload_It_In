@@ -98,7 +98,7 @@ export default function LoginRegister() {
             <h2 className="text-4xl font-bold mb-4">
               {isLogin ? "Welcome Back!" : "Join Us Today"}
             </h2>
-            <p className="text-primary-container/80 text-lg leading-relaxed">
+            <p className="text-slate-200/80 text-lg leading-relaxed">
               {isLogin
                 ? "Log in to access your dashboard, analyze essays, and track your progress."
                 : "Create an account to start grading essays with the power of AI."}
