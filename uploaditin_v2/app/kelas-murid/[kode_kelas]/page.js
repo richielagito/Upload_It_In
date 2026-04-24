@@ -107,8 +107,15 @@ export default function ClassDetailsStudent() {
               method: 'POST',
               body: formData
           });
-          const data = await res.json();
-          if (res.ok && data.success) {
+          
+          let data;
+          try {
+              data = await res.json();
+          } catch (e) {
+              throw new Error(`Server returned an invalid response (Status: ${res.status}). This usually means the request timed out because the AI took too long to respond.`);
+          }
+          
+          if (res.ok && data?.success) {
               toast.success('Assignment turned in successfully!');
               setStagedFile(null);
               setIsEditing(false);
@@ -126,7 +133,7 @@ export default function ClassDetailsStudent() {
           }
       } catch (err) {
           console.error(err);
-          toast.error('An unexpected error occurred during turn in');
+          toast.error(err.message || 'An unexpected error occurred during turn in');
       } finally {
           setUploadingId(null);
       }

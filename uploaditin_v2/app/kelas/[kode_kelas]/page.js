@@ -485,6 +485,7 @@ export default function ClassDetailsTeacher() {
                     )}
                 </div>
             </div>
+            </div>
         )}
 
         {/* Add Assignment Modal */}
