@@ -315,8 +315,19 @@ export default function ClassDetailsTeacher() {
             </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Assignments List */}
+        {isReviewOpen ? (
+            <ManualReview 
+                result={reviewingResult}
+                assignment={{
+                    ...assignments.find(a => a.id === selectedAssignmentId),
+                    class_name: classInfo?.nama_kelas
+                }}
+                onClose={() => setIsReviewOpen(false)}
+                onSave={handleSaveReview}
+            />
+        ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+                {/* Assignments List */}
             <div className="lg:col-span-1 space-y-6">
                 <div className="flex items-center justify-between px-2">
                     <h3 className="text-xl font-extrabold text-foreground font-headline">Assignments</h3>
@@ -474,7 +485,7 @@ export default function ClassDetailsTeacher() {
                     )}
                 </div>
             </div>
-        </div>
+        )}
 
         {/* Add Assignment Modal */}
         {isAddAssignmentOpen && (
@@ -589,18 +600,6 @@ export default function ClassDetailsTeacher() {
              </div>
         )}
 
-        {/* Manual Review Overlay - Full screen implementation */}
-        {isReviewOpen && (
-            <ManualReview 
-                result={reviewingResult}
-                assignment={{
-                    ...assignments.find(a => a.id === selectedAssignmentId),
-                    class_name: classInfo?.nama_kelas
-                }}
-                onClose={() => setIsReviewOpen(false)}
-                onSave={handleSaveReview}
-            />
-        )}
     </DashboardShell>
   );
 }

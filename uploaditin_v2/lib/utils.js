@@ -36,7 +36,7 @@ export function renderHighlightedEssay(text, highlights) {
       <mark 
         key={`hl-${index}`} 
         className={className} 
-        title={h.reason}
+        data-tooltip={h.reason}
       >
         {highlightText}
       </mark>

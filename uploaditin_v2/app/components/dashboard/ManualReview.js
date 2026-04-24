@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { X, ArrowLeft, ArrowRight, ChevronDown, Check, Info, FileText, BookOpen, Clock, Download, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, renderHighlightedEssay } from '@/lib/utils';
+import FileCard from './FileCard';
 
 export default function ManualReview({ result, assignment, onClose, onSave }) {
   const [viewMode, setViewMode] = useState('highlight'); // 'highlight' or 'plain'
@@ -21,18 +22,25 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
 
   const similarity = result?.similarity ? (result.similarity * 100).toFixed(1) : "0";
 
+  const getFilenameFromUrl = (url) => {
+    if (!url) return "";
+    return url.split('/').pop().split('?')[0];
+  };
+
   return (
-    <div className="fixed inset-0 bg-[#f5f5f0] z-[100] flex flex-col font-sans text-[#1a1a18] animate-in fade-in duration-300">
+    <div className="w-full bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500 overflow-hidden">
       {/* Topbar */}
-      <div className="bg-white border-b border-[#e8e6df] px-6 py-3 flex items-center justify-between">
+      <div className="bg-surface-low border-b border-slate-200 px-8 py-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
-            <button onClick={onClose} className="w-9 h-9 rounded-full hover:bg-[#f0ede6] flex items-center justify-center transition-colors border border-transparent hover:border-[#d4d2c8]">
-                <ArrowLeft size={18} className="text-[#444]" />
+            <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-white hover:bg-slate-50 flex items-center justify-center transition-all border border-slate-100 shadow-sm">
+                <ArrowLeft size={20} className="text-slate-600" />
             </button>
             <div>
-              <div className="text-[15px] font-semibold text-[#1a1a18]">Manual Review — {assignment?.judul}</div>
-              <div className="text-[11px] text-[#888] font-medium mt-0.5">
-                {assignment?.class_name || 'Class Review'} &middot; {result?.nama_murid || result?.name}
+              <h2 className="text-xl font-extrabold text-foreground font-headline tracking-tight">Manual Review — {assignment?.judul}</h2>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
+                <span className="text-primary">{assignment?.class_name}</span>
+                <span className="text-slate-300">&bull;</span>
+                <span>{result?.nama_murid || result?.name}</span>
               </div>
             </div>
         </div>
@@ -40,139 +48,184 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
           <button 
             disabled={isSubmitting}
             onClick={() => handleSave('draft')} 
-            className="px-5 py-2 border border-[#d4d2c8] text-[#444] text-[13px] font-medium rounded-lg hover:bg-[#f0ede6] transition-all disabled:opacity-50"
+            className="px-6 py-3 bg-white border-2 border-slate-100 text-slate-600 text-sm font-bold rounded-2xl hover:bg-slate-50 hover:border-primary/20 hover:text-primary transition-all disabled:opacity-50 font-headline"
           >
-            Skip / Draft
+            Save as Draft
           </button>
           <button 
             disabled={isSubmitting}
             onClick={() => handleSave('published')}
-            className="px-6 py-2 bg-[#1D9E75] text-white text-[13px] font-medium rounded-lg hover:bg-[#158f68] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+            className="px-8 py-3 bg-primary text-white text-sm font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20 flex items-center gap-2 disabled:opacity-50 font-headline"
           >
             {isSubmitting ? (
-                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-                <Check size={16} />
+                <Check size={18} />
             )}
-            Approve & Kirim ke Siswa
+            Approve & Publish
           </button>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-col lg:flex-row min-h-[700px]">
         {/* Main Essay Panel */}
-        <div className="flex-1 bg-white border-r border-[#e8e6df] overflow-y-auto">
-           <div className="max-w-4xl mx-auto p-10">
-                {/* Header & Nav */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-[#E1F5EE] text-[#0F6E56] flex items-center justify-center font-bold text-[13px]">
+        <div className="flex-1 bg-white border-r border-slate-100 overflow-y-auto">
+           <div className="p-8 lg:p-10 space-y-10">
+                {/* Header Info */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-2xl bg-primary/5 text-primary flex items-center justify-center font-black text-xl border-2 border-primary/10">
                             {result?.nama_murid?.charAt(0) || result?.name?.charAt(0) || 'S'}
                         </div>
                         <div>
-                            <div className="text-[14px] font-semibold text-[#1a1a18]">{result?.nama_murid || result?.name}</div>
-                            <div className="text-[12px] text-[#888] font-medium">Submitted {result?.created_at}</div>
+                            <div className="text-lg font-extrabold text-foreground font-headline tracking-tight">{result?.nama_murid || result?.name}</div>
+                            <div className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2 mt-1">
+                                <Clock size={12} />
+                                Submitted {result?.created_at}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Question Box */}
-                <div className="bg-[#f5f5f0] border-l-4 border-[#888] rounded-lg p-5 mb-8">
-                    <div className="text-[11px] font-bold text-[#1a1a18] uppercase tracking-wider mb-2">Soal Essay</div>
-                    <p className="text-[13px] text-[#555] leading-relaxed font-medium">
-                        {assignment?.deskripsi}
-                    </p>
-                </div>
+                {/* Assignment Context */}
+                <div className="space-y-6">
+                    <div className="bg-surface-low/50 border-2 border-slate-50 rounded-3xl p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-6 -mt-6 transition-transform group-hover:scale-110 duration-500"></div>
+                        <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 flex items-center gap-2 relative z-10">
+                            <Info size={14} />
+                            Assignment Description
+                        </div>
+                        <p className="text-slate-600 leading-relaxed font-sans font-medium relative z-10 italic">
+                            &quot;{assignment?.deskripsi}&quot;
+                        </p>
+                    </div>
 
-                {/* View Toggles */}
-                <div className="flex bg-[#f0ede6] p-1 rounded-lg w-fit mb-6">
-                    <button 
-                        onClick={() => setViewMode('highlight')}
-                        className={cn(
-                            "px-4 py-1.5 text-[12px] font-medium rounded-md transition-all",
-                            viewMode === 'highlight' ? "bg-white text-[#1a1a18] shadow-sm" : "text-[#666] hover:text-[#1a1a18]"
-                        )}
-                    >
-                        Tampilan Highlight
-                    </button>
-                    <button 
-                        onClick={() => setViewMode('plain')}
-                        className={cn(
-                            "px-4 py-1.5 text-[12px] font-medium rounded-md transition-all",
-                            viewMode === 'plain' ? "bg-white text-[#1a1a18] shadow-sm" : "text-[#666] hover:text-[#1a1a18]"
-                        )}
-                    >
-                        Tampilan Biasa
-                    </button>
-                </div>
-
-                {/* Legend (only in highlight mode) */}
-                <AnimatePresence>
-                    {viewMode === 'highlight' && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="flex flex-wrap gap-5 mb-8 p-3.5 bg-[#f9f8f4] rounded-lg border border-[#e8e6df] w-fit shadow-sm"
-                        >
-                            <div className="flex items-center gap-2 text-[12px] font-medium text-[#666]">
-                                <div className="w-3 h-2 rounded bg-[#d4f0e4] border-b-2 border-[#1D9E75]"></div>
-                                Argumen Kuat
-                            </div>
-                            <div className="flex items-center gap-2 text-[12px] font-medium text-[#666]">
-                                <div className="w-3 h-2 rounded bg-[#fde8d8] border-b-2 border-[#D85A30]"></div>
-                                Perlu Perbaikan
-                            </div>
-                            <div className="flex items-center gap-2 text-[12px] font-medium text-[#666]">
-                                <div className="w-3 h-2 rounded bg-[#e8e6ff] border-b-2 border-[#7F77DD]"></div>
-                                Klaim Tanpa Bukti
-                            </div>
-                        </motion.div>
+                    {/* Assignment Files */}
+                    {assignment?.file_path && (
+                        <div className="px-2">
+                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <FileText size={12} />
+                                Assignment Materials
+                             </div>
+                             <div className="max-w-md">
+                                <FileCard 
+                                    filename={getFilenameFromUrl(assignment.file_path)}
+                                    fileUrl={assignment.file_path}
+                                    onPreview={() => window.open(assignment.file_path, '_blank')}
+                                />
+                             </div>
+                        </div>
                     )}
-                </AnimatePresence>
+                </div>
 
-                {/* Essay Content */}
-                <div className="max-w-3xl mx-auto">
-                    <div className={cn(
-                        "text-[#1a1a18] leading-[1.85] font-serif text-[16px] transition-all",
-                    )}>
-                        {viewMode === 'plain' ? (
-                            <div className="whitespace-pre-wrap">{result?.essay_text || "No essay text available."}</div>
-                        ) : (
-                            <div className="whitespace-pre-wrap">
-                                {renderHighlightedEssay(result?.essay_text, result?.highlights)}
-                            </div>
+                {/* View Controls */}
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex bg-surface-low p-1.5 rounded-2xl w-fit">
+                            <button 
+                                onClick={() => setViewMode('highlight')}
+                                className={cn(
+                                    "px-6 py-2.5 text-xs font-bold rounded-xl transition-all font-headline",
+                                    viewMode === 'highlight' ? "bg-white text-primary shadow-md border border-slate-100" : "text-slate-500 hover:text-slate-800"
+                                )}
+                            >
+                                Highlight View
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('plain')}
+                                className={cn(
+                                    "px-6 py-2.5 text-xs font-bold rounded-xl transition-all font-headline",
+                                    viewMode === 'plain' ? "bg-white text-primary shadow-md border border-slate-100" : "text-slate-500 hover:text-slate-800"
+                                )}
+                            >
+                                Plain Text
+                            </button>
+                        </div>
+
+                        {viewMode === 'highlight' && (
+                             <div className="flex items-center gap-6 px-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100 border-dashed">
+                                <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                    <div className="w-3 h-3 rounded-full bg-green-500/30 border border-green-500/50"></div>
+                                    Strengths
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                    <div className="w-3 h-3 rounded-full bg-red-500/30 border border-red-500/50"></div>
+                                    Improvements
+                                </div>
+                             </div>
                         )}
+                    </div>
+
+                    {/* Essay Content */}
+                    <div className="relative">
+                        <div className={cn(
+                            "w-full rounded-3xl p-10 bg-white border-2 border-slate-100 shadow-sm font-sans text-lg leading-relaxed text-slate-700 transition-all min-h-[400px]",
+                        )}>
+                            {viewMode === 'plain' ? (
+                                <div className="whitespace-pre-wrap">{result?.essay_text || "No essay text available."}</div>
+                            ) : (
+                                <div className="whitespace-pre-wrap">
+                                    {renderHighlightedEssay(result?.essay_text, result?.highlights)}
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                            <span className="text-[10px] text-slate-400 font-medium italic">* Hover over highlights to see AI rationale</span>
+                        </div>
                     </div>
                 </div>
            </div>
         </div>
 
         {/* Sidebar Panel */}
-        <div className="w-[360px] bg-[#fafaf7] overflow-y-auto flex flex-col">
-            <div className="p-6 space-y-8 flex-1">
+        <div className="w-full lg:w-[400px] bg-slate-50/30 overflow-y-auto">
+            <div className="p-8 space-y-10">
                 {/* Score Section */}
-                <div className="bg-white border border-[#e8e6df] rounded-2xl p-6 shadow-sm text-center">
-                    <div className="text-[42px] font-bold text-[#1D9E75] leading-none mb-1">
-                        {reviewForm.grade}<span className="text-[#aaa] text-[16px] font-normal">/100</span>
+                <div className="bg-white border-2 border-slate-100 rounded-[2rem] p-8 shadow-sm text-center relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-125 duration-700"></div>
+                    <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 font-sans relative z-10">AI Predicted Score</div>
+                    <div className="text-6xl font-black text-primary font-headline tracking-tighter relative z-10">
+                        {reviewForm.grade}<span className="text-slate-300 text-2xl font-medium tracking-normal ml-1">/100</span>
                     </div>
-                    <div className="text-[12px] font-medium text-[#888] mt-1">Skor AI</div>
-                    <div className="inline-block bg-[#E1F5EE] text-[#0F6E56] text-[11px] font-medium px-2 py-0.5 rounded-full mt-2 border border-[#1D9E75]/10">
-                        Gemini 3.1 Flash
+                    <div className="mt-6 inline-flex items-center gap-2 px-4 py-1.5 bg-primary/5 text-primary rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/10 relative z-10">
+                        <BookOpen size={14} />
+                        Gemini 3.1 Analysis
                     </div>
                 </div>
 
+                {/* Similarity Stats */}
+                <div className="bg-white border-2 border-slate-100 rounded-3xl p-6 shadow-sm flex items-center justify-between group hover:border-primary/20 transition-all">
+                    <div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 font-sans">Similarity Match</div>
+                        <div className="text-3xl font-mono font-black text-slate-700 tracking-tighter group-hover:text-primary transition-colors">{similarity}%</div>
+                    </div>
+                    <div className="w-14 h-14 rounded-2xl bg-surface-low flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                        <Check size={28} />
+                    </div>
+                </div>
+
+                {/* AI Summary Section */}
+                <div className="bg-primary/5 border-2 border-primary/10 rounded-3xl p-6 shadow-sm relative group">
+                    <div className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3 flex items-center gap-2 font-sans">
+                        <div className="w-1 h-3 bg-primary rounded-full"></div>
+                        AI Executive Summary
+                    </div>
+                    <p className="text-sm text-slate-700 leading-relaxed font-semibold italic">
+                        &quot;{result?.feedback?.substring(0, 200)}...&quot;
+                    </p>
+                </div>
+
                 {/* Aspects Breakdown */}
-                <div className="space-y-4">
-                    <div className="text-[11px] font-semibold text-[#888] uppercase tracking-wider ml-1">Breakdown per aspek</div>
-                    <div className="space-y-3">
+                <div className="space-y-6">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 font-sans">Detailed Breakdown</div>
+                    <div className="space-y-4">
                         {reviewForm.sub_criteria_scores && reviewForm.sub_criteria_scores.length > 0 ? (
                             reviewForm.sub_criteria_scores.map((sub, idx) => (
-                                <div key={idx} className="bg-white border border-[#e8e6df] rounded-xl p-4 shadow-sm group hover:border-[#1D9E75]/30 transition-all">
-                                    <div className="flex justify-between items-center mb-2.5">
-                                        <span className="text-[13px] font-medium text-[#1a1a18]">Question {sub.question}</span>
+                                <div key={idx} className="bg-white border-2 border-slate-50 rounded-2xl p-5 shadow-sm group hover:border-primary/20 transition-all">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <span className="text-sm font-extrabold text-foreground font-headline group-hover:text-primary transition-colors">Question {sub.question}</span>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-[11px] font-mono text-[#888]">{(sub.similarity * 100).toFixed(0)}% sim</span>
+                                            <span className="text-[10px] font-mono font-bold text-slate-400">{(sub.similarity * 100).toFixed(0)}% Match</span>
                                             <input 
                                                 type="number"
                                                 value={sub.grade}
@@ -181,27 +234,27 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
                                                     newScores[idx].grade = parseInt(e.target.value) || 0;
                                                     setReviewForm({...reviewForm, sub_criteria_scores: newScores});
                                                 }}
-                                                className="w-14 text-right bg-[#f5f5f0] border border-[#e8e6df] rounded-md px-2 py-1 text-[13px] font-semibold text-[#1D9E75] focus:border-[#1D9E75] focus:ring-0 outline-none transition-all shadow-inner"
+                                                className="w-16 text-right bg-surface-low border border-slate-100 rounded-xl px-3 py-2 text-sm font-black text-primary focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all shadow-inner"
                                             />
                                         </div>
                                     </div>
-                                    <div className="w-full h-1 bg-[#f0ede6] rounded-full overflow-hidden">
+                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
-                                            className="h-full bg-[#1D9E75] transition-all duration-500" 
+                                            className="h-full bg-primary transition-all duration-700" 
                                             style={{ width: `${(sub.similarity * 100) || 0}%` }}
                                         />
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            ['Kesesuaian', 'Struktur', 'Bahasa'].map(aspect => (
-                                <div key={aspect} className="bg-white border border-[#e8e6df] rounded-xl p-4 shadow-sm">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-[13px] font-medium text-[#1a1a18]">{aspect}</span>
-                                        <span className="text-[13px] font-semibold text-[#1a1a18]">{reviewForm.grade > 0 ? Math.floor(reviewForm.grade * 0.9) : '-'}/100</span>
+                            ['Content Accuracy', 'Grammar & Style', 'Structure'].map(aspect => (
+                                <div key={aspect} className="bg-white border-2 border-slate-50 rounded-2xl p-5 shadow-sm">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <span className="text-sm font-extrabold text-foreground font-headline">{aspect}</span>
+                                        <span className="text-sm font-black text-primary">{reviewForm.grade > 0 ? Math.floor(reviewForm.grade * 0.9) : '-'}/100</span>
                                     </div>
-                                    <div className="w-full h-1 bg-[#f0ede6] rounded-full overflow-hidden">
-                                        <div className="h-full bg-[#1D9E75]" style={{ width: `${reviewForm.grade || 0}%` }}></div>
+                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-primary" style={{ width: `${reviewForm.grade || 0}%` }}></div>
                                     </div>
                                 </div>
                             ))
@@ -209,78 +262,46 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
                     </div>
                 </div>
 
-                {/* AI Summary Section */}
-                <div className="bg-[#f0eeff] border border-[#d4cffa] rounded-xl p-4 shadow-sm">
-                    <div className="text-[11px] font-bold text-[#7F77DD] uppercase tracking-wider mb-2">Ringkasan Otomatis</div>
-                    <p className="text-[13px] text-[#3C3489] leading-relaxed font-medium line-clamp-4">
-                        {result?.ai_summary || "Esai menunjukkan pemahaman yang baik tentang materi. Area yang perlu diperkuat adalah kesimpulan yang lebih spesifik."}
-                    </p>
-                </div>
-
                 {/* Manual Override Form */}
-                <div className="space-y-4 pt-4 border-t border-[#e8e6df]">
-                    <div className="text-[11px] font-semibold text-[#888] uppercase tracking-wider ml-1">Override & Komentar</div>
-                    <div className="space-y-4">
-                        <div className="bg-white border border-[#e8e6df] rounded-xl p-4 shadow-sm">
-                            <label className="block text-[11px] font-bold text-[#888] uppercase tracking-widest mb-3 ml-0.5">Skor Akhir</label>
-                            <div className="flex items-center gap-3">
+                <div className="space-y-6 pt-6 border-t-2 border-slate-100 border-dashed">
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 font-sans">Final Adjustments</div>
+                    <div className="space-y-6">
+                        <div className="bg-white border-2 border-primary/20 rounded-3xl p-6 shadow-md shadow-primary/5">
+                            <label className="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4 ml-1 font-sans">Official Score Override</label>
+                            <div className="flex items-center gap-4">
                                 <input 
                                     type="number" 
                                     min="0" max="100"
                                     value={reviewForm.grade}
                                     onChange={(e) => setReviewForm({ ...reviewForm, grade: parseInt(e.target.value) || 0 })}
-                                    className="w-24 bg-[#f5f5f0] border border-[#e8e6df] rounded-lg px-3 py-2 text-xl font-bold text-[#1D9E75] focus:border-[#1D9E75] focus:ring-0 outline-none transition-all shadow-inner"
+                                    className="w-28 bg-surface-low border-2 border-slate-100 rounded-2xl px-5 py-4 text-3xl font-black text-primary focus:border-primary focus:ring-8 focus:ring-primary/10 outline-none transition-all shadow-inner"
                                 />
-                                <div className="text-[#aaa] font-semibold text-[16px]">/ 100</div>
+                                <div className="text-slate-300 font-black text-2xl font-headline">/ 100</div>
                             </div>
                         </div>
                         <div>
-                            <label className="block text-[11px] font-bold text-[#888] uppercase tracking-widest mb-2 ml-1">Catatan ke Siswa</label>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1 font-sans text-center lg:text-left">Feedback & Guidance to Student</label>
                             <textarea 
                                 value={reviewForm.feedback}
                                 onChange={(e) => setReviewForm({ ...reviewForm, feedback: e.target.value })}
-                                className="w-full bg-white border border-[#d4d2c8] rounded-xl px-4 py-4 text-[13px] font-medium text-[#1a1a18] focus:border-[#7F77DD] focus:ring-0 outline-none transition-all min-h-[140px] shadow-sm leading-relaxed"
-                                placeholder="Tambahkan catatan personal untuk siswa ini..."
+                                className="w-full bg-white border-2 border-slate-100 rounded-[2rem] px-8 py-8 text-sm font-medium text-slate-600 focus:border-primary focus:ring-8 focus:ring-primary/5 outline-none transition-all min-h-[220px] shadow-sm leading-relaxed"
+                                placeholder="Write your professional feedback here..."
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Assignment File Card */}
+                {/* Student Submission Card */}
                 {result?.file_path && (
-                    <div className="pt-4">
-                         <div className="text-[11px] font-semibold text-[#888] uppercase tracking-wider mb-3 ml-1">File Unggahan Siswa</div>
-                         <div 
-                            onClick={() => window.open(result.file_path, '_blank')}
-                            className="flex items-center gap-3 p-3 bg-white border border-[#e8e6df] rounded-xl cursor-pointer hover:bg-[#f0ede6] transition-all group"
-                         >
-                            <div className="w-10 h-10 rounded-lg bg-[#fde8d8] flex items-center justify-center text-[#D85A30] group-hover:scale-105 transition-transform">
-                                <FileText size={20} />
-                            </div>
-                            <div className="flex-1 overflow-hidden">
-                                <div className="text-[12px] font-bold text-[#1a1a18] truncate">Lihat Dokumen Asli</div>
-                                <div className="text-[10px] text-[#888] font-medium uppercase tracking-wider flex items-center gap-1">
-                                    PDF/DOCX <ExternalLink size={10} />
-                                </div>
-                            </div>
-                         </div>
+                    <div className="pt-4 pb-10">
+                         <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 ml-1 font-sans">Student Original Document</div>
+                         <FileCard 
+                            filename={getFilenameFromUrl(result.file_path)}
+                            fileUrl={result.file_path}
+                            onPreview={() => window.open(result.file_path, '_blank')}
+                         />
                     </div>
                 )}
-            </div>
-            
-            {/* Action Footer */}
-            <div className="p-6 bg-white border-t border-[#e8e6df] shadow-sm">
-                <button 
-                    disabled={isSubmitting}
-                    onClick={() => handleSave('published')}
-                    className="w-full py-4 bg-[#1D9E75] text-white rounded-xl font-bold text-[14px] hover:bg-[#158f68] shadow-lg shadow-[#1D9E75]/10 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-                >
-                    {isSubmitting ? (
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                        <>Simpan & Kirim Nilai <ArrowRight size={20} /></>
-                    )}
-                </button>
             </div>
         </div>
       </div>
