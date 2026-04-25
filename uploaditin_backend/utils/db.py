@@ -41,44 +41,53 @@ def get_engine():
 
 
 def simpan_ke_postgres(results):
-    """Simpan atau update hasil penilaian menggunakan ON CONFLICT (atomic upsert)."""
+    """Simpan atau update hasil penilaian menggunakan ON CONFLICT (atomic upsert) secara bulk."""
+    if not results:
+        return
+
+    params = [
+        {
+            "name": r["name"],
+            "similarity": float(r["similarity"]),
+            "grade": r["grade"],
+            "user_id": r["user_id"],
+            "kelas_id": r["kelas_id"],
+            "assignment_id": r.get("assignment_id"),
+            "file_path": r["file_path"],
+            "status": r.get("status", "draft"),
+            "feedback": r.get("feedback"),
+            "sub_criteria_scores": json.dumps(r.get("sub_criteria_scores"))
+            if r.get("sub_criteria_scores")
+            else None,
+            "highlights": json.dumps(r.get("highlights")) if r.get("highlights") else None,
+            "essay_text": r.get("essay_text"),
+        }
+        for r in results
+    ]
+
     try:
         with get_engine().begin() as conn:
-            for r in results:
-                conn.execute(
-                    text("""
-                        INSERT INTO hasil_penilaian
-                            (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores, highlights, essay_text)
-                        VALUES
-                            (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores, :highlights, :essay_text)
-                        ON CONFLICT (user_id, assignment_id)
-                        DO UPDATE SET
-                            nama_murid  = EXCLUDED.nama_murid,
-                            similarity  = EXCLUDED.similarity,
-                            nilai       = EXCLUDED.nilai,
-                            file_path   = EXCLUDED.file_path,
-                            status      = EXCLUDED.status,
-                            feedback    = EXCLUDED.feedback,
-                            sub_criteria_scores = EXCLUDED.sub_criteria_scores,
-                            highlights  = EXCLUDED.highlights,
-                            essay_text  = EXCLUDED.essay_text,
-                            updated_at  = NOW()
-                    """),
-                    {
-                        "name": r["name"],
-                        "similarity": float(r["similarity"]),
-                        "grade": r["grade"],
-                        "user_id": r["user_id"],
-                        "kelas_id": r["kelas_id"],
-                        "assignment_id": r.get("assignment_id"),
-                        "file_path": r["file_path"],
-                        "status": r.get("status", "draft"),
-                        "feedback": r.get("feedback"),
-                        "sub_criteria_scores": json.dumps(r.get("sub_criteria_scores")) if r.get("sub_criteria_scores") else None,
-                        "highlights": json.dumps(r.get("highlights")) if r.get("highlights") else None,
-                        "essay_text": r.get("essay_text"),
-                    },
-                )
+            conn.execute(
+                text("""
+                    INSERT INTO hasil_penilaian
+                        (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores, highlights, essay_text)
+                    VALUES
+                        (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores, :highlights, :essay_text)
+                    ON CONFLICT (user_id, assignment_id)
+                    DO UPDATE SET
+                        nama_murid  = EXCLUDED.nama_murid,
+                        similarity  = EXCLUDED.similarity,
+                        nilai       = EXCLUDED.nilai,
+                        file_path   = EXCLUDED.file_path,
+                        status      = EXCLUDED.status,
+                        feedback    = EXCLUDED.feedback,
+                        sub_criteria_scores = EXCLUDED.sub_criteria_scores,
+                        highlights  = EXCLUDED.highlights,
+                        essay_text  = EXCLUDED.essay_text,
+                        updated_at  = NOW()
+                """),
+                params,
+            )
     except Exception:
         logger.exception("Gagal menyimpan ke PostgreSQL")
         traceback.print_exc()

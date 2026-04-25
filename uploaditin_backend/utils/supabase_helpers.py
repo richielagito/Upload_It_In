@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional
 from urllib.parse import urlparse, parse_qs
 
 from supabase import Client, create_client
