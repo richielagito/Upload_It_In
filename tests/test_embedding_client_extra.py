@@ -30,6 +30,7 @@ def test_normalization_applies_unit_length_and_preserves_order(monkeypatch):
     # Env and client setup
     monkeypatch.setenv("GEMINI_API_KEY", "dummy-key")
     monkeypatch.setenv("EMBEDDING_NORMALIZE", "true")
+    embedding_client._client_cache.clear()
 
     # Create a fake models.embed_content that returns non-normalized vectors
     class FakeModels:
@@ -60,6 +61,7 @@ def test_normalization_applies_unit_length_and_preserves_order(monkeypatch):
 def test_batch_splitting_preserves_order_across_batches(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "dummy-key")
     monkeypatch.setenv("EMBEDDING_NORMALIZE", "false")
+    embedding_client._client_cache.clear()
 
     calls = {"batches": []}
 
@@ -97,6 +99,7 @@ def test_retry_backoff_bounded_then_succeeds(monkeypatch):
     # Make max attempts 4 and small backoff for test speed
     monkeypatch.setattr(embedding_client, "DEFAULT_MAX_ATTEMPTS", 4)
     monkeypatch.setattr(embedding_client, "DEFAULT_BACKOFF_SECONDS", 0.001)
+    embedding_client._client_cache.clear()
 
     calls = {"count": 0}
     sleeps = []
@@ -132,6 +135,7 @@ def test_auth_config_errors_fail_fast_no_retries(monkeypatch):
     monkeypatch.setenv("EMBEDDING_NORMALIZE", "false")
     # Ensure small attempts config to detect incorrect retrying
     monkeypatch.setattr(embedding_client, "DEFAULT_MAX_ATTEMPTS", 5)
+    embedding_client._client_cache.clear()
 
     calls = {"count": 0}
     sleeps = []

@@ -5,9 +5,11 @@ import datetime
 import json
 import logging
 import os
+import pathlib
 import random
 import re
 import string
+import sys
 import tempfile
 from io import BytesIO, StringIO
 from urllib.parse import urlparse
@@ -16,6 +18,14 @@ from dotenv import load_dotenv
 from flask import Flask, g, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_cors import CORS
 import requests
+
+# Ensure the package's own directory is on sys.path so that `utils.*` imports
+# work both when running directly (python app.py / gunicorn app:app from within
+# uploaditin_backend/) and when imported as a sub-package from the project root.
+_here = pathlib.Path(__file__).resolve().parent
+if str(_here) not in sys.path:
+    sys.path.insert(0, str(_here))
+
 
 from utils.db import (
     fetch_all_results,
