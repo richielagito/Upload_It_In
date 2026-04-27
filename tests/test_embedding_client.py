@@ -125,3 +125,28 @@ def test_is_auth_or_config_error_messages():
 
     exc = Exception("Connection timeout")
     assert embedding_client._is_auth_or_config_error(exc) is False
+
+
+def test_normalize_vector_standard():
+    vector = [3.0, 4.0]
+    normalized = embedding_client._normalize_vector(vector)
+    assert normalized == pytest.approx([0.6, 0.8])
+
+
+def test_normalize_vector_zero():
+    vector = [0.0, 0.0, 0.0]
+    normalized = embedding_client._normalize_vector(vector)
+    assert normalized == [0.0, 0.0, 0.0]
+    # Ensure the zero-vector path returns a distinct list object.
+    assert normalized is not vector
+
+
+def test_normalize_vector_negative():
+    vector = [-3.0, 4.0]
+    normalized = embedding_client._normalize_vector(vector)
+    assert normalized == pytest.approx([-0.6, 0.8])
+
+
+def test_normalize_vector_single_element():
+    assert embedding_client._normalize_vector([5.0]) == pytest.approx([1.0])
+    assert embedding_client._normalize_vector([-5.0]) == pytest.approx([-1.0])

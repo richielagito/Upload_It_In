@@ -7,7 +7,6 @@ import logging
 import os
 import pathlib
 import random
-import re
 import string
 import sys
 import tempfile
@@ -119,10 +118,6 @@ def generate_unique_class_code(length: int = 6):
         if not row:
             break
     return code
-
-
-def clean_part(s: str) -> str:
-    return re.sub(r'[\\/*?:"<>| ]', "", s)
 
 
 def get_clean_ext(url: str) -> str:
