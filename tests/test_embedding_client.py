@@ -86,3 +86,28 @@ def test_get_embeddings_missing_key_fails_fast(monkeypatch):
         embedding_client.get_embeddings(["hello"])
 
     assert "GEMINI_API_KEY" in str(exc.value)
+
+
+def test_normalize_vector_standard():
+    vector = [3.0, 4.0]
+    normalized = embedding_client._normalize_vector(vector)
+    assert normalized == pytest.approx([0.6, 0.8])
+
+
+def test_normalize_vector_zero():
+    vector = [0.0, 0.0, 0.0]
+    normalized = embedding_client._normalize_vector(vector)
+    assert normalized == [0.0, 0.0, 0.0]
+    # Ensure the zero-vector path returns a distinct list object.
+    assert normalized is not vector
+
+
+def test_normalize_vector_negative():
+    vector = [-3.0, 4.0]
+    normalized = embedding_client._normalize_vector(vector)
+    assert normalized == pytest.approx([-0.6, 0.8])
+
+
+def test_normalize_vector_single_element():
+    assert embedding_client._normalize_vector([5.0]) == pytest.approx([1.0])
+    assert embedding_client._normalize_vector([-5.0]) == pytest.approx([-1.0])
