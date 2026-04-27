@@ -6,7 +6,7 @@ import { cn, renderHighlightedEssay } from '@/lib/utils';
 
 export default function ManualReview({ result, assignment, onClose, onSave }) {
     const [viewMode, setViewMode] = useState('highlight'); // 'highlight' or 'plain'
-    const [isPublished, setIsPublished] = useState(assignment?.is_published || false);
+    const [isPublished, setIsPublished] = useState(result?.status === 'published');
     const [reviewForm, setReviewForm] = useState({
         grade: result?.nilai || result?.grade || 0,
         feedback: result?.feedback || '',
@@ -88,7 +88,7 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
                     <div className="h-8 w-px bg-slate-200" />
                     <button
                         disabled={isSubmitting}
-                        onClick={() => handleSave('current')}
+                        onClick={() => handleSave(isPublished ? 'published' : 'draft')}
                         className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20 flex items-center gap-2 disabled:opacity-50 font-headline"
                     >
                         {isSubmitting ? (

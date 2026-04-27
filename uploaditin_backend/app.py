@@ -908,7 +908,7 @@ def api_toggle_publish_assignment(assignment_id):
             )
 
         status = "dipublikasikan" if is_published else "disembunyikan"
-        return jsonify({"success": true, "message": f"Hasil pengumpulan berhasil {status}."})
+        return jsonify({"success": True, "message": f"Hasil pengumpulan berhasil {status}."})
         
     except Exception:
         logger.exception("Error toggling publish status")
