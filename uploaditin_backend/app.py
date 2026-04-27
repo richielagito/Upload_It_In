@@ -1096,7 +1096,22 @@ def api_upload_student_answer(assignment_id):
     }
 
     try:
-        simpan_ke_postgres([result_to_save])
+        with get_engine().begin() as txn:
+            max_version_row = txn.execute(
+                text("SELECT COALESCE(MAX(version), 0) FROM hasil_penilaian WHERE user_id = :uid AND assignment_id = :aid"),
+                {"uid": session['user_id'], "aid": assignment_id}
+            ).fetchone()
+            max_version = max_version_row[0] if max_version_row else 0
+            
+            txn.execute(
+                text("UPDATE hasil_penilaian SET is_active = FALSE WHERE user_id = :uid AND assignment_id = :aid"),
+                {"uid": session['user_id'], "aid": assignment_id}
+            )
+            
+            result_to_save["version"] = max_version + 1
+            result_to_save["is_active"] = True
+            
+            simpan_ke_postgres([result_to_save], conn=txn)
     except Exception:
         logger.exception("Error saving student submission")
         return jsonify({"error": "Gagal menyimpan hasil unggahan siswa."}), 500

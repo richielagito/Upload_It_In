@@ -52,13 +52,11 @@ export default function FileCard({ filename, fileUrl, isLoading = false, onPrevi
             )}
         >
             {/* File Icon Container */}
-            <div className="shrink-0 w-12 h-12 bg-surface-low rounded-xl flex items-center justify-center mr-4 group-hover:text-white transition-all">
-                {isLoading ? <Loader2 size={24} className="text-primary animate-spin" /> : <div className="transition-transform group-hover:scale-110">{getFileIcon(filename)}</div>}
-            </div>
+            <div className="shrink-0 w-12 h-12 bg-surface-low rounded-xl flex items-center justify-center mr-4">{isLoading ? <Loader2 size={24} className="text-primary animate-spin" /> : <div>{getFileIcon(filename)}</div>}</div>
 
             {/* File Info */}
             <div className="flex-1 min-w-0 mr-4">
-                <p className="text-sm font-extrabold text-foreground truncate font-headline group-hover:text-primary transition-colors">{filename || "Unnamed File"}</p>
+                <p className="text-sm font-extrabold text-foreground truncate font-headline transition-colors">{filename || "Unnamed File"}</p>
 
                 {!isLoading && onChangeFile && (
                     <button
