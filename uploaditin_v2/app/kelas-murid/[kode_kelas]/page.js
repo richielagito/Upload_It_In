@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, FileText, Upload, Download, CheckCircle, Clock, AlertCircle, UploadCloud } from 'lucide-react';
@@ -157,6 +157,8 @@ export default function ClassDetailsStudent() {
         }
     };
 
+    const resultsMap = useMemo(() => new Map(myResults.map(r => [r.assignment_id, r])), [myResults]);
+
     if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
 
     const activeDeadlineDate = activeAssignment?.deadline ? new Date(activeAssignment.deadline.replace(' ', 'T')) : null;
@@ -203,11 +205,11 @@ export default function ClassDetailsStudent() {
                     {assignments.map(ass => {
                         const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
                         const isClosed = deadlineDate && new Date() > deadlineDate;
-                        const result = myResults.find(r => r.assignment_id === ass.id);
+                        const result = resultsMap.get(ass.id);
                         const isGraded = !!result && ass.is_published;
 
-                        // This should have been the assignment cards
-                        return (
+                            // This should have been the assignment cards
+                            return (
                             <div key={ass.id} className="break-inside-avoid-column bg-white rounded-[2rem] border-2 border-slate-100 p-8 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all flex flex-col mb-8 last:mb-0 group">
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="text-2xl font-extrabold text-foreground font-headline group-hover:text-primary transition-colors">{ass.judul}</h3>
@@ -266,8 +268,8 @@ export default function ClassDetailsStudent() {
                                     </button>
                                 </div>
                             </div>
-                        );
-                    })}
+                            );
+                        })}
                     {assignments.length === 0 && (
                         <div className="col-span-full text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
                             <div className="w-16 h-16 bg-surface-low rounded-full flex items-center justify-center mx-auto mb-4">
