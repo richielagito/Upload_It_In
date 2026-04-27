@@ -609,7 +609,7 @@ export default function ClassDetailsTeacher() {
                                   </div>
                               </div>
                           </div>
-                         <button disabled={submitting} type="submit" className="w-full cursor-pointer py-5 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl font-extrabold text-lg hover:shadow-xl hover:shadow-primary/30 transition-all font-headline flex items-center justify-center gap-3">
+                         <button disabled={submitting} type="submit" className="w-full cursor-pointer py-5 bg-linear-to-r from-primary to-primary-container text-white rounded-2xl font-extrabold text-lg hover:shadow-xl hover:shadow-primary/30 transition-all font-headline flex items-center justify-center gap-3">
                              {submitting ? (
                                 <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                              ) : (
