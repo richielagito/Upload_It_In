@@ -186,53 +186,29 @@ export default function FeedbackPanel({
             </div>
           </div>
 
-          {/* Student Submission Section */}
-          <div className="space-y-4">
+          {/* Student Submission Section - Simplified as it is now in AssignmentCard */}
+          <div className="space-y-4 pt-4 border-t border-slate-100">
             <h3 className="text-xl font-extrabold text-foreground flex items-center gap-3 font-headline">
-              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-colors", stagedFile ? "bg-primary/10 text-primary" : "bg-amber-50 text-amber-600")}>
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400">
                 <Clock size={20} />
               </div>
-              Your Work
+              Submission History
             </h3>
             <div className="flex flex-wrap gap-6">
               {result?.file_path && (
                 <div className="space-y-3 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
-                  <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans ml-1">Submitted Version</p>
+                  <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans ml-1">Evaluated Version</p>
                   <FileCard
                     filename={getFilenameFromUrl(result.file_path)}
                     fileUrl={result.file_path}
                     onPreview={() => window.open(result.file_path, '_blank')}
-                    onChangeFile={isEditing ? onStage : null}
-                    onRemove={isEditing ? () => onStage(null) : null}
                   />
+                  {result.version && (
+                    <p className="text-[10px] font-bold text-primary uppercase tracking-tight ml-1 italic">
+                      Version {result.version}
+                    </p>
+                  )}
                 </div>
-              )}
-              {stagedFile && (
-                <div className="space-y-3 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
-                  <p className="text-[10px] font-extrabold text-primary uppercase tracking-widest font-sans ml-1">Staged for Turn In</p>
-                  <FileCard
-                    filename={stagedFile.name}
-                    isLoading={isStaging}
-                    onPreview={() => {
-                      const url = URL.createObjectURL(stagedFile);
-                      window.open(url, '_blank');
-                    }}
-                    onRemove={() => onStage(null)}
-                    onChangeFile={onStage}
-                  />
-                </div>
-              )}
-              {(!result || isEditing) && !stagedFile && !isStaging && (
-                <button
-                  onClick={onStage}
-                  disabled={!isDeadlineOpen}
-                  className="flex flex-col items-center justify-center gap-3 w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] h-32 border-3 border-dashed border-slate-100 rounded-4xl text-slate-400 font-extrabold hover:border-primary/30 hover:bg-primary/5 hover:text-primary transition-all group disabled:opacity-50 disabled:cursor-not-allowed font-headline"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-surface-low flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
-                    <UploadCloud size={28} className="transition-transform group-hover:scale-110" />
-                  </div>
-                  Attach File
-                </button>
               )}
             </div>
           </div>

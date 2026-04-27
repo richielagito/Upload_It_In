@@ -6,6 +6,7 @@ import { cn, renderHighlightedEssay } from '@/lib/utils';
 
 export default function ManualReview({ result, assignment, onClose, onSave }) {
     const [viewMode, setViewMode] = useState('highlight'); // 'highlight' or 'plain'
+    const [isPublished, setIsPublished] = useState(assignment?.is_published || false);
     const [reviewForm, setReviewForm] = useState({
         grade: result?.nilai || result?.grade || 0,
         feedback: result?.feedback || '',
@@ -22,7 +23,8 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
             sub_criteria_scores: reviewForm.sub_criteria_scores.map(s => ({
                 ...s,
                 grade: parseInt(s.grade) || 0
-            }))
+            })),
+            is_published: status === 'published' ? true : (status === 'draft' ? false : isPublished)
         };
         await onSave(finalForm, status);
         setIsSubmitting(false);
@@ -62,25 +64,39 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3 bg-slate-100 p-1 rounded-xl">
+                        <button
+                            onClick={() => setIsPublished(false)}
+                            className={cn(
+                                "px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all",
+                                !isPublished ? "bg-white text-slate-700 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                            )}
+                        >
+                            Draft
+                        </button>
+                        <button
+                            onClick={() => setIsPublished(true)}
+                            className={cn(
+                                "px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all",
+                                isPublished ? "bg-emerald-500 text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
+                            )}
+                        >
+                            Published
+                        </button>
+                    </div>
+                    <div className="h-8 w-px bg-slate-200" />
                     <button
                         disabled={isSubmitting}
-                        onClick={() => handleSave('draft')}
-                        className="px-6 py-2.5 text-slate-600 text-sm font-bold rounded-2xl hover:bg-slate-50 transition-all disabled:opacity-50 font-headline"
-                    >
-                        Save Draft
-                    </button>
-                    <button
-                        disabled={isSubmitting}
-                        onClick={() => handleSave('published')}
-                        className="px-8 py-2.5 bg-primary text-white text-sm font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20 flex items-center gap-2 disabled:opacity-50 font-headline"
+                        onClick={() => handleSave('current')}
+                        className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20 flex items-center gap-2 disabled:opacity-50 font-headline"
                     >
                         {isSubmitting ? (
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
                             <Check size={18} />
                         )}
-                        Approve & Publish
+                        Save Changes
                     </button>
                 </div>
             </div>

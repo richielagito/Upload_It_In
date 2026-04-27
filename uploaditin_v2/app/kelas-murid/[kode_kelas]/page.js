@@ -6,6 +6,7 @@ import { ArrowLeft, FileText, Upload, Download, CheckCircle, Clock, AlertCircle,
 import { createClient } from '@/lib/supabase';
 import DashboardShell from '@/app/components/dashboard/DashboardShell';
 import FeedbackPanel from '@/app/components/dashboard/FeedbackPanel';
+import AssignmentCard from '@/app/components/dashboard/AssignmentCard';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -139,6 +140,31 @@ export default function ClassDetailsStudent() {
       }
   };
 
+  const handleUndo = async () => {
+    if (!activeAssignment) return;
+
+    try {
+        const res = await fetch(`/api/submissions/undo/${activeAssignment.id}`, {
+            method: 'POST'
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            toast.success(data.message);
+            await Promise.all([fetchAssignments(), fetchMyResults()]);
+            // Update local state to reflect no submission
+            setActiveResult(null);
+            setStagedFile(null);
+            setIsEditing(false);
+        } else {
+            toast.error(data.error || "Failed to undo submission");
+        }
+    } catch (err) {
+        console.error(err);
+        toast.error("Error undoing submission");
+    }
+  };
+
   if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
 
   const activeDeadlineDate = activeAssignment?.deadline ? new Date(activeAssignment.deadline.replace(' ', 'T')) : null;
@@ -237,17 +263,21 @@ export default function ClassDetailsStudent() {
                     const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
                     const isClosed = deadlineDate && new Date() > deadlineDate;
                     const result = myResults.find(r => r.assignment_id === ass.id);
-                    const isGraded = !!result;
-                    const isPending = ass.is_submitted && !isGraded;
+                    const isGraded = !!result && ass.is_published;
 
                     return (
                         <div key={ass.id} className="break-inside-avoid-column bg-white rounded-[2rem] border-2 border-slate-100 p-8 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all flex flex-col mb-8 last:mb-0 group">
                             <div className="flex justify-between items-start mb-4">
                                 <h3 className="text-2xl font-extrabold text-foreground font-headline group-hover:text-primary transition-colors">{ass.judul}</h3>
+                                {ass.is_submitted && (
+                                     <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest border border-emerald-100">
+                                        Submitted
+                                     </span>
+                                )}
                             </div>
                             <p className="text-slate-600 mb-8 text-sm leading-relaxed flex-1 font-sans font-medium line-clamp-3">{ass.deskripsi}</p>
                             
-                            {/* Grade Summary (if graded) */}
+                            {/* Grade Summary (if graded AND published) */}
                             {isGraded && (
                                 <div className="mb-8 p-5 bg-surface-low border border-primary/10 rounded-[1.5rem] flex items-center justify-between shadow-inner">
                                     <div className="flex flex-col">
@@ -291,7 +321,7 @@ export default function ClassDetailsStudent() {
                                     }}
                                     className="w-full py-4 bg-primary text-white rounded-2xl font-extrabold hover:bg-primary-container transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 font-headline"
                                 >
-                                    <FileText size={20} /> View Detail & Feedback
+                                    <FileText size={20} /> View Detail {isGraded && "& Feedback"}
                                 </button>
                             </div>
                         </div>
@@ -308,32 +338,37 @@ export default function ClassDetailsStudent() {
             </div>
         ) : (
             activeAssignment && (
-                <>
+                <div className="space-y-8">
                     <input 
                         type="file" 
                         id={`file-stage-input`}
                         className="hidden" 
                         onChange={(e) => handleStageFile(e, activeAssignment.id)}
                     />
-                    <FeedbackPanel 
+                    
+                    <AssignmentCard 
                         assignment={activeAssignment}
                         result={activeResult}
                         stagedFile={stagedFile}
                         isStaging={isStaging}
-                        isEditing={isEditing}
                         isUploading={uploadingId === activeAssignment.id}
-                        onClose={() => {
-                            setViewMode('list');
-                            setStagedFile(null);
-                            setIsEditing(false);
-                        }}
+                        isDeadlineOpen={isActiveDeadlineOpen}
                         onStage={(val) => {
                             if (val === null) setStagedFile(null);
                             else document.getElementById(`file-stage-input`)?.click();
                         }}
-                        isDeadlineOpen={isActiveDeadlineOpen}
+                        onTurnIn={handleTurnIn}
+                        onUndo={handleUndo}
                     />
-                </>
+
+                    {activeResult && activeAssignment.is_published && (
+                        <FeedbackPanel 
+                            assignment={activeAssignment}
+                            result={activeResult}
+                            onClose={() => setViewMode('list')}
+                        />
+                    )}
+                </div>
             )
         )}
     </DashboardShell>

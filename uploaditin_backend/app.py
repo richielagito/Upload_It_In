@@ -805,8 +805,9 @@ def api_get_assignments_by_kode_kelas(kode_kelas):
                     a.created_at,
                     EXISTS(
                         SELECT 1 FROM hasil_penilaian hp
-                        WHERE hp.assignment_id = a.id AND hp.user_id = :uid
-                    ) as is_submitted
+                        WHERE hp.assignment_id = a.id AND hp.user_id = :uid AND hp.is_active = TRUE
+                    ) as is_submitted,
+                    a.is_published
                 FROM assignments a
                 WHERE a.kelas_id = :kid
                 ORDER BY a.created_at DESC
@@ -826,7 +827,77 @@ def api_get_assignments_by_kode_kelas(kode_kelas):
         "jawaban_path": a[5],
         "created_at": a[6].strftime("%Y-%m-%d %H:%M"),
         "is_submitted": a[7],
+        "is_published": a[8]
     } for a in assignments])
+
+
+@app.route('/api/submissions/undo/<int:assignment_id>', methods=['POST'])
+def api_undo_submission(assignment_id):
+    if 'user_id' not in session or session.get('role') != 'Student':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user_id = session['user_id']
+    conn = get_db()
+    
+    try:
+        # 1. Cek apakah assignment masih dalam periode submission (belum lewat deadline)
+        assignment = conn.execute(
+            text("SELECT deadline FROM assignments WHERE id = :id"),
+            {"id": assignment_id}
+        ).fetchone()
+        
+        if not assignment:
+            return jsonify({"error": "Assignment tidak ditemukan"}), 404
+        
+        deadline = assignment[0]
+        if deadline and datetime.datetime.now() > deadline:
+            return jsonify({"error": "Batas waktu pengumpulan telah lewat. Tidak bisa membatalkan pengumpulan."}), 400
+
+        # 2. Cek apakah ada submission yang aktif
+        submission = conn.execute(
+            text("SELECT id FROM hasil_penilaian WHERE user_id = :uid AND assignment_id = :aid AND is_active = TRUE"),
+            {"uid": user_id, "aid": assignment_id}
+        ).fetchone()
+        
+        if not submission:
+            return jsonify({"error": "Tidak ada submission aktif yang ditemukan"}), 404
+
+        # 3. Mark as inactive
+        with get_engine().begin() as txn:
+            txn.execute(
+                text("UPDATE hasil_penilaian SET is_active = FALSE WHERE id = :sid"),
+                {"sid": submission[0]}
+            )
+
+        return jsonify({"success": true, "message": "Berhasil membatalkan pengumpulan. Silakan unggah ulang jika perlu."})
+        
+    except Exception:
+        logger.exception("Error undoing submission")
+        return jsonify({"error": "Terjadi kesalahan saat membatalkan pengumpulan"}), 500
+
+
+@app.route('/api/assignments/publish/<int:assignment_id>', methods=['POST'])
+def api_toggle_publish_assignment(assignment_id):
+    if 'user_id' not in session or session.get('role') != 'Teacher':
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    try:
+        data = request.get_json()
+        is_published = data.get('is_published', False)
+
+        with get_engine().begin() as txn:
+            txn.execute(
+                text("UPDATE assignments SET is_published = :pub WHERE id = :id"),
+                {"pub": is_published, "id": assignment_id}
+            )
+
+        status = "dipublikasikan" if is_published else "disembunyikan"
+        return jsonify({"success": true, "message": f"Hasil pengumpulan berhasil {status}."})
+        
+    except Exception:
+        logger.exception("Error toggling publish status")
+        return jsonify({"error": "Terjadi kesalahan saat mengubah status publikasi"}), 500
 
 
 @app.route('/api/assignments/<int:assignment_id>', methods=['DELETE'])

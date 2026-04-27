@@ -280,6 +280,29 @@ export default function ClassDetailsTeacher() {
        window.open(`/api/assignments/${assignmentId}/download-csv`, '_blank');
   };
 
+  const togglePublish = async (assignmentId, currentStatus) => {
+    try {
+        const res = await fetch(`/api/assignments/publish/${assignmentId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_published: !currentStatus })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            toast.success(data.message);
+            // Update local assignments state
+            setAssignments(prev => prev.map(a => 
+                a.id === assignmentId ? { ...a, is_published: !currentStatus } : a
+            ));
+        } else {
+            toast.error(data.error || "Failed to update publication status");
+        }
+    } catch (err) {
+        console.error(err);
+        toast.error("Error updating publication status");
+    }
+  };
+
   if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
 
   return (
@@ -368,17 +391,31 @@ export default function ClassDetailsTeacher() {
                             </div>
                             <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); downloadCSV(ass.id); }}
-                                    className="text-xs font-extrabold cursor-pointer text-primary hover:text-primary-container flex items-center gap-1.5 transition-colors font-headline uppercase tracking-wider"
+                                    onClick={(e) => { e.stopPropagation(); togglePublish(ass.id, ass.is_published); }}
+                                    className={cn(
+                                        "text-[10px] font-black cursor-pointer px-3 py-1.5 rounded-lg border transition-all uppercase tracking-widest font-headline flex items-center gap-1.5",
+                                        ass.is_published 
+                                            ? "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100" 
+                                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                                    )}
                                  >
-                                     <Download size={14} /> Download CSV
+                                     <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", ass.is_published ? "bg-emerald-500" : "bg-slate-400")} />
+                                     {ass.is_published ? "Published" : "Draft (Hidden)"}
                                  </button>
-                                 <button 
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteAssignment(ass.id); }}
-                                    className="text-xs font-extrabold cursor-pointer text-red-500 hover:text-red-700 flex items-center gap-1.5 transition-colors font-headline uppercase tracking-wider"
-                                 >
-                                     <Trash2 size={14} /> Delete
-                                 </button>
+                                 <div className="flex items-center gap-3">
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); downloadCSV(ass.id); }}
+                                        className="text-xs font-extrabold cursor-pointer text-primary hover:text-primary-container flex items-center gap-1.5 transition-colors font-headline uppercase tracking-wider"
+                                    >
+                                        <Download size={14} /> CSV
+                                    </button>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteAssignment(ass.id); }}
+                                        className="text-xs font-extrabold cursor-pointer text-red-500 hover:text-red-700 flex items-center gap-1.5 transition-colors font-headline uppercase tracking-wider"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                 </div>
                             </div>
                         </div>
                     ))}
