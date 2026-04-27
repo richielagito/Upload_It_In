@@ -850,8 +850,13 @@ def api_undo_submission(assignment_id):
             return jsonify({"error": "Assignment tidak ditemukan"}), 404
         
         deadline = assignment[0]
-        if deadline and datetime.datetime.now() > deadline:
-            return jsonify({"error": "Batas waktu pengumpulan telah lewat. Tidak bisa membatalkan pengumpulan."}), 400
+        if deadline:
+            # Pastikan deadline timezone-aware jika perlu (asumsi naive adalah UTC)
+            if deadline.tzinfo is None:
+                deadline = deadline.replace(tzinfo=datetime.timezone.utc)
+            
+            if datetime.datetime.now(datetime.timezone.utc) > deadline:
+                return jsonify({"error": "Batas waktu pengumpulan telah lewat. Tidak bisa membatalkan pengumpulan."}), 400
 
         # 2. Cek apakah ada submission yang aktif
         submission = conn.execute(
