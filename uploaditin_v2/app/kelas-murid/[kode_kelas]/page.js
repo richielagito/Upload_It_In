@@ -29,7 +29,6 @@ export default function ClassDetailsStudent() {
   const [activeResult, setActiveResult] = useState(null);
   const [stagedFile, setStagedFile] = useState(null);
   const [isStaging, setIsStaging] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -91,11 +90,6 @@ export default function ClassDetailsStudent() {
       }, 1500);
   };
 
-  const handleUnTurnIn = () => {
-      setIsEditing(true);
-      toast.info("You can now change your submission.");
-  };
-
   const handleTurnIn = async () => {
       if (!stagedFile || !activeAssignment) return;
 
@@ -119,7 +113,6 @@ export default function ClassDetailsStudent() {
           if (res.ok && data?.success) {
               toast.success('Assignment turned in successfully!');
               setStagedFile(null);
-              setIsEditing(false);
               await Promise.all([fetchAssignments(), fetchMyResults()]);
               
               // Find the new result to update the view
@@ -155,7 +148,6 @@ export default function ClassDetailsStudent() {
             // Update local state to reflect no submission
             setActiveResult(null);
             setStagedFile(null);
-            setIsEditing(false);
         } else {
             toast.error(data.error || "Failed to undo submission");
         }
@@ -184,7 +176,6 @@ export default function ClassDetailsStudent() {
                 <button 
                     onClick={() => {
                         setViewMode('list');
-                        setIsEditing(false);
                         setStagedFile(null);
                     }}
                     className="text-slate-500 hover:text-primary flex items-center gap-2 mb-6 text-sm font-bold font-sans transition-colors group"
@@ -204,56 +195,6 @@ export default function ClassDetailsStudent() {
                         {viewMode === 'detail' ? 'Assignment Details & Feedback' : 'View assignments and your performance'}
                     </p>
                 </div>
-                
-                {viewMode === 'detail' && activeAssignment && (
-                    <div className="flex items-center gap-4">
-                        {activeResult && !isEditing ? (
-                            <>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest font-sans">Status</span>
-                                    <span className="text-sm font-extrabold text-slate-900 font-headline">Pending Review</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button 
-                                        disabled
-                                        className="px-8 py-3 bg-surface-low text-slate-400 rounded-2xl font-bold cursor-not-allowed flex items-center gap-2 border border-slate-100"
-                                    >
-                                        <CheckCircle size={18} />
-                                        Turned In
-                                    </button>
-                                    <button 
-                                        onClick={handleUnTurnIn}
-                                        disabled={!isActiveDeadlineOpen}
-                                        className="px-6 py-3 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 hover:border-primary/20 hover:text-primary transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed font-headline"
-                                    >
-                                        Un Turn In
-                                    </button>
-                                </div>
-                            </>
-                        ) : (
-                            <button 
-                                onClick={handleTurnIn}
-                                disabled={!stagedFile || isStaging || uploadingId === activeAssignment.id || !isActiveDeadlineOpen}
-                                className={cn(
-                                    "px-10 py-4 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl font-extrabold hover:shadow-xl hover:shadow-primary/30 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:from-slate-400 disabled:to-slate-500 min-w-[180px] font-headline",
-                                    !activeResult && "px-12"
-                                )}
-                            >
-                                {uploadingId === activeAssignment.id ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Turning in...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle size={20} />
-                                        {activeResult ? 'Turn In Again' : 'Turn In'}
-                                    </>
-                                )}
-                            </button>
-                        )}
-                    </div>
-                )}
             </div>
         </div>
 
@@ -317,7 +258,6 @@ export default function ClassDetailsStudent() {
                                         setActiveResult(result);
                                         setViewMode('detail');
                                         setStagedFile(null);
-                                        setIsEditing(false);
                                     }}
                                     className="w-full py-4 bg-primary text-white rounded-2xl font-extrabold hover:bg-primary-container transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 font-headline"
                                 >

@@ -990,7 +990,9 @@ def api_upload_student_answer(assignment_id):
 
     nama_user = session.get('username', 'user')
     ext = os.path.splitext(student_file.filename or "")[-1]
-    student_filename = f"answers/student/{kelas_id}_{assignment_id}_{nama_user}_jawaban{ext}".replace(" ", "_")
+    import time
+    timestamp = int(time.time())
+    student_filename = f"answers/student/{kelas_id}_{assignment_id}_{nama_user}_jawaban_{timestamp}{ext}".replace(" ", "_")
 
     # Upload file murid ke Supabase Storage
     try:

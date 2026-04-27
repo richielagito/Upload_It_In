@@ -50,48 +50,77 @@ def simpan_ke_postgres(results):
                 # 1. Cari versi terakhir untuk user_id & assignment_id ini
                 latest_row = conn.execute(
                     text("""
-                        SELECT MAX(version) FROM hasil_penilaian 
+                        SELECT id, version, essay_text FROM hasil_penilaian 
                         WHERE user_id = :user_id AND assignment_id = :assignment_id
+                        ORDER BY version DESC LIMIT 1
                     """),
                     {"user_id": r["user_id"], "assignment_id": r.get("assignment_id")}
                 ).fetchone()
                 
-                new_version = (latest_row[0] or 0) + 1
-                
-                # 2. Tandai semua versi lama sebagai tidak aktif
-                conn.execute(
-                    text("""
-                        UPDATE hasil_penilaian SET is_active = FALSE 
-                        WHERE user_id = :user_id AND assignment_id = :assignment_id
-                    """),
-                    {"user_id": r["user_id"], "assignment_id": r.get("assignment_id")}
-                )
-                
-                # 3. Insert versi baru sebagai aktif
-                conn.execute(
-                    text("""
-                        INSERT INTO hasil_penilaian
-                            (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores, highlights, essay_text, version, is_active)
-                        VALUES
-                            (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores, :highlights, :essay_text, :version, :is_active)
-                    """),
-                    {
-                        "name": r["name"],
-                        "similarity": float(r["similarity"]),
-                        "grade": r["grade"],
-                        "user_id": r["user_id"],
-                        "kelas_id": r["kelas_id"],
-                        "assignment_id": r.get("assignment_id"),
-                        "file_path": r["file_path"],
-                        "status": r.get("status", "draft"),
-                        "feedback": r.get("feedback"),
-                        "sub_criteria_scores": json.dumps(r.get("sub_criteria_scores")) if r.get("sub_criteria_scores") else None,
-                        "highlights": json.dumps(r.get("highlights")) if r.get("highlights") else None,
-                        "essay_text": r.get("essay_text"),
-                        "version": new_version,
-                        "is_active": True
-                    },
-                )
+                # Check if the text matches the most recent version exactly
+                if latest_row and r.get("essay_text") and latest_row[2] == r.get("essay_text"):
+                    # Overwrite the latest version instead of creating a new one
+                    conn.execute(
+                        text("""
+                            UPDATE hasil_penilaian
+                            SET similarity = :similarity,
+                                nilai = :grade,
+                                file_path = :file_path,
+                                status = :status,
+                                feedback = :feedback,
+                                sub_criteria_scores = :sub_criteria_scores,
+                                highlights = :highlights,
+                                is_active = TRUE
+                            WHERE id = :id
+                        """),
+                        {
+                            "id": latest_row[0],
+                            "similarity": float(r["similarity"]),
+                            "grade": r["grade"],
+                            "file_path": r["file_path"],
+                            "status": r.get("status", "draft"),
+                            "feedback": r.get("feedback"),
+                            "sub_criteria_scores": json.dumps(r.get("sub_criteria_scores")) if r.get("sub_criteria_scores") else None,
+                            "highlights": json.dumps(r.get("highlights")) if r.get("highlights") else None,
+                        }
+                    )
+                else:
+                    new_version = (latest_row[1] or 0) + 1 if latest_row else 1
+                    
+                    # 2. Tandai semua versi lama sebagai tidak aktif
+                    conn.execute(
+                        text("""
+                            UPDATE hasil_penilaian SET is_active = FALSE 
+                            WHERE user_id = :user_id AND assignment_id = :assignment_id
+                        """),
+                        {"user_id": r["user_id"], "assignment_id": r.get("assignment_id")}
+                    )
+                    
+                    # 3. Insert versi baru sebagai aktif
+                    conn.execute(
+                        text("""
+                            INSERT INTO hasil_penilaian
+                                (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores, highlights, essay_text, version, is_active)
+                            VALUES
+                                (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores, :highlights, :essay_text, :version, :is_active)
+                        """),
+                        {
+                            "name": r["name"],
+                            "similarity": float(r["similarity"]),
+                            "grade": r["grade"],
+                            "user_id": r["user_id"],
+                            "kelas_id": r["kelas_id"],
+                            "assignment_id": r.get("assignment_id"),
+                            "file_path": r["file_path"],
+                            "status": r.get("status", "draft"),
+                            "feedback": r.get("feedback"),
+                            "sub_criteria_scores": json.dumps(r.get("sub_criteria_scores")) if r.get("sub_criteria_scores") else None,
+                            "highlights": json.dumps(r.get("highlights")) if r.get("highlights") else None,
+                            "essay_text": r.get("essay_text"),
+                            "version": new_version,
+                            "is_active": True
+                        },
+                    )
     except Exception:
         logger.exception("Gagal menyimpan ke PostgreSQL")
         traceback.print_exc()
