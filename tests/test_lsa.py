@@ -1,9 +1,12 @@
-import os
 from uploaditin_backend.utils.LSA import extract_text_from_txt
 
-def test_extract_text_from_txt_non_existent():
-    # Pass a non-existent file path
-    result = extract_text_from_txt("non_existent_file_12345.txt")
+def test_extract_text_from_txt_non_existent(tmp_path):
+    # Build a guaranteed non-existent file path under the temporary test directory
+    missing_file = tmp_path / "non_existent_file_12345.txt"
+    assert not missing_file.exists()
+
+    # Pass the non-existent file path
+    result = extract_text_from_txt(str(missing_file))
     # Assert that an empty string is returned
     assert result == ""
 
