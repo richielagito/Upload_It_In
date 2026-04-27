@@ -56,6 +56,7 @@ Upload_It_In/
 | `FLASK_SECRET_KEY` | Flask session secret key |
 | `SCORING_ENGINE` | `embeddings` (default) or `legacy` |
 | `EMBEDDING_NORMALIZE` | *(Optional)* `true` to enable L2 normalization of vectors |
+| `ALLOWED_ORIGINS` | *(Optional)* Comma-separated list of allowed CORS origins (default: `http://localhost:3000`) |
 
 Copy the example below into a `.env` file at the project root:
 

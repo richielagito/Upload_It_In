@@ -57,7 +57,19 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)
+
+_allowed_origins_raw = os.getenv("ALLOWED_ORIGINS")
+if _allowed_origins_raw is None:
+    allowed_origins = ["http://localhost:3000"]
+else:
+    allowed_origins = [origin.strip() for origin in _allowed_origins_raw.split(",") if origin.strip()]
+    if not allowed_origins:
+        raise RuntimeError(
+            "ALLOWED_ORIGINS is set but does not contain any valid origins. "
+            "Provide a comma-separated list of origins, for example: "
+            "\"http://localhost:3000,https://example.com\""
+        )
+CORS(app, origins=allowed_origins)
 
 # --- Security: secret key wajib di-set via environment variable ---
 _secret = os.getenv("FLASK_SECRET_KEY")
