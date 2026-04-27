@@ -1,0 +1,8 @@
+{
+  "track_id": "dynamic_assignment_submission_20260427",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-04-27T10:00:00Z",
+  "updated_at": "2026-04-27T10:00:00Z",
+  "description": "Dynamic Assignment Submission & Publication Control: Refactor student submission workflow to be centralized on the Assignment Card with a two-stage process and hide feedback until published."
+}
