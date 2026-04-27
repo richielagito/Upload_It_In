@@ -4,4 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
+- [ ] **Track: Dynamic Assignment Submission & Publication Control**
+*Link: [./tracks/dynamic_assignment_submission_20260427/](./tracks/dynamic_assignment_submission_20260427/)*
+
 
