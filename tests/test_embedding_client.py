@@ -88,6 +88,45 @@ def test_get_embeddings_missing_key_fails_fast(monkeypatch):
     assert "GEMINI_API_KEY" in str(exc.value)
 
 
+def test_is_auth_or_config_error_status_codes():
+    # True cases
+    for code in (400, 401, 403):
+        exc = _StatusError("some random message", status_code=code)
+        assert embedding_client._is_auth_or_config_error(exc) is True
+
+    # False cases
+    for code in (500, 404, 200, 429):
+        exc = _StatusError("some random message", status_code=code)
+        assert embedding_client._is_auth_or_config_error(exc) is False
+
+
+def test_is_auth_or_config_error_messages():
+    # True cases
+    tokens = [
+        "api key",
+        "invalid key",
+        "authentication",
+        "unauthorized",
+        "permission denied",
+        "forbidden",
+    ]
+    for token in tokens:
+        # Test exact match
+        exc = Exception(token)
+        assert embedding_client._is_auth_or_config_error(exc) is True
+
+        # Test case insensitivity and substrings
+        exc = Exception(f"Some Error: {token.upper()} provided")
+        assert embedding_client._is_auth_or_config_error(exc) is True
+
+    # False cases
+    exc = Exception("generic server error 500")
+    assert embedding_client._is_auth_or_config_error(exc) is False
+
+    exc = Exception("Connection timeout")
+    assert embedding_client._is_auth_or_config_error(exc) is False
+
+
 def test_normalize_vector_standard():
     vector = [3.0, 4.0]
     normalized = embedding_client._normalize_vector(vector)
