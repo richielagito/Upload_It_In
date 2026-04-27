@@ -17,26 +17,20 @@ class _FakeResponse:
         return self._payload
 
 
-class _FakeCursor:
-    def __init__(self, admin_row=None):
-        self.admin_row = admin_row
-
-    def execute(self, *_args, **_kwargs):
-        return None
+class _FakeResult:
+    def __init__(self, row=None):
+        self._row = row
 
     def fetchone(self):
-        return self.admin_row
-
-    def close(self):
-        return None
+        return self._row
 
 
 class _FakeConn:
     def __init__(self, admin_row=None):
         self.admin_row = admin_row
 
-    def cursor(self):
-        return _FakeCursor(admin_row=self.admin_row)
+    def execute(self, *_args, **_kwargs):
+        return _FakeResult(row=self.admin_row)
 
     def close(self):
         return None
@@ -70,7 +64,7 @@ def test_set_session_valid_token_sets_session(monkeypatch, app_module):
         )
 
     monkeypatch.setattr(app_module.requests, "get", fake_requests_get)
-    monkeypatch.setattr(app_module, "get_postgres_conn", lambda: _FakeConn(admin_row=None))
+    monkeypatch.setattr(app_module, "get_db", lambda: _FakeConn(admin_row=None))
 
     client = app_module.app.test_client()
     resp = client.post("/set_session", json={"access_token": "token-123"})
@@ -98,7 +92,7 @@ def test_set_session_missing_token(monkeypatch, app_module):
 
 def test_set_session_invalid_token_returns_401(monkeypatch, app_module):
     monkeypatch.setattr(app_module.requests, "get", lambda *_args, **_kwargs: _FakeResponse(401, {"error": "invalid"}))
-    monkeypatch.setattr(app_module, "get_postgres_conn", lambda: _FakeConn(admin_row=None))
+    monkeypatch.setattr(app_module, "get_db", lambda: _FakeConn(admin_row=None))
 
     client = app_module.app.test_client()
     resp = client.post("/set_session", json={"access_token": "bad-token"})
@@ -120,7 +114,7 @@ def test_set_session_admin_override(monkeypatch, app_module):
             },
         ),
     )
-    monkeypatch.setattr(app_module, "get_postgres_conn", lambda: _FakeConn(admin_row=(1,)))
+    monkeypatch.setattr(app_module, "get_db", lambda: _FakeConn(admin_row=(1,)))
 
     client = app_module.app.test_client()
     resp = client.post("/set_session", json={"access_token": "token-admin"})

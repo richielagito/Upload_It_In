@@ -9,6 +9,7 @@ os.environ.setdefault('host', 'localhost')
 os.environ.setdefault('port', '5432')
 os.environ.setdefault('dbname', 'test_db')
 os.environ['SCORING_ENGINE'] = 'legacy'
+os.environ.setdefault('FLASK_SECRET_KEY', 'test-secret-key-for-tests')
 
 import uploaditin_backend.app as app_module
 

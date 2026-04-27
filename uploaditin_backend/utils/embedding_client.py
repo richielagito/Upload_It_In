@@ -77,6 +77,15 @@ def _create_genai_client(api_key: str):
     return genai.Client(api_key=api_key)
 
 
+_client_cache: dict = {}
+
+
+def _get_or_create_client(api_key: str):
+    if api_key not in _client_cache:
+        _client_cache[api_key] = _create_genai_client(api_key)
+    return _client_cache[api_key]
+
+
 def _extract_embedding_values(embedding_obj) -> List[float]:
     values = getattr(embedding_obj, "values", None)
     if values is None:
@@ -139,7 +148,7 @@ def get_embeddings(
 
     normalize = os.getenv("EMBEDDING_NORMALIZE", "false").strip().lower() in ("1", "true", "yes", "on")
     max_attempts = max(1, DEFAULT_MAX_ATTEMPTS)
-    client = _create_genai_client(api_key)
+    client = _get_or_create_client(api_key)
 
     ordered_vectors: List[List[float]] = []
     for start in range(0, len(texts), batch_size):

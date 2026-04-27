@@ -29,7 +29,7 @@ def test_missing_student_answer_scores_zero(fixtures):
     teacher = fixtures["teacher"]
     student = fixtures["student_missing"]
 
-    avg_similarity, grade = lsa_similarity(teacher, student)
+    avg_similarity, grade, per_question = lsa_similarity(teacher, student)
 
     # Per LSA behavior: missing answer => per-question sim 0 included in average
     # There are 3 teacher answers, student provided 2 -> one zero included
@@ -83,7 +83,7 @@ def test_malformed_teacher_returns_zero(monkeypatch, fixtures):
     student = fixtures["student_full"]
 
     # Embedding path should not be required here; test LSA path behavior
-    avg_similarity, grade = lsa_similarity(teacher, student)
+    avg_similarity, grade, per_question = lsa_similarity(teacher, student)
     assert avg_similarity == 0.0
     assert grade == 0
 

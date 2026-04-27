@@ -2,10 +2,13 @@ import fitz
 from docx import Document  
 import os
 import re
+import logging
 import numpy as np
 from collections import Counter
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
+
+logger = logging.getLogger(__name__)
 
 # --- File Read ---
 
@@ -14,7 +17,7 @@ def extract_text_from_pdf(path):
         doc = fitz.open(path)
         return " ".join(page.get_text("text") for page in doc.pages())
     except Exception as e:
-        print(f"Error membaca PDF {path}: {e}")
+        logger.error("Error membaca PDF %s: %s", path, e)
         return ""
 
 def extract_text_from_docx(path):
@@ -22,7 +25,7 @@ def extract_text_from_docx(path):
         doc = Document(path)
         return " ".join([para.text for para in doc.paragraphs])
     except Exception as e:
-        print(f"Error membaca DOCX {path}: {e}")
+        logger.error("Error membaca DOCX %s: %s", path, e)
         return ""
 
 def extract_text_from_txt(path):
@@ -30,7 +33,7 @@ def extract_text_from_txt(path):
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
-        print(f"Error membaca TXT {path}: {e}")
+        logger.error("Error membaca TXT %s: %s", path, e)
         return ""
 
 def extract_text_from_any(path):
@@ -42,7 +45,7 @@ def extract_text_from_any(path):
     elif ext == ".txt":
         return extract_text_from_txt(path)
     else:
-        print(f"Format tidak didukung: {ext}")
+        logger.warning("Format tidak didukung: %s", ext)
         return ""
 
 def extract_answers(text):
@@ -51,14 +54,30 @@ def extract_answers(text):
     return {num.strip(): ans.strip() for num, ans in matches}
 
 # --- Text Preprocessing ---
-stemmer = StemmerFactory().create_stemmer()
-stopword_remover = StopWordRemoverFactory().create_stop_word_remover()
+
+_stemmer = None
+_stopword_remover = None
+
+
+def _get_stemmer():
+    global _stemmer
+    if _stemmer is None:
+        _stemmer = StemmerFactory().create_stemmer()
+    return _stemmer
+
+
+def _get_stopword_remover():
+    global _stopword_remover
+    if _stopword_remover is None:
+        _stopword_remover = StopWordRemoverFactory().create_stop_word_remover()
+    return _stopword_remover
+
 
 def preprocess(text):
     text = text.lower()
     text = re.sub(r'[^a-z\s]', ' ', text)
-    text = stopword_remover.remove(text)
-    text = stemmer.stem(text)
+    text = _get_stopword_remover().remove(text)
+    text = _get_stemmer().stem(text)
     tokens = text.split()
     return tokens
 
@@ -87,6 +106,7 @@ def compute_tfidf(docs):
     return tfidf_matrix
 
 def truncated_svd(matrix, n_components=2):
+    n_components = min(n_components, matrix.shape[0], matrix.shape[1])
     U, S, VT = np.linalg.svd(matrix, full_matrices=False)
     S_matrix = np.diag(S[:n_components])
     return np.dot(U[:, :n_components], S_matrix)
