@@ -1,5 +1,5 @@
 import pytest
-from app import get_clean_ext
+from uploaditin_backend.app import get_clean_ext
 
 def test_get_clean_ext_valid_extensions():
     assert get_clean_ext("http://example.com/file.pdf") == ".pdf"
