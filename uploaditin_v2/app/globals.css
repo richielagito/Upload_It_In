@@ -36,6 +36,99 @@ body {
   font-family: var(--font-sans);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-headline);
+}
+
+@keyframes loading-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 1.5s infinite linear;
+}
+
+/* Essay Highlights */
+.hl {
+  border-radius: 4px;
+  padding: 2px 0;
+  cursor: help;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.hl-strong {
+  background-color: rgba(34, 197, 94, 0.2);
+  border-bottom: 2px solid rgba(34, 197, 94, 0.4);
+}
+
+.hl-strong:hover {
+  background-color: rgba(34, 197, 94, 0.3);
+}
+
+.hl-weak {
+  background-color: rgba(239, 68, 68, 0.2);
+  border-bottom: 2px solid rgba(239, 68, 68, 0.4);
+}
+
+.hl-weak:hover {
+  background-color: rgba(239, 68, 68, 0.3);
+}
+
+.hl::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background-color: #1e293b;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  line-height: 1.5;
+  width: max-content;
+  max-width: 300px;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+  white-space: normal;
+}
+
+.hl:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-15px);
+}
+
+/* globals.css */
+@layer base {
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+  }
+
+  input[type=number] {
+    -moz-appearance: textfield !important;
+  }
 }

@@ -26,6 +26,7 @@ _here = pathlib.Path(__file__).resolve().parent
 if str(_here) not in sys.path:
     sys.path.insert(0, str(_here))
 
+
 from utils.db import (
     fetch_all_results,
     fetch_results_by_assignment_id,
@@ -48,6 +49,7 @@ from utils.LSA import (
 )
 from utils.embedding_scorer import embedding_score_submission
 from utils.feedback_generator import generate_pedagogical_feedback
+from utils.highlight_helper import extract_highlights
 from sqlalchemy import text
 
 load_dotenv()
@@ -983,10 +985,15 @@ def api_upload_student_answer(assignment_id):
 
         # Generate Pedagogical Feedback using Gemini
         try:
-            feedback = generate_pedagogical_feedback(guru_text, murid_text, grade)
+            feedback_data = generate_pedagogical_feedback(guru_text, murid_text, grade)
+            feedback = feedback_data.get("feedback", "Gagal menghasilkan feedback otomatis.")
+            raw_highlights = feedback_data.get("highlights", [])
+            # Extract actual spans in student text
+            highlights = extract_highlights(murid_text, raw_highlights)
         except Exception:
             logger.exception("Feedback generation failed")
             feedback = "Gagal menghasilkan feedback otomatis."
+            highlights = []
 
     result_to_save = {
         "name": nama_user,
@@ -998,7 +1005,9 @@ def api_upload_student_answer(assignment_id):
         "file_path": murid_url,
         "status": "draft",
         "feedback": feedback,
-        "sub_criteria_scores": sub_criteria_scores
+        "sub_criteria_scores": sub_criteria_scores,
+        "highlights": highlights,
+        "essay_text": murid_text
     }
 
     try:

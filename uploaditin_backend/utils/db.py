@@ -41,40 +41,53 @@ def get_engine():
 
 
 def simpan_ke_postgres(results):
-    """Simpan atau update hasil penilaian menggunakan ON CONFLICT (atomic upsert)."""
+    """Simpan atau update hasil penilaian menggunakan ON CONFLICT (atomic upsert) secara bulk."""
+    if not results:
+        return
+
+    params = [
+        {
+            "name": r["name"],
+            "similarity": float(r["similarity"]),
+            "grade": r["grade"],
+            "user_id": r["user_id"],
+            "kelas_id": r["kelas_id"],
+            "assignment_id": r.get("assignment_id"),
+            "file_path": r["file_path"],
+            "status": r.get("status", "draft"),
+            "feedback": r.get("feedback"),
+            "sub_criteria_scores": json.dumps(r.get("sub_criteria_scores"))
+            if r.get("sub_criteria_scores")
+            else None,
+            "highlights": json.dumps(r.get("highlights")) if r.get("highlights") else None,
+            "essay_text": r.get("essay_text"),
+        }
+        for r in results
+    ]
+
     try:
         with get_engine().begin() as conn:
-            for r in results:
-                conn.execute(
-                    text("""
-                        INSERT INTO hasil_penilaian
-                            (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores)
-                        VALUES
-                            (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores)
-                        ON CONFLICT (user_id, assignment_id)
-                        DO UPDATE SET
-                            nama_murid  = EXCLUDED.nama_murid,
-                            similarity  = EXCLUDED.similarity,
-                            nilai       = EXCLUDED.nilai,
-                            file_path   = EXCLUDED.file_path,
-                            status      = EXCLUDED.status,
-                            feedback    = EXCLUDED.feedback,
-                            sub_criteria_scores = EXCLUDED.sub_criteria_scores,
-                            updated_at  = NOW()
-                    """),
-                    {
-                        "name": r["name"],
-                        "similarity": float(r["similarity"]),
-                        "grade": r["grade"],
-                        "user_id": r["user_id"],
-                        "kelas_id": r["kelas_id"],
-                        "assignment_id": r.get("assignment_id"),
-                        "file_path": r["file_path"],
-                        "status": r.get("status", "draft"),
-                        "feedback": r.get("feedback"),
-                        "sub_criteria_scores": json.dumps(r.get("sub_criteria_scores")) if r.get("sub_criteria_scores") else None,
-                    },
-                )
+            conn.execute(
+                text("""
+                    INSERT INTO hasil_penilaian
+                        (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores, highlights, essay_text)
+                    VALUES
+                        (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores, :highlights, :essay_text)
+                    ON CONFLICT (user_id, assignment_id)
+                    DO UPDATE SET
+                        nama_murid  = EXCLUDED.nama_murid,
+                        similarity  = EXCLUDED.similarity,
+                        nilai       = EXCLUDED.nilai,
+                        file_path   = EXCLUDED.file_path,
+                        status      = EXCLUDED.status,
+                        feedback    = EXCLUDED.feedback,
+                        sub_criteria_scores = EXCLUDED.sub_criteria_scores,
+                        highlights  = EXCLUDED.highlights,
+                        essay_text  = EXCLUDED.essay_text,
+                        updated_at  = NOW()
+                """),
+                params,
+            )
     except Exception:
         logger.exception("Gagal menyimpan ke PostgreSQL")
         traceback.print_exc()
@@ -94,6 +107,11 @@ def fetch_all_results(user_id, status=None):
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
+                if r.get("highlights") and isinstance(r["highlights"], str):
+                    try:
+                        r["highlights"] = json.loads(r["highlights"])
+                    except Exception:
+                        pass
             return results
     except Exception:
         logger.exception("Gagal fetch data dari PostgreSQL")
@@ -113,6 +131,11 @@ def fetch_results_by_kelas(kelas_id, status=None):
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
+                if r.get("highlights") and isinstance(r["highlights"], str):
+                    try:
+                        r["highlights"] = json.loads(r["highlights"])
+                    except Exception:
+                        pass
             return results
     except Exception:
         logger.exception("Gagal fetch data dari PostgreSQL (by kelas)")
@@ -151,6 +174,11 @@ def fetch_results_by_kode_kelas(kode_kelas, user_id, status=None):
             results = [dict(row) for row in result.mappings()]
             for r in results:
                 r["similarity"] = float(r["similarity"])
+                if r.get("highlights") and isinstance(r["highlights"], str):
+                    try:
+                        r["highlights"] = json.loads(r["highlights"])
+                    except Exception:
+                        pass
             return results
     except Exception:
         logger.exception("Gagal fetch data dari PostgreSQL (by kode_kelas)")
@@ -161,7 +189,7 @@ def fetch_results_by_assignment_id(assignment_id, status=None):
     try:
         with get_engine().connect() as conn:
             query = """
-                SELECT id, nama_murid, similarity, nilai, status, feedback, sub_criteria_scores, created_at
+                SELECT id, nama_murid, similarity, nilai, status, feedback, sub_criteria_scores, highlights, essay_text, created_at
                 FROM public.hasil_penilaian
                 WHERE assignment_id = :assignment_id
             """
@@ -178,6 +206,11 @@ def fetch_results_by_assignment_id(assignment_id, status=None):
                 if r.get("sub_criteria_scores") and isinstance(r["sub_criteria_scores"], str):
                     try:
                         r["sub_criteria_scores"] = json.loads(r["sub_criteria_scores"])
+                    except Exception:
+                        pass
+                if r.get("highlights") and isinstance(r["highlights"], str):
+                    try:
+                        r["highlights"] = json.loads(r["highlights"])
                     except Exception:
                         pass
             return results

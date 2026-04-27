@@ -77,17 +77,17 @@ export default function HowItWorks() {
                     </span>
 
                     {/* The Masked Number Overlay (Google Photos Style) */}
-                    <span className="absolute inset-0 flex items-center justify-center text-[14rem] font-black leading-none text-transparent bg-clip-text bg-gradient-to-br from-primary via-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-95 group-hover:scale-100 font-headline">
+                    <span className="absolute inset-0 flex items-center justify-center text-[14rem] font-black leading-none text-transparent bg-clip-text bg-gradient-to-br from-primary via-primary-container to-secondary opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-95 group-hover:scale-100 font-headline">
                       {step.id}
                     </span>
 
                     {/* Icon Node */}
-                    <div className="relative z-10 w-20 h-20 rounded-[1.5rem] bg-white shadow-xl shadow-blue-500/10 flex items-center justify-center text-primary group-hover:scale-110 group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-primary-container group-hover:text-white transition-all duration-200 border border-slate-100">
+                    <div className="relative z-10 w-20 h-20 rounded-[1.5rem] bg-white shadow-xl shadow-primary/10 flex items-center justify-center text-primary group-hover:scale-110 group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-primary-container group-hover:text-white transition-all duration-200 border border-slate-100">
                       {step.icon}
                     </div>
 
                     {/* Floating Decorative Elements */}
-                    <div className="absolute -top-4 -right-4 w-12 h-12 bg-blue-50 rounded-full blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" />
+                    <div className="absolute -top-4 -right-4 w-12 h-12 bg-primary/10 rounded-full blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-300 pointer-events-none" />
                   </div>
 
                   <div className="text-center max-w-[240px] px-2">

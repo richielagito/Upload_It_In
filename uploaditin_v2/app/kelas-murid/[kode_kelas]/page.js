@@ -22,10 +22,13 @@ export default function ClassDetailsStudent() {
     const [uploadingId, setUploadingId] = useState(null);
     const [selectedFiles, setSelectedFiles] = useState({});
 
-  // Feedback Panel State
-  const [showFeedback, setShowFeedback] = useState(false);
+  // View Management State
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'detail'
   const [activeAssignment, setActiveAssignment] = useState(null);
   const [activeResult, setActiveResult] = useState(null);
+  const [stagedFile, setStagedFile] = useState(null);
+  const [isStaging, setIsStaging] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -73,32 +76,64 @@ export default function ClassDetailsStudent() {
       } catch (e) { console.error(e); }
   };
 
-  const handleUploadAnswer = async (e, assignmentId) => {
-      e.preventDefault();
-      const file = e.target.files?.[0];
+  const handleStageFile = async (e, assignmentId) => {
+      const file = e.target?.files?.[0];
       if (!file) return;
 
-      setUploadingId(assignmentId);
+      setIsStaging(true);
+      setStagedFile(file);
+      
+      // Simulate upload progress
+      setTimeout(() => {
+          setIsStaging(false);
+          toast.info(`${file.name} is ready to turn in.`);
+      }, 1500);
+  };
+
+  const handleUnTurnIn = () => {
+      setIsEditing(true);
+      toast.info("You can now change your submission.");
+  };
+
+  const handleTurnIn = async () => {
+      if (!stagedFile || !activeAssignment) return;
+
+      setUploadingId(activeAssignment.id);
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', stagedFile);
 
       try {
-          const res = await fetch(`/api/assignments/upload/${assignmentId}`, {
+          const res = await fetch(`/api/assignments/upload/${activeAssignment.id}`, {
               method: 'POST',
               body: formData
           });
-          const data = await res.json();
-          if (res.ok && data.success) {
-              toast.success('Uploaded successfully!');
-              setSelectedFiles(prev => ({...prev, [assignmentId]: null}));
-              fetchAssignments(); // Refresh status (is_submitted)
-              setTimeout(() => window.location.reload(), 1000); // Reload to ensure sync
+          
+          let data;
+          try {
+              data = await res.json();
+          } catch (e) {
+              throw new Error(`Server returned an invalid response (Status: ${res.status}). This usually means the request timed out because the AI took too long to respond.`);
+          }
+          
+          if (res.ok && data?.success) {
+              toast.success('Assignment turned in successfully!');
+              setStagedFile(null);
+              setIsEditing(false);
+              await Promise.all([fetchAssignments(), fetchMyResults()]);
+              
+              // Find the new result to update the view
+              const newRes = await fetch(`/api/results/kelas-kode/${kode_kelas}`);
+              if (newRes.ok) {
+                  const resultsData = await newRes.json();
+                  const updatedResult = resultsData.find(r => r.assignment_id === activeAssignment.id);
+                  setActiveResult(updatedResult);
+              }
           } else {
-              toast.error(data.error || "Upload failed");
+              toast.error(data.error || "Turn in failed");
           }
       } catch (err) {
           console.error(err);
-          toast.error('An unexpected error occurred during upload');
+          toast.error(err.message || 'An unexpected error occurred during turn in');
       } finally {
           setUploadingId(null);
       }
@@ -106,140 +141,201 @@ export default function ClassDetailsStudent() {
 
   if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
 
+  const activeDeadlineDate = activeAssignment?.deadline ? new Date(activeAssignment.deadline.replace(' ', 'T')) : null;
+  const isActiveDeadlineOpen = !activeDeadlineDate || new Date() < activeDeadlineDate;
+
   return (
     <DashboardShell role="Student" username={user?.user_metadata?.username}>
         <div className="mb-8">
-            <Link href="/dashboard" className="text-slate-500 hover:text-blue-600 flex items-center gap-1 mb-4 text-sm font-medium">
-                <ArrowLeft size={16} /> Back to Dashboard
-            </Link>
-            <h1 className="text-3xl font-bold text-slate-900 mb-1">{classInfo?.nama_kelas}</h1>
-            <p className="text-slate-500">View assignments and your grades</p>
+            {viewMode === 'list' ? (
+                <Link href="/dashboard" className="text-slate-500 hover:text-primary flex items-center gap-2 mb-6 text-sm font-bold font-sans transition-colors group">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <ArrowLeft size={16} />
+                    </div>
+                    Back to Dashboard
+                </Link>
+            ) : (
+                <button 
+                    onClick={() => {
+                        setViewMode('list');
+                        setIsEditing(false);
+                        setStagedFile(null);
+                    }}
+                    className="text-slate-500 hover:text-primary flex items-center gap-2 mb-6 text-sm font-bold font-sans transition-colors group"
+                >
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <ArrowLeft size={16} />
+                    </div>
+                    Back to {classInfo?.nama_kelas || 'Class'}
+                </button>
+            )}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm shadow-primary/5">
+                <div className="flex-1">
+                    <h1 className="text-3xl font-extrabold text-foreground mb-2 font-headline tracking-tight">
+                        {viewMode === 'detail' && activeAssignment ? activeAssignment.judul : classInfo?.nama_kelas}
+                    </h1>
+                    <p className="text-slate-500 font-sans font-medium">
+                        {viewMode === 'detail' ? 'Assignment Details & Feedback' : 'View assignments and your performance'}
+                    </p>
+                </div>
+                
+                {viewMode === 'detail' && activeAssignment && (
+                    <div className="flex items-center gap-4">
+                        {activeResult && !isEditing ? (
+                            <>
+                                <div className="flex flex-col items-end">
+                                    <span className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest font-sans">Status</span>
+                                    <span className="text-sm font-extrabold text-slate-900 font-headline">Pending Review</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button 
+                                        disabled
+                                        className="px-8 py-3 bg-surface-low text-slate-400 rounded-2xl font-bold cursor-not-allowed flex items-center gap-2 border border-slate-100"
+                                    >
+                                        <CheckCircle size={18} />
+                                        Turned In
+                                    </button>
+                                    <button 
+                                        onClick={handleUnTurnIn}
+                                        disabled={!isActiveDeadlineOpen}
+                                        className="px-6 py-3 bg-white border-2 border-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 hover:border-primary/20 hover:text-primary transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed font-headline"
+                                    >
+                                        Un Turn In
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <button 
+                                onClick={handleTurnIn}
+                                disabled={!stagedFile || isStaging || uploadingId === activeAssignment.id || !isActiveDeadlineOpen}
+                                className={cn(
+                                    "px-10 py-4 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl font-extrabold hover:shadow-xl hover:shadow-primary/30 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:from-slate-400 disabled:to-slate-500 min-w-[180px] font-headline",
+                                    !activeResult && "px-12"
+                                )}
+                            >
+                                {uploadingId === activeAssignment.id ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Turning in...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle size={20} />
+                                        {activeResult ? 'Turn In Again' : 'Turn In'}
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
 
-        <div className="columns-1 md:columns-2 gap-8 space-y-8 mb-12">
-            {assignments.map(ass => {
-                 const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
-                 const isClosed = deadlineDate && new Date() > deadlineDate;
-                 const result = myResults.find(r => r.assignment_id === ass.id);
-                 const isGraded = !!result;
-                 const isPending = ass.is_submitted && !isGraded;
+        {viewMode === 'list' ? (
+            <div className="columns-1 md:columns-2 gap-8 space-y-8 mb-12">
+                {assignments.map(ass => {
+                    const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
+                    const isClosed = deadlineDate && new Date() > deadlineDate;
+                    const result = myResults.find(r => r.assignment_id === ass.id);
+                    const isGraded = !!result;
+                    const isPending = ass.is_submitted && !isGraded;
 
-                 return (
-                    <div key={ass.id} className="break-inside-avoid-column bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition flex flex-col mb-8 last:mb-0">
-                        <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-xl font-bold text-slate-900">{ass.judul}</h3>
-                        </div>
-                        <p className="text-slate-600 mb-6 text-sm leading-relaxed flex-1">{ass.deskripsi}</p>
-                        
-                        {/* Grade Summary (if graded) */}
-                        {isGraded && (
-                            <div className="mb-6 p-4 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Score</span>
-                                    <span className="text-xl font-black text-slate-900">{result.nilai || result.grade}</span>
+                    return (
+                        <div key={ass.id} className="break-inside-avoid-column bg-white rounded-[2rem] border-2 border-slate-100 p-8 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all flex flex-col mb-8 last:mb-0 group">
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-2xl font-extrabold text-foreground font-headline group-hover:text-primary transition-colors">{ass.judul}</h3>
+                            </div>
+                            <p className="text-slate-600 mb-8 text-sm leading-relaxed flex-1 font-sans font-medium line-clamp-3">{ass.deskripsi}</p>
+                            
+                            {/* Grade Summary (if graded) */}
+                            {isGraded && (
+                                <div className="mb-8 p-5 bg-surface-low border border-primary/10 rounded-[1.5rem] flex items-center justify-between shadow-inner">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans mb-1">Score</span>
+                                        <span className="text-2xl font-black text-primary font-headline">{result.nilai || result.grade}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center font-sans mb-1">Grade</span>
+                                        <span className={cn(
+                                            "px-3 py-1 rounded-lg text-xs font-black shadow-sm",
+                                            parseFloat(result.nilai) >= 80 ? "bg-green-100 text-green-700 border border-green-200" :
+                                            parseFloat(result.nilai) >= 60 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" : "bg-red-100 text-red-700 border border-red-200"
+                                        )}>
+                                            {parseFloat(result.nilai) >= 80 ? 'A' : parseFloat(result.nilai) >= 60 ? 'B/C' : parseFloat(result.nilai) < 60 ? 'D/E' : '-'}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans mb-1">Similarity</span>
+                                        <span className="text-sm font-black text-slate-700 font-mono">{(result.similarity * 100).toFixed(0)}%</span>
+                                    </div>
                                 </div>
-                                <div className="flex flex-col items-center">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Grade</span>
-                                    <span className={cn(
-                                        "px-2 py-0.5 rounded text-xs font-bold mt-0.5",
-                                        parseFloat(result.nilai) >= 80 ? "bg-green-100 text-green-700" :
-                                        parseFloat(result.nilai) >= 60 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"
-                                    )}>
-                                        {parseFloat(result.nilai) >= 80 ? 'A' : parseFloat(result.nilai) >= 60 ? 'B/C' : parseFloat(result.nilai) < 60 ? 'D/E' : '-'}
+                            )}
+
+                            <div className="space-y-3 mb-8 text-sm font-bold font-sans uppercase tracking-widest text-slate-400">
+                                <div className="flex items-center gap-3">
+                                    <Clock size={16} className="text-primary" /> 
+                                    <span className={isClosed ? "text-red-500" : "text-slate-500"}>
+                                        Deadline: {ass.deadline} {isClosed && "(Closed)"}
                                     </span>
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Similarity</span>
-                                    <span className="text-sm font-bold text-slate-700">{result.similarity || "0%"}</span>
-                                </div>
                             </div>
-                        )}
 
-                        <div className="space-y-2 mb-6">
-                            <div className="flex items-center gap-2 text-sm text-slate-500">
-                                <Clock size={16} /> 
-                                <span className={isClosed ? "text-red-500 font-bold" : ""}>
-                                    Deadline: {ass.deadline} {isClosed && "(Closed)"}
-                                </span>
-                            </div>
-                            {ass.file_path && (
-                                <a 
-                                    href={ass.file_path + (ass.file_path.includes('?') ? '&download' : '?download')} 
-                                    className="flex items-center gap-2 text-sm text-blue-600 font-bold hover:underline"
-                                >
-                                    <Download size={16} /> Download Assignment File
-                                </a>
-                            )}
-                        </div>
-
-                        <div className="border-t border-slate-150 pt-4 mt-auto">
-                            {isGraded ? (
+                            <div className="pt-6 border-t border-slate-100 mt-auto">
                                 <button 
                                     onClick={() => {
                                         setActiveAssignment(ass);
                                         setActiveResult(result);
-                                        setShowFeedback(true);
+                                        setViewMode('detail');
+                                        setStagedFile(null);
+                                        setIsEditing(false);
                                     }}
-                                    className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm"
+                                    className="w-full py-4 bg-primary text-white rounded-2xl font-extrabold hover:bg-primary-container transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 font-headline"
                                 >
-                                    <FileText size={18} /> View Detail
+                                    <FileText size={20} /> View Detail & Feedback
                                 </button>
-                            ) : isPending ? (
-                                <button 
-                                    disabled
-                                    className="w-full py-3 bg-slate-100 text-slate-400 rounded-xl font-bold flex items-center justify-center gap-2 cursor-not-allowed"
-                                >
-                                    <Clock size={18} /> Pending Review
-                                </button>
-                            ) : isClosed ? (
-                                <div className="flex items-center gap-2 text-red-500 bg-red-50 p-3 rounded-lg text-sm font-bold justify-center">
-                                    <AlertCircle size={18} /> Assignment Closed
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    <input 
-                                        type="file" 
-                                        id={`file-input-${ass.id}`}
-                                        className="hidden" 
-                                        onChange={(e) => handleUploadAnswer(e, ass.id)}
-                                    />
-                                    <button 
-                                        onClick={() => document.getElementById(`file-input-${ass.id}`).click()}
-                                        disabled={uploadingId === ass.id}
-                                        className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
-                                    >
-                                        {uploadingId === ass.id ? "Uploading..." : (
-                                            <>
-                                                <Upload size={18} /> Submit Answer
-                                            </>
-                                        )}
-                                    </button>
-                                    {selectedFiles[ass.id] && (
-                                        <p className="text-center text-xs text-slate-400">Selected: {selectedFiles[ass.id]}</p>
-                                    )}
-                                </div>
-                            )}
+                            </div>
                         </div>
+                    );
+                })}
+                {assignments.length === 0 && (
+                    <div className="col-span-full text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                        <div className="w-16 h-16 bg-surface-low rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle size={32} className="text-slate-300" />
+                        </div>
+                        <p className="text-slate-500 font-bold font-headline">No assignments active at the moment.</p>
                     </div>
-                 );
-            })}
-            {assignments.length === 0 && <div className="col-span-full text-center py-10 text-slate-500">No assignments active.</div>}
-        </div>
-
-        {showFeedback && activeAssignment && (
-            <FeedbackPanel 
-                assignment={activeAssignment}
-                result={activeResult}
-                onClose={() => setShowFeedback(false)}
-                onReupload={() => {
-                    setTimeout(() => {
-                        document.getElementById(`file-input-${activeAssignment.id}`)?.click();
-                    }, 100);
-                }}
-                isDeadlineOpen={activeAssignment.deadline ? new Date() < new Date(activeAssignment.deadline.replace(' ', 'T')) : true}
-            />
+                )}
+            </div>
+        ) : (
+            activeAssignment && (
+                <>
+                    <input 
+                        type="file" 
+                        id={`file-stage-input`}
+                        className="hidden" 
+                        onChange={(e) => handleStageFile(e, activeAssignment.id)}
+                    />
+                    <FeedbackPanel 
+                        assignment={activeAssignment}
+                        result={activeResult}
+                        stagedFile={stagedFile}
+                        isStaging={isStaging}
+                        isEditing={isEditing}
+                        isUploading={uploadingId === activeAssignment.id}
+                        onClose={() => {
+                            setViewMode('list');
+                            setStagedFile(null);
+                            setIsEditing(false);
+                        }}
+                        onStage={(val) => {
+                            if (val === null) setStagedFile(null);
+                            else document.getElementById(`file-stage-input`)?.click();
+                        }}
+                        isDeadlineOpen={isActiveDeadlineOpen}
+                    />
+                </>
+            )
         )}
-
     </DashboardShell>
   );
 }

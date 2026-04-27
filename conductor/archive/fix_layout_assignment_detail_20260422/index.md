@@ -1,9 +1,8 @@
-# Project Context
+# Track fix_layout_assignment_detail_20260422 Context
 
-## Definition
-- [Product Definition](./product.md)
-- [Product Guidelines](./product-guidelines.md)
-- [Tech Stack](./tech-stack.md)
+- [Specification](./spec.md)
+- [Implementation Plan](./plan.md)
+- [Metadata](./metadata.json)d)
 
 ## Workflow
 - [Workflow](./workflow.md)

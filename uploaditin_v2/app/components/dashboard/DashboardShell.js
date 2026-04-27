@@ -66,8 +66,8 @@ export default function DashboardShell({ children, role, username, onLogout }) {
         )}
       >
         <div className="h-16 flex items-center px-6 border-b border-slate-100">
-           <Link href="/dashboard" className="text-2xl font-bold text-slate-800 flex items-center">
-            Upload<span className="text-blue-600">ItIn</span>
+           <Link href="/dashboard" className="text-2xl font-extrabold text-foreground flex items-center font-headline tracking-tight">
+            Scova<span className="text-primary">.ai</span>
           </Link>
         </div>
 
@@ -75,12 +75,12 @@ export default function DashboardShell({ children, role, username, onLogout }) {
             
              {/* Main Navigation */}
             <div className="space-y-1">
-                <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-4">Menu</p>
+                <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 mt-4 font-sans">Menu</p>
                 <Link 
                     href="/dashboard" 
                     className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium",
-                        pathname === '/dashboard' ? "bg-blue-50 text-blue-600" : "text-slate-600 hover:bg-slate-100"
+                        "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold font-sans",
+                        pathname === '/dashboard' ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-primary/5 hover:text-primary"
                     )}
                 >
                     <BarChart size={20} />
@@ -89,12 +89,12 @@ export default function DashboardShell({ children, role, username, onLogout }) {
             </div>
 
             <div className="space-y-1 mt-auto">
-                <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 mt-8">Support</p>
-                <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors font-medium">
+                <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 mt-8 font-sans">Support</p>
+                <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-primary/5 hover:text-primary transition-all font-bold font-sans">
                     <HelpCircle size={20} />
                     Help & Support
                 </a>
-                <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors font-medium">
+                <a href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-primary/5 hover:text-primary transition-all font-bold font-sans">
                     <Settings size={20} />
                     Settings
                 </a>
@@ -108,7 +108,7 @@ export default function DashboardShell({ children, role, username, onLogout }) {
                     await fetch('/logout');
                     window.location.href = '/login-register';
                 }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-colors font-medium"
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold font-sans"
             >
                 <LogOut size={20} />
                 Sign Out
@@ -122,17 +122,17 @@ export default function DashboardShell({ children, role, username, onLogout }) {
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8">
             <button 
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="lg:hidden p-2 text-slate-600 hover:bg-primary/5 rounded-lg transition-all"
             >
                 <Menu size={24} />
             </button>
 
             <div className="flex items-center gap-4 ml-auto">
                 <div className="text-right hidden md:block">
-                    <div className="text-sm font-bold text-slate-800">{username || 'User'}</div>
-                    <div className="text-xs text-blue-600 font-medium">{role || 'Student'}</div>
+                    <div className="text-sm font-extrabold text-foreground font-headline tracking-tight">{username || 'User'}</div>
+                    <div className="text-xs text-primary font-bold font-sans uppercase tracking-wider">{role || 'Student'}</div>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 border border-blue-200">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 transition-all shadow-sm">
                     <User size={20} />
                 </div>
             </div>

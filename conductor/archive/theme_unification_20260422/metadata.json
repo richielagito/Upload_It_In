@@ -1,0 +1,8 @@
+{
+  "track_id": "theme_unification_20260422",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-04-22T00:00:00Z",
+  "updated_at": "2026-04-22T00:00:00Z",
+  "description": "Theme Unification - harmonizing the color palette across the Scova application (Landing page, Dashboard, Login) using the Core Color Palette defined in CSS variables and Tailwind config."
+}

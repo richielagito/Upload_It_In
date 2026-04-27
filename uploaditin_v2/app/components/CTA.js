@@ -8,7 +8,7 @@ export default function CTA() {
   return (
     <section className="bg-gradient-to-br from-[#001E4D] via-foreground to-black text-white overflow-hidden relative">
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 opacity-60" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 opacity-40" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary-container/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 opacity-40" />
 
       <div className="container mx-auto px-6 py-28 lg:py-40 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
@@ -18,7 +18,7 @@ export default function CTA() {
             viewport={{ once: true }}
             className="text-4xl md:text-6xl font-black mb-8 font-headline tracking-tighter leading-tight"
           >
-            Ready for <span className="text-blue-400 italic">Better Feedback?</span>
+            Ready for <span className="text-primary-container italic underline decoration-primary/30 underline-offset-8">Better Feedback?</span>
           </motion.h2>
           
           <motion.p 
