@@ -121,10 +121,6 @@ def generate_unique_class_code(length: int = 6):
     return code
 
 
-def clean_part(s: str) -> str:
-    return re.sub(r'[\\/*?:"<>| ]', "", s)
-
-
 def get_clean_ext(url: str) -> str:
     path = urlparse(url).path
     ext = os.path.splitext(path)[-1]
