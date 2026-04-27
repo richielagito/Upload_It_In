@@ -98,8 +98,8 @@ def test_normalize_vector_zero():
     vector = [0.0, 0.0, 0.0]
     normalized = embedding_client._normalize_vector(vector)
     assert normalized == [0.0, 0.0, 0.0]
-    # Ensure it returns a new list or at least correctly handles it
-    assert normalized is not vector or list(vector) == vector
+    # Ensure the zero-vector path returns a distinct list object.
+    assert normalized is not vector
 
 
 def test_normalize_vector_negative():
