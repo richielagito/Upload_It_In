@@ -210,7 +210,7 @@ export default function ClassDetailsStudent() {
 
                             // This should have been the assignment cards
                             return (
-                            <div key={ass.id} className="break-inside-avoid-column bg-white rounded-[2rem] border-2 border-slate-100 p-8 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all flex flex-col mb-8 last:mb-0 group">
+                            <div key={ass.id} className="break-inside-avoid-column bg-white rounded-4xl border-2 border-slate-100 p-8 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all flex flex-col mb-8 last:mb-0 group">
                                 <div className="flex justify-between items-start mb-4">
                                     <h3 className="text-2xl font-extrabold text-foreground font-headline group-hover:text-primary transition-colors">{ass.judul}</h3>
                                     {ass.is_submitted && (
@@ -223,7 +223,7 @@ export default function ClassDetailsStudent() {
 
                                 {/* Grade Summary (if graded AND published) */}
                                 {isGraded && (
-                                    <div className="mb-8 p-5 bg-surface-low border border-primary/10 rounded-[1.5rem] flex items-center justify-between shadow-inner">
+                                    <div className="mb-8 p-5 bg-surface-low border border-primary/10 rounded-3xl flex items-center justify-between shadow-inner">
                                         <div className="flex flex-col">
                                             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans mb-1">Score</span>
                                             <span className="text-2xl font-black text-primary font-headline">{result.nilai || result.grade}</span>
