@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, FileText, Upload, Download, CheckCircle, Clock, AlertCircle, UploadCloud } from 'lucide-react';
@@ -157,6 +157,8 @@ export default function ClassDetailsStudent() {
         }
     };
 
+    const resultsMap = useMemo(() => new Map(myResults.map(r => [r.assignment_id, r])), [myResults]);
+
     if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
 
     const activeDeadlineDate = activeAssignment?.deadline ? new Date(activeAssignment.deadline.replace(' ', 'T')) : null;
@@ -200,13 +202,11 @@ export default function ClassDetailsStudent() {
 
             {viewMode === 'list' ? (
                 <div className="columns-1 md:columns-2 gap-8 space-y-8 mb-12">
-                    {(() => {
-                        const resultsMap = new Map(myResults.map(r => [r.assignment_id, r]));
-                        return assignments.map(ass => {
-                            const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
-                            const isClosed = deadlineDate && new Date() > deadlineDate;
-                            const result = resultsMap.get(ass.id);
-                            const isGraded = !!result && ass.is_published;
+                    {assignments.map(ass => {
+                        const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
+                        const isClosed = deadlineDate && new Date() > deadlineDate;
+                        const result = resultsMap.get(ass.id);
+                        const isGraded = !!result && ass.is_published;
 
                             // This should have been the assignment cards
                             return (
@@ -269,8 +269,7 @@ export default function ClassDetailsStudent() {
                                 </div>
                             </div>
                             );
-                        });
-                    })()}
+                        })}
                     {assignments.length === 0 && (
                         <div className="col-span-full text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
                             <div className="w-16 h-16 bg-surface-low rounded-full flex items-center justify-center mx-auto mb-4">
