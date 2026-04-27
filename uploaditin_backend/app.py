@@ -7,7 +7,6 @@ import logging
 import os
 import pathlib
 import random
-import re
 import string
 import sys
 import tempfile
