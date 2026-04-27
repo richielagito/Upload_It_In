@@ -91,7 +91,6 @@ def test_preflight_disallowed_origin(_client):
 def test_allowed_origins_empty_env_var_raises(monkeypatch):
     """ALLOWED_ORIGINS set to empty/whitespace-only string must raise RuntimeError."""
     monkeypatch.setenv("ALLOWED_ORIGINS", "  ,  ,  ")
-    import importlib
     import sys
 
     # Remove cached module so it re-executes top-level code
@@ -106,7 +105,6 @@ def test_allowed_origins_empty_env_var_raises(monkeypatch):
 def test_allowed_origins_unset_defaults_to_localhost(monkeypatch):
     """When ALLOWED_ORIGINS is not set the default must be http://localhost:3000."""
     monkeypatch.delenv("ALLOWED_ORIGINS", raising=False)
-    import importlib
     import sys
 
     for mod in list(sys.modules.keys()):
