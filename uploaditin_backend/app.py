@@ -58,7 +58,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)
+
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+CORS(app, origins=[origin.strip() for origin in allowed_origins])
 
 # --- Security: secret key wajib di-set via environment variable ---
 _secret = os.getenv("FLASK_SECRET_KEY")
