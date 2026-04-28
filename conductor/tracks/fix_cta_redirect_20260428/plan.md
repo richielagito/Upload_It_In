@@ -19,3 +19,6 @@
     - [x] Update the "Get Started" `<Link>` to point to `/dashboard` if authenticated, else `/login-register`.
 
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Update Landing Page Components' (Protocol in workflow.md)
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions 968cad3
