@@ -1,0 +1,8 @@
+{
+  "track_id": "fix_cta_redirect_20260428",
+  "type": "bug",
+  "status": "new",
+  "created_at": "2026-04-28T00:00:00Z",
+  "updated_at": "2026-04-28T00:00:00Z",
+  "description": "Fix landing page CTA redirect logic to handle authenticated users."
+}
