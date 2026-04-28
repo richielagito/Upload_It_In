@@ -376,13 +376,13 @@ export default function ClassDetailsTeacher() {
                             className={cn(
                                 "p-6 rounded-3xl border-2 cursor-pointer transition-all hover:shadow-xl hover:shadow-primary/5",
                                 selectedAssignmentId === ass.id 
-                                    ? "bg-primary/5 border-primary ring-4 ring-primary/10" 
+                                    ? "bg-white border-primary shadow-xl shadow-primary/5" 
                                     : "bg-white border-slate-100 hover:border-primary/30"
                             )}
                         >
                             <h4 className={cn(
                                 "font-extrabold text-lg mb-2 font-headline transition-colors",
-                                selectedAssignmentId === ass.id ? "text-primary" : "text-slate-900"
+                                selectedAssignmentId === ass.id ? "text-slate-900" : "text-slate-900"
                             )}>{ass.judul}</h4>
                             <p className="text-sm text-slate-500 line-clamp-2 mb-4 font-sans font-medium">{ass.deskripsi}</p>
                             <div className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-wider mb-5">
