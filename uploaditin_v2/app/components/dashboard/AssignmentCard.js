@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { FileText, UploadCloud, CheckCircle, Clock, ExternalLink, AlertCircle, RotateCcw, ArrowRight, Lock } from "lucide-react";
+import { FileText, UploadCloud, CheckCircle, Clock, ExternalLink, AlertCircle, RotateCcw, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FileCard from "./FileCard";
 
@@ -160,11 +160,8 @@ export default function AssignmentCard({
                         ) : isSubmitted ? (
                             /* File is turned in (locked) — NO remove action */
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between px-1">
+                                <div className="px-1">
                                     <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans">Your Submission</p>
-                                    <span className="flex items-center gap-1 text-[9px] font-bold text-primary uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
-                                        <Lock size={10} /> Locked
-                                    </span>
                                 </div>
                                 <FileCard
                                     filename={getFilenameFromUrl(result.file_path)}
