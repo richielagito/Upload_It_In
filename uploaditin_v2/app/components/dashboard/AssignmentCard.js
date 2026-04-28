@@ -35,24 +35,24 @@ export default function AssignmentCard({
     const formatDate = (dateStr) => {
         if (!dateStr) return "";
         try {
-            // Handle "YYYY-MM-DD HH:MM:SS" format from backend
-            const parts = dateStr.includes(" ") ? dateStr.split(" ") : [dateStr];
-            const dateParts = parts[0].split("-");
-            let formattedDate = "";
+            const isoString = dateStr.replace(" ", "T");
+            const dateObj = new Date(isoString);
+            
+            if (isNaN(dateObj)) return dateStr;
 
-            if (dateParts.length === 3) {
-                if (dateParts[0].length === 4) formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-                else formattedDate = `${dateParts[0]}/${dateParts[1]}/${dateParts[2]}`;
-            } else {
-                formattedDate = dateStr;
-            }
+            const datePart = dateObj.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
 
-            if (parts.length > 1) {
-                const timeParts = parts[1].split(":");
-                formattedDate += ` ${timeParts[0]}:${timeParts[1]}`;
-            }
+            const timePart = dateObj.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace('.', ':');
 
-            return formattedDate;
+            return `${datePart} | ${timePart}`;
         } catch (e) {
             return dateStr;
         }
@@ -127,8 +127,8 @@ export default function AssignmentCard({
 
             {/* Submission Area */}
             <div className="mt-auto space-y-6">
-                <div className="flex items-center gap-3 text-sm font-bold font-sans uppercase tracking-widest">
-                    <Clock size={16} className={cn(!isDeadlineOpen ? "text-red-500" : "text-primary")} />
+                <div className="flex items-center gap-3 text-[11px] font-bold font-sans uppercase tracking-widest">
+                    <Clock size={14} className={cn(!isDeadlineOpen ? "text-red-500" : "text-primary")} />
                     <span className={cn(!isDeadlineOpen ? "text-red-500" : "text-slate-500")}>
                         Deadline: {formatDate(assignment.deadline)} {!isDeadlineOpen && "(Closed)"}
                     </span>
