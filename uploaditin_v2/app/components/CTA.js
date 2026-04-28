@@ -3,8 +3,11 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { useSession } from '../hooks/useSession';
 
 export default function CTA() {
+  const { session } = useSession();
+
   return (
     <section className="bg-gradient-to-br from-[#001E4D] via-foreground to-black text-white overflow-hidden relative">
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 opacity-60" />
@@ -38,7 +41,7 @@ export default function CTA() {
              transition={{ delay: 0.2 }}
           >
             <Link 
-              href="/login-register" 
+              href={session ? "/dashboard" : "/login-register"} 
               className="inline-flex px-10 py-4 rounded-xl bg-gradient-to-r from-primary to-primary-container text-white font-bold text-lg hover:shadow-xl hover:shadow-primary/20 transition-all font-headline group/btn items-center"
             >
               Get Started Now <ArrowRight size={24} className="ml-3 group-hover/btn:translate-x-1 transition-transform" />
