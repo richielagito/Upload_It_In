@@ -23,7 +23,7 @@ export function useSession() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase.auth]);
 
   return { session, loading };
 }
