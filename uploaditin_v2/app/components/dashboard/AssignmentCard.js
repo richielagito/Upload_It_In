@@ -37,20 +37,22 @@ export default function AssignmentCard({
         try {
             const isoString = dateStr.replace(" ", "T");
             const dateObj = new Date(isoString);
-            
+
             if (isNaN(dateObj)) return dateStr;
 
-            const datePart = dateObj.toLocaleDateString('id-ID', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
+            const datePart = dateObj.toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
             });
 
-            const timePart = dateObj.toLocaleTimeString('id-ID', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).replace('.', ':');
+            const timePart = dateObj
+                .toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                })
+                .replace(".", ":");
 
             return `${datePart} | ${timePart}`;
         } catch (e) {
@@ -109,11 +111,8 @@ export default function AssignmentCard({
             {assignment.file_path && (
                 <div className="mb-8 space-y-3">
                     <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans ml-1">Reference Material</p>
-                    <div
-                        className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-all group/ref cursor-pointer max-w-md"
-                        onClick={() => window.open(assignment.file_path, "_blank")}
-                    >
-                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-primary group-hover/ref:scale-110 transition-transform">
+                    <div className="flex items-center gap-4 p-4 bg-slate-150 rounded-2xl border border-slate-100 hover:bg-slate-200 transition-all group/ref cursor-pointer" onClick={() => window.open(assignment.file_path, "_blank")}>
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-primary transition-transform">
                             <FileText size={20} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -126,7 +125,7 @@ export default function AssignmentCard({
             )}
 
             {/* Submission Area */}
-            <div className="mt-auto space-y-6">
+            <div className="mt-auto flex-1 flex flex-col space-y-6">
                 <div className="flex items-center gap-3 text-[11px] font-bold font-sans uppercase tracking-widest">
                     <Clock size={14} className={cn(!isDeadlineOpen ? "text-red-500" : "text-primary")} />
                     <span className={cn(!isDeadlineOpen ? "text-red-500" : "text-slate-500")}>
@@ -134,9 +133,9 @@ export default function AssignmentCard({
                     </span>
                 </div>
 
-                <div className="pt-6 border-t border-slate-100">
+                <div className="pt-6 border-t border-slate-100 flex-1 flex flex-col gap-6">
                     {/* Submission State Display */}
-                    <div className="mb-6">
+                    <div className="flex-1 flex flex-col">
                         {stagedFile ? (
                             <div className="space-y-3">
                                 <p className="text-[10px] font-extrabold text-primary uppercase tracking-widest font-sans ml-1">Ready to Turn In</p>
@@ -169,7 +168,7 @@ export default function AssignmentCard({
                                 onDrop={handleDrop}
                                 disabled={!isDeadlineOpen || isUploading}
                                 className={cn(
-                                    "flex flex-col items-center justify-center gap-2 w-full py-8 border-3 border-dashed rounded-3xl text-slate-400 font-extrabold transition-all group/upload disabled:opacity-50 disabled:cursor-not-allowed font-headline",
+                                    "flex flex-col items-center justify-center gap-2 w-full py-8 flex-1 border-3 border-dashed rounded-3xl text-slate-400 font-extrabold transition-all group/upload disabled:opacity-50 disabled:cursor-not-allowed font-headline",
                                     isDragging ? "border-primary bg-primary/5 text-primary" : "border-slate-100",
                                     isDeadlineOpen && !isUploading && !isDragging && "hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
                                 )}
