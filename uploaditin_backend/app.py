@@ -546,9 +546,7 @@ def api_results():
     if 'user_id' not in session:
         return jsonify([]), 401
     
-    role = session.get('role')
-    status = 'published' if role == 'Student' else None
-    results = fetch_all_results(session['user_id'], status=status)
+    results = fetch_all_results(session['user_id'])
     return jsonify(results)
 
 
@@ -557,9 +555,7 @@ def api_results_by_kelas(kelas_id):
     if 'user_id' not in session:
         return jsonify([]), 401
     
-    role = session.get('role')
-    status = 'published' if role == 'Student' else None
-    results = fetch_results_by_kelas(kelas_id, status=status)
+    results = fetch_results_by_kelas(kelas_id)
     return jsonify(results)
 
 
@@ -568,9 +564,7 @@ def api_results_by_kode_kelas(kode_kelas):
     if 'user_id' not in session:
         return jsonify([]), 401
     
-    role = session.get('role')
-    status = 'published' if role == 'Student' else None
-    results = fetch_results_by_kode_kelas(kode_kelas, session['user_id'], status=status)
+    results = fetch_results_by_kode_kelas(kode_kelas, session['user_id'])
     return jsonify(results)
 
 
@@ -824,7 +818,10 @@ def api_get_assignments_by_kode_kelas(kode_kelas):
                         SELECT 1 FROM hasil_penilaian hp
                         WHERE hp.assignment_id = a.id AND hp.user_id = :uid AND hp.is_active = TRUE
                     ) as is_submitted,
-                    a.is_published
+                    a.is_published,
+                    (SELECT COALESCE(MAX(version), 0) FROM hasil_penilaian hp
+                     WHERE hp.assignment_id = a.id AND hp.user_id = :uid
+                    ) as max_version
                 FROM assignments a
                 WHERE a.kelas_id = :kid
                 ORDER BY a.created_at DESC
@@ -844,7 +841,8 @@ def api_get_assignments_by_kode_kelas(kode_kelas):
         "jawaban_path": a[5],
         "created_at": a[6].strftime("%Y-%m-%d %H:%M"),
         "is_submitted": a[7],
-        "is_published": a[8]
+        "is_published": a[8],
+        "max_version": a[9]
     } for a in assignments])
 
 
@@ -891,7 +889,7 @@ def api_undo_submission(assignment_id):
                 {"sid": submission[0]}
             )
 
-        return jsonify({"success": true, "message": "Berhasil membatalkan pengumpulan. Silakan unggah ulang jika perlu."})
+        return jsonify({"success": True, "message": "Berhasil membatalkan pengumpulan. Silakan unggah ulang jika perlu."})
         
     except Exception:
         logger.exception("Error undoing submission")

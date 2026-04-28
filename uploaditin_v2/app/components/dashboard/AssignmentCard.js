@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { FileText, UploadCloud, CheckCircle, Clock, ExternalLink, AlertCircle, RotateCcw, ArrowRight } from "lucide-react";
+import { FileText, UploadCloud, CheckCircle, Clock, ExternalLink, AlertCircle, RotateCcw, ArrowRight, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FileCard from "./FileCard";
 
@@ -20,6 +20,7 @@ export default function AssignmentCard({
     const [isDragging, setIsDragging] = useState(false);
     const isSubmitted = !!result;
     const isGraded = !!result && assignment.is_published;
+    const hasSubmittedBefore = (assignment.max_version || 0) > 0;
 
     const getFilenameFromUrl = (url) => {
         if (!url) return "";
@@ -86,6 +87,12 @@ export default function AssignmentCard({
         }
     };
 
+    // Determine Turn In button text
+    const getTurnInLabel = () => {
+        if (hasSubmittedBefore) return "Turn In Again";
+        return "Turn In";
+    };
+
     return (
         <div
             className={cn(
@@ -111,7 +118,7 @@ export default function AssignmentCard({
             {assignment.file_path && (
                 <div className="mb-8 space-y-3">
                     <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans ml-1">Reference Material</p>
-                    <div className="flex items-center gap-4 p-4 bg-slate-150 rounded-2xl border border-slate-100 hover:bg-slate-200 transition-all group/ref cursor-pointer" onClick={() => window.open(assignment.file_path, "_blank")}>
+                    <div className="flex items-center gap-4 p-4 bg-slate-100 rounded-2xl border border-slate-200 hover:bg-slate-200 transition-all group/ref cursor-pointer" onClick={() => window.open(assignment.file_path, "_blank")}>
                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-primary transition-transform">
                             <FileText size={20} />
                         </div>
@@ -125,7 +132,7 @@ export default function AssignmentCard({
             )}
 
             {/* Submission Area */}
-            <div className="mt-auto flex-1 flex flex-col space-y-6">
+            <div className="mt-auto space-y-6 flex flex-col flex-1">
                 <div className="flex items-center gap-3 text-[11px] font-bold font-sans uppercase tracking-widest">
                     <Clock size={14} className={cn(!isDeadlineOpen ? "text-red-500" : "text-primary")} />
                     <span className={cn(!isDeadlineOpen ? "text-red-500" : "text-slate-500")}>
@@ -133,10 +140,11 @@ export default function AssignmentCard({
                     </span>
                 </div>
 
-                <div className="pt-6 border-t border-slate-100 flex-1 flex flex-col gap-6">
+                <div className="pt-6 border-t border-slate-100 flex flex-col flex-1">
                     {/* Submission State Display */}
-                    <div className="flex-1 flex flex-col">
+                    <div className={cn("flex flex-col", !stagedFile && !isSubmitted ? "flex-1 mb-0" : "mb-6")}>
                         {stagedFile ? (
+                            /* File is staged but not yet turned in — allow remove */
                             <div className="space-y-3">
                                 <p className="text-[10px] font-extrabold text-primary uppercase tracking-widest font-sans ml-1">Ready to Turn In</p>
                                 <FileCard
@@ -150,16 +158,23 @@ export default function AssignmentCard({
                                 />
                             </div>
                         ) : isSubmitted ? (
+                            /* File is turned in (locked) — NO remove action */
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between px-1">
                                     <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans">Your Submission</p>
-                                    <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                                        <CheckCircle size={10} /> Received
+                                    <span className="flex items-center gap-1 text-[9px] font-bold text-primary uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded border border-primary/10">
+                                        <Lock size={10} /> Locked
                                     </span>
                                 </div>
-                                <FileCard filename={getFilenameFromUrl(result.file_path)} fileUrl={result.file_path} onPreview={() => window.open(result.file_path, "_blank")} />
+                                <FileCard
+                                    filename={getFilenameFromUrl(result.file_path)}
+                                    fileUrl={result.file_path}
+                                    onPreview={() => window.open(result.file_path, "_blank")}
+                                    /* No onRemove — file is locked after turn in */
+                                />
                             </div>
                         ) : (
+                            /* No submission — show upload zone */
                             <button
                                 onClick={() => onStage()}
                                 onDragEnter={handleDragEnter}
@@ -168,7 +183,7 @@ export default function AssignmentCard({
                                 onDrop={handleDrop}
                                 disabled={!isDeadlineOpen || isUploading}
                                 className={cn(
-                                    "flex flex-col items-center justify-center gap-2 w-full py-8 flex-1 border-3 border-dashed rounded-3xl text-slate-400 font-extrabold transition-all group/upload disabled:opacity-50 disabled:cursor-not-allowed font-headline",
+                                    "flex flex-col items-center justify-center gap-2 w-full h-full flex-1 py-8 border-3 border-dashed rounded-3xl text-slate-400 font-extrabold transition-all group/upload disabled:opacity-50 disabled:cursor-not-allowed font-headline",
                                     isDragging ? "border-primary bg-primary/5 text-primary" : "border-slate-100",
                                     isDeadlineOpen && !isUploading && !isDragging && "hover:border-primary/30 hover:bg-primary/5 hover:text-primary",
                                 )}
@@ -185,6 +200,7 @@ export default function AssignmentCard({
                     {/* Action Buttons */}
                     <div className="space-y-3">
                         {stagedFile ? (
+                            /* Staged file ready — show Turn In / Turn In Again */
                             <button
                                 onClick={onTurnIn}
                                 disabled={isStaging || isUploading || !isDeadlineOpen}
@@ -201,7 +217,7 @@ export default function AssignmentCard({
                                 ) : (
                                     <>
                                         <CheckCircle size={20} />
-                                        <span>{isSubmitted ? "Turn In Again" : "Turn In"}</span>
+                                        <span>{getTurnInLabel()}</span>
                                     </>
                                 )}
                             </button>
@@ -209,6 +225,7 @@ export default function AssignmentCard({
                             isSubmitted &&
                             !isGraded &&
                             isDeadlineOpen && (
+                                /* Submitted & locked — show Undo Turn In */
                                 <button
                                     onClick={onUndo}
                                     className="w-full py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 shadow-lg font-headline bg-white border-2 border-slate-100 text-slate-600 hover:text-red-500 hover:border-red-100 hover:bg-red-50 hover:-translate-y-0.5"
