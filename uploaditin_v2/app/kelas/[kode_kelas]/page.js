@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -38,6 +38,11 @@ export default function ClassDetailsTeacher() {
         feedback: '',
         sub_criteria_scores: []
     });
+
+    const selectedAssignment = useMemo(() => {
+        if (!isReviewOpen || !selectedAssignmentId) return null;
+        return assignments.find(a => a.id === selectedAssignmentId);
+    }, [assignments, selectedAssignmentId, isReviewOpen]);
 
     const handleOpenReview = (res) => {
         setReviewingResult(res);
@@ -342,7 +347,7 @@ export default function ClassDetailsTeacher() {
                 <ManualReview
                     result={reviewingResult}
                     assignment={{
-                        ...assignments.find(a => a.id === selectedAssignmentId),
+                        ...selectedAssignment,
                         class_name: classInfo?.nama_kelas
                     }}
                     onClose={() => setIsReviewOpen(false)}
