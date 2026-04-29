@@ -1,5 +1,5 @@
-import pytest
-from uploaditin_backend.app import get_clean_ext
+import uploaditin_backend.app as app_module
+from uploaditin_backend.app import get_clean_ext, generate_unique_class_code
 
 def test_get_clean_ext_valid_extensions():
     assert get_clean_ext("http://example.com/file.pdf") == ".pdf"
@@ -35,3 +35,43 @@ def test_get_clean_ext_path_only():
 
 def test_get_clean_ext_fragment():
     assert get_clean_ext("http://example.com/file.pdf#page=5") == ".pdf"
+
+
+def test_generate_unique_class_code_first_try(make_fake_db):
+    make_fake_db([])  # empty → fetchone returns None → unique on first try
+
+    code = generate_unique_class_code(6)
+
+    assert len(code) == 6
+    assert all(c.isupper() or c.isdigit() for c in code)
+
+def test_generate_unique_class_code_collision(monkeypatch):
+    call_count = [0]
+
+    class _FakeDbResult:
+        def __init__(self, row):
+            self._row = row
+
+        def fetchone(self):
+            return self._row
+
+    class _FakeDbConn:
+        def execute(self, *args, **kwargs):
+            call_count[0] += 1
+            return _FakeDbResult((1,) if call_count[0] == 1 else None)
+
+    monkeypatch.setattr(app_module, 'get_db', lambda: _FakeDbConn())
+
+    code = generate_unique_class_code(6)
+
+    assert len(code) == 6
+    assert call_count[0] == 2
+    assert all(c.isupper() or c.isdigit() for c in code)
+
+def test_generate_unique_class_code_custom_length(make_fake_db):
+    make_fake_db([])
+
+    code = generate_unique_class_code(10)
+
+    assert len(code) == 10
+    assert all(c.isupper() or c.isdigit() for c in code)
