@@ -7,6 +7,7 @@ from google import genai
 logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "gemini-3.1-flash-lite-preview"
+FALLBACK_MODELS = ["gemini-2.5-flash-lite", "gemini-3-flash-preview"]
 
 def _create_genai_client(api_key: str):
     return genai.Client(api_key=api_key)
@@ -64,36 +65,44 @@ def generate_pedagogical_feedback(teacher_answer: str, student_answer: str, scor
     Feedback (JSON):
     """
     
-    try:
-        response = client.models.generate_content(
-            model=DEFAULT_MODEL,
-            contents=prompt,
-            config={
-                'response_mime_type': 'application/json'
-            }
-        )
-        
-        # Parse response text
-        text = response.text
-        # Cleanup potential markdown code blocks
-        if "```json" in text:
-            text = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL).group(1)
-        elif "```" in text:
-            text = re.search(r"```\s*(.*?)\s*```", text, re.DOTALL).group(1)
+    models_to_try = [DEFAULT_MODEL] + FALLBACK_MODELS
+    last_error = None
+    
+    for model_name in models_to_try:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config={
+                    'response_mime_type': 'application/json'
+                }
+            )
             
-        data = json.loads(text)
-        
-        # Ensure required keys exist
-        if "feedback" not in data:
-            data["feedback"] = "Bagus! Teruskan belajarmu."
-        if "highlights" not in data or not isinstance(data["highlights"], list):
-            data["highlights"] = []
+            # Parse response text
+            text = response.text
+            # Cleanup potential markdown code blocks
+            if "```json" in text:
+                text = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL).group(1)
+            elif "```" in text:
+                text = re.search(r"```\s*(.*?)\s*```", text, re.DOTALL).group(1)
+                
+            data = json.loads(text)
             
-        return data
-        
-    except Exception as e:
-        logger.error(f"Error generating feedback: {e}")
-        return {
-            "feedback": "Maaf, terjadi kesalahan saat menghasilkan feedback otomatis.",
-            "highlights": []
-        }
+            # Ensure required keys exist
+            if "feedback" not in data:
+                data["feedback"] = "Bagus! Teruskan belajarmu."
+            if "highlights" not in data or not isinstance(data["highlights"], list):
+                data["highlights"] = []
+                
+            return data
+            
+        except Exception as e:
+            logger.warning(f"Error generating feedback with model {model_name}: {e}")
+            last_error = e
+            continue
+            
+    logger.error(f"All models failed for feedback generation. Last error: {last_error}")
+    return {
+        "feedback": "Maaf, terjadi kesalahan saat menghasilkan feedback otomatis.",
+        "highlights": []
+    }

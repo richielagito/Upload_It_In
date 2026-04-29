@@ -987,13 +987,21 @@ def api_upload_student_answer(assignment_id):
     conn = get_db()
     try:
         assignment_info = conn.execute(
-            text("SELECT kelas_id, jawaban_path, judul FROM assignments WHERE id = :id"),
+            text("SELECT kelas_id, jawaban_path, judul, deadline FROM assignments WHERE id = :id"),
             {"id": assignment_id},
         ).fetchone()
         if not assignment_info:
             return jsonify({"error": "Assignment tidak ditemukan."}), 404
 
-        kelas_id, guru_jawaban_url, judul_assignment = assignment_info
+        kelas_id, guru_jawaban_url, judul_assignment, deadline = assignment_info
+
+        # Cek deadline
+        if deadline:
+            if deadline.tzinfo is not None:
+                deadline = deadline.replace(tzinfo=None)
+            
+            if datetime.datetime.now() > deadline:
+                return jsonify({"error": "Batas waktu pengumpulan (deadline) telah lewat."}), 400
 
         kelas_row = conn.execute(
             text("SELECT nama_kelas FROM classes WHERE id = :kid"), {"kid": kelas_id}
@@ -1016,24 +1024,13 @@ def api_upload_student_answer(assignment_id):
         logger.exception("Error uploading student file")
         return jsonify({"error": "Gagal mengupload file jawaban"}), 500
 
-    if not guru_jawaban_url:
-        return jsonify({"error": "Guru jawaban url tidak tersedia"}), 500
     if not murid_url:
         return jsonify({"error": "murid url tidak tersedia"}), 500
 
-    guru_ext = get_clean_ext(guru_jawaban_url)
     murid_ext = get_clean_ext(murid_url)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=guru_ext) as tmp_guru, \
-         tempfile.NamedTemporaryFile(delete=False, suffix=murid_ext) as tmp_murid:
-        try:
-            guru_bytes = download_file(guru_jawaban_url, client=_get_supabase())
-        except SupabaseDownloadError:
-            logger.exception("Failed to download guru file")
-            return jsonify({"error": "Gagal mendownload file guru dari storage"}), 500
-        tmp_guru.write(guru_bytes)
-        tmp_guru.flush()
-
+    # Defer AI: Only extract text for now, skip scoring and feedback.
+    with tempfile.NamedTemporaryFile(delete=False, suffix=murid_ext) as tmp_murid:
         try:
             murid_bytes = download_file(murid_url, client=_get_supabase())
         except SupabaseDownloadError:
@@ -1042,54 +1039,22 @@ def api_upload_student_answer(assignment_id):
         tmp_murid.write(murid_bytes)
         tmp_murid.flush()
 
-        guru_text = extract_text_from_any(tmp_guru.name)
         murid_text = extract_text_from_any(tmp_murid.name)
-
-        if not guru_text or not murid_text:
+        if not murid_text:
             return jsonify({"error": "Format tidak didukung atau file kosong"}), 400
-
-        scoring_engine = os.getenv("SCORING_ENGINE", "legacy").lower()
-        sub_criteria_scores = None
-
-        if scoring_engine == "embeddings":
-            try:
-                score_res = embedding_score_submission(guru_text, murid_text)
-                avg_similarity = score_res["avg_similarity"]
-                grade = score_res["grade"]
-                sub_criteria_scores = score_res.get("per_question")
-            except Exception:
-                logger.exception("Embedding scoring failed")
-                return jsonify({"error": "Gagal memproses penilaian dengan AI. Silakan coba lagi nanti."}), 502
-        else:
-            avg_similarity, grade, per_question = lsa_similarity(guru_text, murid_text)
-            sub_criteria_scores = per_question
-
-        similarity = avg_similarity
-
-        # Generate Pedagogical Feedback using Gemini
-        try:
-            feedback_data = generate_pedagogical_feedback(guru_text, murid_text, grade)
-            feedback = feedback_data.get("feedback", "Gagal menghasilkan feedback otomatis.")
-            raw_highlights = feedback_data.get("highlights", [])
-            # Extract actual spans in student text
-            highlights = extract_highlights(murid_text, raw_highlights)
-        except Exception:
-            logger.exception("Feedback generation failed")
-            feedback = "Gagal menghasilkan feedback otomatis."
-            highlights = []
 
     result_to_save = {
         "name": nama_user,
-        "similarity": similarity,
-        "grade": grade,
+        "similarity": 0,
+        "grade": 0,
         "user_id": session['user_id'],
         "kelas_id": kelas_id,
         "assignment_id": assignment_id,
         "file_path": murid_url,
-        "status": "draft",
-        "feedback": feedback,
-        "sub_criteria_scores": sub_criteria_scores,
-        "highlights": highlights,
+        "status": "pending",
+        "feedback": "Menunggu penilaian guru.",
+        "sub_criteria_scores": [],
+        "highlights": [],
         "essay_text": murid_text
     }
 
@@ -1115,18 +1080,192 @@ def api_upload_student_answer(assignment_id):
         return jsonify({"error": "Gagal menyimpan hasil unggahan siswa."}), 500
 
     # Hapus file temp
-    for tmp_path in [tmp_guru.name, tmp_murid.name]:
-        try:
-            os.remove(tmp_path)
-        except Exception:
-            logger.warning("Gagal hapus file temp: %s", tmp_path)
+    try:
+        os.remove(tmp_murid.name)
+    except Exception:
+        logger.warning("Gagal hapus file temp: %s", tmp_murid.name)
 
     return jsonify({
         "success": True,
-        "message": "Unggahan berhasil diproses!",
-        "grade": grade,
-        "similarity": similarity,
+        "message": "Unggahan berhasil! Menunggu penilaian guru.",
+        "status": "pending"
     })
+
+
+def _perform_ai_grading(submission, assignment):
+    # submission: (id, assignment_id, nama_murid, file_path, status, essay_text, user_id, kelas_id)
+    # assignment: (kelas_id, jawaban_path, judul, deadline)
+    sub_id, aid, nama_murid, murid_url, status, murid_text, student_user_id, kelas_id = submission
+    akid, guru_jawaban_url, judul_assignment, _ = assignment
+    
+    try:
+        guru_ext = get_clean_ext(guru_jawaban_url)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=guru_ext) as tmp_guru:
+            try:
+                guru_bytes = download_file(guru_jawaban_url, client=_get_supabase())
+            except SupabaseDownloadError:
+                logger.exception("Failed to download guru file")
+                return False, "Gagal mendownload file kunci jawaban dari storage"
+            
+            tmp_guru.write(guru_bytes)
+            tmp_guru.flush()
+            guru_text = extract_text_from_any(tmp_guru.name)
+
+        if not guru_text:
+            return False, "Gagal mengekstrak teks kunci jawaban guru."
+
+        scoring_engine = os.getenv("SCORING_ENGINE", "legacy").lower()
+        sub_criteria_scores = None
+
+        if scoring_engine == "embeddings":
+            try:
+                score_res = embedding_score_submission(guru_text, murid_text)
+                avg_similarity = score_res["avg_similarity"]
+                grade = score_res["grade"]
+                sub_criteria_scores = score_res.get("per_question")
+            except Exception:
+                logger.exception("Embedding scoring failed")
+                return False, "Gagal memproses penilaian dengan AI."
+        else:
+            try:
+                avg_similarity, grade, per_question = lsa_similarity(guru_text, murid_text)
+                sub_criteria_scores = per_question
+            except Exception:
+                logger.exception("LSA scoring failed")
+                return False, "Gagal memproses penilaian dengan LSA."
+
+        # Generate Pedagogical Feedback
+        try:
+            feedback_data = generate_pedagogical_feedback(guru_text, murid_text, grade)
+            feedback = feedback_data.get("feedback", "Gagal menghasilkan feedback otomatis.")
+            raw_highlights = feedback_data.get("highlights", [])
+            highlights = extract_highlights(murid_text, raw_highlights)
+        except Exception:
+            logger.exception("Feedback generation failed")
+            feedback = "Gagal menghasilkan feedback otomatis."
+            highlights = []
+
+        result_to_save = {
+            "name": nama_murid,
+            "similarity": avg_similarity,
+            "grade": grade,
+            "user_id": student_user_id,
+            "kelas_id": kelas_id,
+            "assignment_id": aid,
+            "file_path": murid_url,
+            "status": "draft",
+            "feedback": feedback,
+            "sub_criteria_scores": sub_criteria_scores,
+            "highlights": highlights,
+            "essay_text": murid_text
+        }
+
+        with get_engine().begin() as txn:
+            max_version_row = txn.execute(
+                text("SELECT COALESCE(MAX(version), 0) FROM hasil_penilaian WHERE user_id = :uid AND assignment_id = :aid"),
+                {"uid": student_user_id, "aid": aid}
+            ).fetchone()
+            max_version = max_version_row[0] if max_version_row else 0
+            
+            txn.execute(
+                text("UPDATE hasil_penilaian SET is_active = FALSE WHERE user_id = :uid AND assignment_id = :aid"),
+                {"uid": student_user_id, "aid": aid}
+            )
+            
+            result_to_save["version"] = max_version + 1
+            result_to_save["is_active"] = True
+            
+            simpan_ke_postgres([result_to_save], conn=txn)
+
+        # Cleanup
+        try:
+            os.remove(tmp_guru.name)
+        except Exception:
+            pass
+            
+        return True, result_to_save
+    except Exception:
+        logger.exception("Internal error during _perform_ai_grading")
+        return False, "Terjadi kesalahan saat memproses penilaian AI."
+
+@app.route('/api/submissions/grade/<submission_id>', methods=['POST'])
+def api_grade_individual_submission(submission_id):
+    if 'user_id' not in session or session.get('role') not in ['Teacher', 'Admin']:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    try:
+        submission = conn.execute(
+            text("SELECT id, assignment_id, nama_murid, file_path, status, essay_text, user_id, kelas_id FROM hasil_penilaian WHERE id = :id"),
+            {"id": submission_id}
+        ).fetchone()
+        
+        if not submission:
+            return jsonify({"error": "Submission tidak ditemukan"}), 404
+        
+        assignment_id = submission[1]
+        assignment = conn.execute(
+            text("SELECT kelas_id, jawaban_path, judul, deadline FROM assignments WHERE id = :id"),
+            {"id": assignment_id}
+        ).fetchone()
+        
+        # Check deadline
+        deadline = assignment[3]
+        if deadline:
+            if deadline.tzinfo is not None:
+                deadline = deadline.replace(tzinfo=None)
+            if datetime.datetime.now() < deadline:
+                return jsonify({"error": "Penilaian hanya dapat dilakukan setelah deadline lewat."}), 400
+
+        success, result = _perform_ai_grading(submission, assignment)
+        if not success:
+            return jsonify({"error": result}), 500
+            
+        return jsonify({"success": True, "message": "Berhasil melakukan penilaian AI."})
+        
+    except Exception:
+        logger.exception("Error in individual grading")
+        return jsonify({"error": "Terjadi kesalahan internal"}), 500
+
+@app.route('/api/assignments/grade-bulk/<int:assignment_id>', methods=['POST'])
+def api_grade_bulk_submissions(assignment_id):
+    if 'user_id' not in session or session.get('role') not in ['Teacher', 'Admin']:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    try:
+        assignment = conn.execute(
+            text("SELECT kelas_id, jawaban_path, judul, deadline FROM assignments WHERE id = :id"),
+            {"id": assignment_id}
+        ).fetchone()
+        
+        if not assignment:
+            return jsonify({"error": "Assignment tidak ditemukan"}), 404
+
+        # Check deadline
+        deadline = assignment[3]
+        if deadline:
+            if deadline.tzinfo is not None:
+                deadline = deadline.replace(tzinfo=None)
+            if datetime.datetime.now() < deadline:
+                return jsonify({"error": "Penilaian hanya dapat dilakukan setelah deadline lewat."}), 400
+
+        pending_submissions = conn.execute(
+            text("SELECT id, assignment_id, nama_murid, file_path, status, essay_text, user_id, kelas_id FROM hasil_penilaian WHERE assignment_id = :aid AND status = 'pending' AND is_active = TRUE"),
+            {"aid": assignment_id}
+        ).fetchall()
+        
+        processed_count = 0
+        for sub in pending_submissions:
+            success, _ = _perform_ai_grading(sub, assignment)
+            if success:
+                processed_count += 1
+                
+        return jsonify({"success": True, "processed_count": processed_count})
+        
+    except Exception:
+        logger.exception("Error in bulk grading")
+        return jsonify({"error": "Terjadi kesalahan internal"}), 500
 
 
 # ---------------------------------------------------------------------------

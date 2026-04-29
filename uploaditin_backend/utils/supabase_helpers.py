@@ -1,5 +1,7 @@
+
 from typing import Optional
 from urllib.parse import urlparse, parse_qs
+import mimetypes
 
 from supabase import Client, create_client
 import os as _os
@@ -88,14 +90,20 @@ def upload_file(
     if client is None:
         client = get_server_supabase_client()
 
+    content_type, _ = mimetypes.guess_type(dest_path)
+    if not content_type:
+        content_type = 'application/octet-stream'
+        
+    file_options = {"content-type": content_type}
+
     try:
-        res = client.storage.from_(bucket).upload(dest_path, file_bytes)
+        res = client.storage.from_(bucket).upload(dest_path, file_bytes, file_options=file_options)
     except Exception as e:
         # detect object-exists by message substring (mocked tests rely on this)
         msg = str(e).lower()
         if 'already exists' in msg or 'object already exists' in msg:
             try:
-                res = client.storage.from_(bucket).update(dest_path, file_bytes)
+                res = client.storage.from_(bucket).update(dest_path, file_bytes, file_options=file_options)
             except Exception as e2:
                 raise SupabaseStorageError(f"Failed to update existing object '{dest_path}': {e2}", e2)
         else:

@@ -125,7 +125,7 @@ export default function FeedbackPanel({ assignment, result, stagedFile, isStagin
                         </h3>
                         <div
                             className={cn(
-                                "w-full rounded-3xl p-6 border-2 italic leading-relaxed text-base shadow-sm transition-all font-sans font-medium",
+                                "w-full rounded-3xl p-6 border-2 leading-relaxed text-base shadow-sm transition-all font-sans font-medium",
                                 result ? "bg-primary/5 border-primary/10 text-slate-700" : "bg-surface-low border-slate-100 text-slate-400",
                             )}
                         >

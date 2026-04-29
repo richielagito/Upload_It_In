@@ -38,7 +38,15 @@ class FakeConn:
         self.results = fetchone_results
 
     def execute(self, *args, **kwargs):
-        return FakeResult(self.results)
+        if not self.results:
+            return FakeResult([])
+        res = self.results.pop(0)
+        # If it's a list (for fetchall), pass as is to FakeResult
+        # If it's a tuple (for fetchone), wrap in list
+        if isinstance(res, list):
+            return FakeResult(res)
+        else:
+            return FakeResult([res])
 
     def close(self):
         return
@@ -150,7 +158,7 @@ def capture_simpan(monkeypatch):
     """Capture calls to simpan_ke_postgres and allow forcing an exception via attribute."""
     calls = {'args': []}
 
-    def fake_simpan(results):
+    def fake_simpan(results, conn=None):
         calls['args'].append(results)
         if calls.get('raise'):
             raise Exception('DB save failed')

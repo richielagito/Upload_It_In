@@ -4,6 +4,7 @@ from typing import List
 
 
 DEFAULT_MODEL = "gemini-embedding-2-preview"
+FALLBACK_MODELS = ["gemini-embedding-2", "gemini-embedding-001"]
 DEFAULT_BATCH_SIZE = 16
 DEFAULT_MAX_ATTEMPTS = int(os.getenv("EMBEDDING_RETRY_ATTEMPTS", "3"))
 DEFAULT_BACKOFF_SECONDS = float(os.getenv("EMBEDDING_RETRY_BASE_SECONDS", "0.5"))
@@ -150,28 +151,43 @@ def get_embeddings(
     max_attempts = max(1, DEFAULT_MAX_ATTEMPTS)
     client = _get_or_create_client(api_key)
 
+    target_models = [model]
+    if model == DEFAULT_MODEL:
+        target_models.extend(FALLBACK_MODELS)
+
     ordered_vectors: List[List[float]] = []
     for start in range(0, len(texts), batch_size):
         batch = texts[start:start + batch_size]
-        attempt = 0
+        success = False
+        last_error = None
 
-        while True:
-            try:
-                ordered_vectors.extend(_embed_batch(client, batch, model=model, normalize=normalize))
+        for current_model in target_models:
+            attempt = 0
+            while True:
+                try:
+                    ordered_vectors.extend(_embed_batch(client, batch, model=current_model, normalize=normalize))
+                    success = True
+                    break
+                except Exception as exc:
+                    attempt += 1
+                    last_error = exc
+
+                    if _is_auth_or_config_error(exc):
+                        raise RuntimeError(f"Embedding request failed due to auth/config error: {exc}") from exc
+
+                    if _is_transient_error(exc) and attempt < max_attempts:
+                        sleep_seconds = DEFAULT_BACKOFF_SECONDS * (2 ** (attempt - 1))
+                        time.sleep(sleep_seconds)
+                        continue
+
+                    break
+
+            if success:
                 break
-            except Exception as exc:
-                attempt += 1
 
-                if _is_auth_or_config_error(exc):
-                    raise RuntimeError(f"Embedding request failed due to auth/config error: {exc}") from exc
-
-                if _is_transient_error(exc) and attempt < max_attempts:
-                    sleep_seconds = DEFAULT_BACKOFF_SECONDS * (2 ** (attempt - 1))
-                    time.sleep(sleep_seconds)
-                    continue
-
-                raise RuntimeError(
-                    f"Embedding request failed after {attempt} attempt(s): {exc}"
-                ) from exc
+        if not success:
+            raise RuntimeError(
+                f"Embedding request failed after trying all models. Last error: {last_error}"
+            ) from last_error
 
     return ordered_vectors

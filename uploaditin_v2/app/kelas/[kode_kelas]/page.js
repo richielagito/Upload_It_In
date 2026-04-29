@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-    ArrowLeft, Plus, Edit, Trash2, Download, FileText, Calendar, Clock, UploadCloud, X, ArrowRight
+    ArrowLeft, Plus, Edit, Trash2, Download, FileText, Calendar, Clock, UploadCloud, X, ArrowRight, RotateCcw
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import DashboardShell from '@/app/components/dashboard/DashboardShell';
@@ -24,6 +24,7 @@ export default function ClassDetailsTeacher() {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedAssignmentId, setSelectedAssignmentId] = useState(null);
+    const [gradingId, setGradingId] = useState(null); // submission id or 'bulk'
 
     // Modals
     const [isAddAssignmentOpen, setIsAddAssignmentOpen] = useState(false);
@@ -40,9 +41,55 @@ export default function ClassDetailsTeacher() {
     });
 
     const selectedAssignment = useMemo(() => {
-        if (!isReviewOpen || !selectedAssignmentId) return null;
+        if (!selectedAssignmentId) return null;
         return assignments.find(a => a.id === selectedAssignmentId);
-    }, [assignments, selectedAssignmentId, isReviewOpen]);
+    }, [assignments, selectedAssignmentId]);
+
+    const isDeadlinePassed = (deadlineStr) => {
+        if (!deadlineStr) return true;
+        try {
+            const deadline = new Date(deadlineStr.replace(" ", "T"));
+            return new Date() > deadline;
+        } catch (e) { return true; }
+    };
+
+    const handleGradeNow = async (submissionId) => {
+        setGradingId(submissionId);
+        try {
+            const res = await fetch(`/api/submissions/grade/${submissionId}`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success('AI Grading completed!');
+                fetchResults(selectedAssignmentId);
+            } else {
+                toast.error(data.error || 'Grading failed');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Error during AI grading');
+        } finally {
+            setGradingId(null);
+        }
+    };
+
+    const handleBulkGrade = async (assignmentId) => {
+        setGradingId('bulk');
+        try {
+            const res = await fetch(`/api/assignments/grade-bulk/${assignmentId}`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(`Processed ${data.processed_count} submissions!`);
+                fetchResults(assignmentId);
+            } else {
+                toast.error(data.error || 'Bulk grading failed');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Error during bulk grading');
+        } finally {
+            setGradingId(null);
+        }
+    };
 
     const handleOpenReview = (res) => {
         setReviewingResult(res);
@@ -448,9 +495,29 @@ export default function ClassDetailsTeacher() {
                                     {selectedAssignmentId ? "Submission Results" : "Select an Assignment"}
                                 </h3>
                                 {selectedAssignmentId && (
-                                    <span className="px-3 py-1 bg-primary text-white text-[10px] font-bold rounded-full uppercase tracking-widest">
-                                        {results.length} Submissions
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            disabled={gradingId === 'bulk' || !isDeadlinePassed(selectedAssignment?.deadline)}
+                                            onClick={() => handleBulkGrade(selectedAssignmentId)}
+                                            className={cn(
+                                                "px-4 py-2 text-[10px] font-bold rounded-xl uppercase tracking-widest transition-all flex items-center gap-2",
+                                                gradingId === 'bulk' ? "bg-slate-100 text-slate-400 cursor-not-allowed" :
+                                                !isDeadlinePassed(selectedAssignment?.deadline) ? "bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100" :
+                                                "bg-primary text-white hover:bg-primary-container shadow-md shadow-primary/20"
+                                            )}
+                                            title={!isDeadlinePassed(selectedAssignment?.deadline) ? "Deadline must pass before bulk grading" : "Grade all pending submissions"}
+                                        >
+                                            {gradingId === 'bulk' ? (
+                                                <div className="w-3 h-3 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin" />
+                                            ) : (
+                                                <RotateCcw size={14} />
+                                            )}
+                                            Bulk Grade
+                                        </button>
+                                        <span className="px-3 py-1 bg-primary text-white text-[10px] font-bold rounded-full uppercase tracking-widest">
+                                            {results.length} Submissions
+                                        </span>
+                                    </div>
                                 )}
                             </div>
 
@@ -515,6 +582,25 @@ export default function ClassDetailsTeacher() {
                                                         </td>
                                                         <td className="px-6 py-5 text-right">
                                                             <div className="flex items-center justify-end gap-2">
+                                                                {res.status === 'pending' && (
+                                                                    <button
+                                                                        disabled={gradingId === res.id || !isDeadlinePassed(selectedAssignment?.deadline)}
+                                                                        onClick={() => handleGradeNow(res.id)}
+                                                                        className={cn(
+                                                                            "w-9 h-9 flex items-center justify-center rounded-xl transition-all border",
+                                                                            gradingId === res.id ? "bg-slate-50 text-slate-300 border-slate-100" :
+                                                                            !isDeadlinePassed(selectedAssignment?.deadline) ? "text-slate-200 border-slate-100 cursor-not-allowed" :
+                                                                            "text-primary border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 cursor-pointer"
+                                                                        )}
+                                                                        title={!isDeadlinePassed(selectedAssignment?.deadline) ? "Deadline not yet passed" : "Grade Now with AI"}
+                                                                    >
+                                                                        {gradingId === res.id ? (
+                                                                            <div className="w-4 h-4 border-2 border-slate-300/30 border-t-slate-400 rounded-full animate-spin" />
+                                                                        ) : (
+                                                                            <RotateCcw size={18} />
+                                                                        )}
+                                                                    </button>
+                                                                )}
                                                                 <button
                                                                     onClick={() => handleOpenReview(res)}
                                                                     className="w-9 h-9 flex items-center justify-center text-slate-400 cursor-pointer hover:text-yellow-500 hover:bg-yellow-50 rounded-xl transition-all border border-transparent hover:border-yellow-100"

@@ -104,9 +104,14 @@ export default function AssignmentCard({
             <div className="flex justify-between items-start mb-3">
                 <h3 className={cn("text-xl font-extrabold text-foreground font-headline transition-colors", isListView && "group-hover:text-primary")}>{assignment.judul}</h3>
                 {isSubmitted && (
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 shadow-sm animate-in fade-in zoom-in duration-300">
-                        <CheckCircle size={12} />
-                        Submitted
+                    <div className={cn(
+                        "flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border shadow-sm animate-in fade-in zoom-in duration-300",
+                        result.status === 'pending'
+                            ? "text-amber-600 bg-amber-50 border-amber-100"
+                            : "text-emerald-600 bg-emerald-50 border-emerald-100"
+                    )}>
+                        {result.status === 'pending' ? <Clock size={12} /> : <CheckCircle size={12} />}
+                        {result.status === 'pending' ? 'Pending Review' : 'Submitted'}
                     </div>
                 )}
             </div>
@@ -225,7 +230,7 @@ export default function AssignmentCard({
                                 /* Submitted & locked — show Undo Turn In */
                                 <button
                                     onClick={onUndo}
-                                    className="w-full py-2.5 rounded-2xl font-black text-base transition-all flex items-center justify-center gap-3 shadow-lg font-headline bg-white border-2 border-slate-100 text-slate-600 hover:text-red-500 hover:border-red-100 hover:bg-red-50 hover:-translate-y-0.5"
+                                    className="w-full py-2.5 rounded-2xl font-black text-base transition-all flex items-center justify-center gap-3 hover:shadow-lg font-headline bg-white border-2 border-red-100 text-red-500 hover:bg-red-50"
                                 >
                                     <RotateCcw size={18} />
                                     <span>Undo Turn In</span>
@@ -236,7 +241,7 @@ export default function AssignmentCard({
                         {isGraded && onViewDetail && (
                             <button
                                 onClick={onViewDetail}
-                                className="w-full py-2.5 bg-primary text-white rounded-2xl font-black text-base transition-all flex items-center justify-center gap-3 shadow-lg shadow-primary/20 font-headline hover:bg-primary-container hover:-translate-y-0.5"
+                                className="w-full py-2.5 bg-primary text-white rounded-2xl font-black text-base transition-all flex items-center justify-center gap-3 hover:shadow-lg shadow-primary/20 font-headline hover:bg-primary-container"
                             >
                                 <FileText size={18} />
                                 View Feedback
