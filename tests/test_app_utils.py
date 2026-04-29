@@ -1,5 +1,6 @@
 import pytest
-from uploaditin_backend.app import get_clean_ext
+from unittest.mock import MagicMock, patch
+from uploaditin_backend.app import get_clean_ext, generate_unique_class_code
 
 def test_get_clean_ext_valid_extensions():
     assert get_clean_ext("http://example.com/file.pdf") == ".pdf"
@@ -35,3 +36,52 @@ def test_get_clean_ext_path_only():
 
 def test_get_clean_ext_fragment():
     assert get_clean_ext("http://example.com/file.pdf#page=5") == ".pdf"
+
+
+@patch('uploaditin_backend.app.get_db')
+def test_generate_unique_class_code_first_try(mock_get_db):
+    mock_conn = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_execute = MagicMock()
+    mock_conn.execute.return_value = mock_execute
+
+    # Simulate fetchone() returning None, meaning the code is unique
+    mock_execute.fetchone.return_value = None
+
+    code = generate_unique_class_code(6)
+
+    assert len(code) == 6
+    assert mock_conn.execute.call_count == 1
+    # Check that code consists of uppercase letters and digits
+    assert all(c.isupper() or c.isdigit() for c in code)
+
+@patch('uploaditin_backend.app.get_db')
+def test_generate_unique_class_code_collision(mock_get_db):
+    mock_conn = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_execute = MagicMock()
+    mock_conn.execute.return_value = mock_execute
+
+    # Simulate first fetchone() returning a row (collision),
+    # second fetchone() returning None (unique)
+    mock_execute.fetchone.side_effect = [(1,), None]
+
+    code = generate_unique_class_code(6)
+
+    assert len(code) == 6
+    assert mock_conn.execute.call_count == 2
+    assert all(c.isupper() or c.isdigit() for c in code)
+
+@patch('uploaditin_backend.app.get_db')
+def test_generate_unique_class_code_custom_length(mock_get_db):
+    mock_conn = MagicMock()
+    mock_get_db.return_value = mock_conn
+    mock_execute = MagicMock()
+    mock_conn.execute.return_value = mock_execute
+
+    mock_execute.fetchone.return_value = None
+
+    code = generate_unique_class_code(10)
+
+    assert len(code) == 10
+    assert mock_conn.execute.call_count == 1
