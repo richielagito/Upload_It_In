@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -24,6 +24,10 @@ export default function ClassDetailsTeacher() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState(null);
+
+  const selectedAssignment = useMemo(() => {
+    return assignments.find(a => a.id === selectedAssignmentId);
+  }, [assignments, selectedAssignmentId]);
 
   // Modals
   const [isAddAssignmentOpen, setIsAddAssignmentOpen] = useState(false);
@@ -342,7 +346,7 @@ export default function ClassDetailsTeacher() {
             <ManualReview 
                 result={reviewingResult}
                 assignment={{
-                    ...assignments.find(a => a.id === selectedAssignmentId),
+                    ...selectedAssignment,
                     class_name: classInfo?.nama_kelas
                 }}
                 onClose={() => setIsReviewOpen(false)}
