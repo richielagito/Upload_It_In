@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-    ArrowLeft, Plus, Edit, Trash2, Download, FileText, Calendar, UploadCloud, X, ArrowRight
+    ArrowLeft, Plus, Edit, Trash2, Download, FileText, Calendar, Clock, UploadCloud, X, ArrowRight
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import DashboardShell from '@/app/components/dashboard/DashboardShell';
@@ -88,7 +88,8 @@ export default function ClassDetailsTeacher() {
     const [newAssignment, setNewAssignment] = useState({
         judul: '',
         deskripsi: '',
-        deadline: '',
+        deadlineDate: '',
+        deadlineTime: '',
         file: null,
         jawabanGuru: null
     });
@@ -200,7 +201,11 @@ export default function ClassDetailsTeacher() {
         const formData = new FormData();
         formData.append('judulAssignment', newAssignment.judul);
         formData.append('deskripsiAssignment', newAssignment.deskripsi);
-        formData.append('deadlineAssignment', newAssignment.deadline);
+
+        // Gabungkan tanggal dan jam menjadi format YYYY-MM-DD HH:MM:SS
+        const deadlineStr = `${newAssignment.deadlineDate} ${newAssignment.deadlineTime}:00`;
+        formData.append('deadlineAssignment', deadlineStr);
+
         formData.append('fileAssignment', newAssignment.file);
         formData.append('jawabanGuru', newAssignment.jawabanGuru);
         formData.append('kelas_id', classInfo.id);
@@ -214,7 +219,7 @@ export default function ClassDetailsTeacher() {
                 toast.success('Assignment created!');
                 setIsAddAssignmentOpen(false);
                 fetchAssignments();
-                setNewAssignment({ judul: '', deskripsi: '', deadline: '', file: null, jawabanGuru: null });
+                setNewAssignment({ judul: '', deskripsi: '', deadlineDate: '', deadlineTime: '', file: null, jawabanGuru: null });
             } else {
                 const err = await res.json();
                 toast.error(err.error || "Failed to create assignment");
@@ -550,21 +555,52 @@ export default function ClassDetailsTeacher() {
                         </div>
                         <form onSubmit={handleAddAssignment} className="p-8 space-y-6 overflow-y-auto">
                             <div>
-                                <label className="block text-slate-700 text-sm font-bold mb-2 font-sans">Assignment Title</label>
-                                <input type="text" required value={newAssignment.judul} onChange={e => setNewAssignment({ ...newAssignment, judul: e.target.value })} placeholder="e.g. Analisis Puisi Kontemporer" className="w-full border-2 border-slate-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none rounded-2xl px-5 py-4 text-primary font-bold transition-all" />
+                                <label className="block text-slate-900 text-sm font-bold mb-2 font-sans">Assignment Title</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newAssignment.judul}
+                                    onChange={e => setNewAssignment({ ...newAssignment, judul: e.target.value })}
+                                    placeholder="e.g. Analisis Puisi Kontemporer"
+                                    className="w-full border-2 border-slate-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none rounded-2xl px-5 py-4 text-slate-900 font-bold transition-all placeholder-slate-400"
+                                />
                             </div>
                             <div>
-                                <label className="block text-slate-700 text-sm font-bold mb-2 font-sans">Description & Instructions</label>
-                                <textarea required value={newAssignment.deskripsi} onChange={e => setNewAssignment({ ...newAssignment, deskripsi: e.target.value })} placeholder="Provide clear instructions for your students..." className="w-full border-2 border-slate-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none rounded-2xl px-5 py-4 text-slate-600 font-medium transition-all" rows="4"></textarea>
+                                <label className="block text-slate-900 text-sm font-bold mb-2 font-sans">Description & Instructions</label>
+                                <textarea
+                                    required
+                                    value={newAssignment.deskripsi}
+                                    onChange={e => setNewAssignment({ ...newAssignment, deskripsi: e.target.value })}
+                                    placeholder="Provide clear instructions for your students..."
+                                    className="w-full border-2 border-slate-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none rounded-2xl px-5 py-4 text-slate-900 font-medium transition-all placeholder-slate-400"
+                                    rows="4"
+                                ></textarea>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-slate-700 text-sm font-bold mb-2 font-sans">Submission Deadline</label>
-                                    <input type="datetime-local" required value={newAssignment.deadline} onChange={e => setNewAssignment({ ...newAssignment, deadline: e.target.value })} className="w-full border-2 border-slate-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none rounded-2xl px-5 py-4 text-primary font-bold transition-all" />
+                                    <label className="block text-slate-900 text-sm font-bold mb-2 font-sans">Deadline Date</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={newAssignment.deadlineDate}
+                                        onChange={e => setNewAssignment({ ...newAssignment, deadlineDate: e.target.value })}
+                                        className="w-full border-2 border-slate-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none rounded-2xl px-5 py-4 text-slate-900 font-bold transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-slate-900 text-sm font-bold mb-2 font-sans">Deadline Time</label>
+                                    <input
+                                        type="time"
+                                        required
+                                        value={newAssignment.deadlineTime}
+                                        onChange={e => setNewAssignment({ ...newAssignment, deadlineTime: e.target.value })}
+                                        className="w-full border-2 border-slate-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none rounded-2xl px-5 py-4 text-slate-900 font-bold transition-all"
+                                    />
                                 </div>
                             </div>
+
                             <div>
-                                <label className="block text-slate-700 text-sm font-bold mb-2 font-sans">Assignment Materials (Optional PDF/DOCX)</label>
+                                <label className="block text-slate-900 text-sm font-bold mb-2 font-sans">Assignment Materials (Optional PDF/DOCX)</label>
                                 <div className="relative group">
                                     <div className="border-3 border-dashed border-slate-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all group-hover:bg-primary/5 group-hover:border-primary/30 bg-surface-low/50">
                                         <input
@@ -572,7 +608,7 @@ export default function ClassDetailsTeacher() {
                                             onChange={e => setNewAssignment({ ...newAssignment, file: e.target.files[0] })}
                                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         />
-                                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all", newAssignment.file ? "bg-primary text-white" : "bg-white text-slate-400 group-hover:text-primary group-hover:scale-110 shadow-sm")}>
+                                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all", newAssignment.file ? "bg-primary text-white" : "bg-white text-slate-400 group-hover:text-primary shadow-sm")}>
                                             <UploadCloud size={32} />
                                         </div>
 
@@ -583,7 +619,7 @@ export default function ClassDetailsTeacher() {
                                             </div>
                                         ) : (
                                             <div>
-                                                <p className="text-sm font-bold text-slate-700 font-headline">
+                                                <p className="text-sm font-bold text-slate-900 font-headline">
                                                     <span className="text-primary underline">Click to upload</span> or drag and drop
                                                 </p>
                                                 <p className="text-xs text-slate-400 mt-2 font-sans font-medium">PDF or DOCX materials for the assignment</p>
@@ -593,7 +629,7 @@ export default function ClassDetailsTeacher() {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-slate-700 text-sm font-bold mb-2 font-sans">Teacher Answer Key (Required for AI Grading)</label>
+                                <label className="block text-slate-900 text-sm font-bold mb-2 font-sans">Teacher Answer Key (Required for AI Grading)</label>
                                 <div className="relative group">
                                     <div className="border-3 border-dashed border-slate-200 rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all group-hover:bg-primary/5 group-hover:border-primary/30 bg-surface-low/50">
                                         <input
@@ -602,7 +638,7 @@ export default function ClassDetailsTeacher() {
                                             onChange={e => setNewAssignment({ ...newAssignment, jawabanGuru: e.target.files[0] })}
                                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         />
-                                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all", newAssignment.jawabanGuru ? "bg-primary text-white" : "bg-white text-slate-400 group-hover:text-primary group-hover:scale-110 shadow-sm")}>
+                                        <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all", newAssignment.jawabanGuru ? "bg-primary text-white" : "bg-white text-slate-400 group-hover:text-primary shadow-sm")}>
                                             <UploadCloud size={32} />
                                         </div>
 
@@ -613,7 +649,7 @@ export default function ClassDetailsTeacher() {
                                             </div>
                                         ) : (
                                             <div>
-                                                <p className="text-sm font-bold text-slate-700 font-headline">
+                                                <p className="text-sm font-bold text-slate-900 font-headline">
                                                     <span className="text-primary underline">Upload answer key</span>
                                                 </p>
                                                 <p className="text-xs text-slate-400 mt-2 font-sans font-medium">This will be used as the gold standard for grading</p>

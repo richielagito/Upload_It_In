@@ -45,17 +45,25 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
         return filename.split('.').pop().toUpperCase();
     };
 
-    const formatDate = (dateStr) => {
-        if (!dateStr) return "";
+    const formatDate = (dateValue) => {
+        if (!dateValue) return "-";
         try {
-            // Jika sudah ada tanda | berarti sudah terformat, langsung kembalikan
-            if (dateStr.includes(" | ")) return dateStr;
-            
-            // Coba bersihkan format string tanggal
-            const isoString = dateStr.includes(" ") ? dateStr.replace(" ", "T") : dateStr;
-            const dateObj = new Date(isoString);
-            
-            if (isNaN(dateObj.getTime())) return dateStr;
+            // Jika sudah diformat manual sebelumnya, jangan diproses lagi
+            if (typeof dateValue === 'string' && dateValue.includes(" | ")) return dateValue;
+
+            // Coba parsing langsung dulu (paling aman untuk format GMT/ISO standar)
+            let dateObj = new Date(dateValue);
+
+            // Jika gagal parsing langsung, coba bersihkan spasi (khusus format "YYYY-MM-DD HH:MM:SS")
+            if (isNaN(dateObj.getTime()) && typeof dateValue === 'string') {
+                const safeDateStr = dateValue.trim().replace(" ", "T");
+                dateObj = new Date(safeDateStr);
+            }
+
+            // Jika tetap Invalid Date setelah semua upaya
+            if (isNaN(dateObj.getTime())) {
+                return String(dateValue);
+            }
 
             const d = dateObj.toLocaleDateString('id-ID', {
                 day: 'numeric',
@@ -70,7 +78,7 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
 
             return `${d} | ${t}`;
         } catch (e) {
-            return dateStr;
+            return String(dateValue);
         }
     };
 

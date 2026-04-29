@@ -212,7 +212,7 @@ export default function ClassDetailsStudent() {
             </div>
 
             {viewMode === 'list' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                     {assignments.map(ass => {
                         const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
                         const isDeadlineOpen = !deadlineDate || new Date() < deadlineDate;

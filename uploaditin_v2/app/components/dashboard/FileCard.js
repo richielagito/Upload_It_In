@@ -3,22 +3,22 @@ import { FileText, Download, Eye, Loader2, FileCode, FileImage, MoreVertical, Tr
 import { cn } from "@/lib/utils";
 
 const getFileIcon = (filename) => {
-    if (!filename) return <FileText size={24} />;
+    if (!filename) return <FileText size={20} />;
     const ext = filename.split(".").pop().toLowerCase();
     switch (ext) {
         case "pdf":
-            return <FileText size={24} className="text-red-500" />;
+            return <FileText size={20} className="text-red-500" />;
         case "docx":
         case "doc":
-            return <FileText size={24} className="text-primary" />;
+            return <FileText size={20} className="text-primary" />;
         case "txt":
-            return <FileText size={24} className="text-slate-500" />;
+            return <FileText size={20} className="text-slate-500" />;
         case "jpg":
         case "jpeg":
         case "png":
-            return <FileImage size={24} className="text-primary" />;
+            return <FileImage size={20} className="text-primary" />;
         default:
-            return <FileCode size={24} className="text-slate-500" />;
+            return <FileCode size={20} className="text-slate-500" />;
     }
 };
 
@@ -46,13 +46,13 @@ export default function FileCard({ filename, fileUrl, isLoading = false, onPrevi
         <div
             onClick={handleCardClick}
             className={cn(
-                "group relative flex items-center p-5 bg-white border-2 border-slate-100 rounded-2xl shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300 cursor-pointer",
+                "group relative flex items-center p-3.5 bg-white border-2 border-slate-100 rounded-2xl shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300 cursor-pointer",
                 isLoading && "opacity-75 cursor-not-allowed",
                 className,
             )}
         >
             {/* File Icon Container */}
-            <div className="shrink-0 w-12 h-12 bg-surface-low rounded-xl flex items-center justify-center mr-4">{isLoading ? <Loader2 size={24} className="text-primary animate-spin" /> : <div>{getFileIcon(filename)}</div>}</div>
+            <div className="shrink-0 w-10 h-10 bg-surface-low rounded-xl flex items-center justify-center mr-3">{isLoading ? <Loader2 size={20} className="text-primary animate-spin" /> : <div>{getFileIcon(filename)}</div>}</div>
 
             {/* File Info */}
             <div className="flex-1 min-w-0 mr-4">
