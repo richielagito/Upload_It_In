@@ -1,0 +1,8 @@
+{
+  "track_id": "deferred_ai_grading_20260429",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-04-29T10:00:00Z",
+  "updated_at": "2026-04-29T10:00:00Z",
+  "description": "Change flow to defer AI grading until manually triggered by teacher to save tokens."
+}

@@ -10,6 +10,11 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [ ] **Track: Implement Masonry Layout for Assignment Cards.**
 *Link: [./tracks/masonry_layout_20240515/](./tracks/masonry_layout_20240515/)*
 
+---
+
+- [ ] **Track: Change flow to defer AI grading until manually triggered by teacher to save tokens.**
+*Link: [./tracks/deferred_ai_grading_20260429/](./tracks/deferred_ai_grading_20260429/)*
+
 
 
 
