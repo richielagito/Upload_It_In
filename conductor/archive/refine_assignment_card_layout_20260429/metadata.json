@@ -1,0 +1,8 @@
+{
+  "id": "refine_assignment_card_layout_20260429",
+  "title": "Refine Assignment Card Layout",
+  "description": "Adjust margins, padding, and gaps in AssignmentCard and student dashboard to reduce oversized elements while maintaining existing style.",
+  "status": "completed",
+  "created_at": "2026-04-29T11:33:00Z",
+  "updated_at": "2026-04-29T12:00:00Z"
+}
