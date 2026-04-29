@@ -212,57 +212,59 @@ export default function ClassDetailsStudent() {
             </div>
 
             {viewMode === 'list' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                    {assignments.map(ass => {
-                        const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
-                        const isDeadlineOpen = !deadlineDate || new Date() < deadlineDate;
-                        const result = resultsMap.get(ass.id);
-                        
-                        return (
-                            <AssignmentCard 
-                                key={ass.id}
-                                assignment={ass}
-                                result={result}
-                                isListView={true}
-                                stagedFile={activeAssignment?.id === ass.id ? stagedFile : null}
-                                isStaging={activeAssignment?.id === ass.id && isStaging}
-                                isUploading={uploadingId === ass.id}
-                                isDeadlineOpen={isDeadlineOpen}
-                                onStage={(val) => {
-                                    if (val === null) {
+                <>
+                    <div className="columns-1 md:columns-2 gap-6 mb-12">
+                        {assignments.map(ass => {
+                            const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
+                            const isDeadlineOpen = !deadlineDate || new Date() < deadlineDate;
+                            const result = resultsMap.get(ass.id);
+                            
+                            return (
+                                <AssignmentCard 
+                                    key={ass.id}
+                                    assignment={ass}
+                                    result={result}
+                                    isListView={true}
+                                    stagedFile={activeAssignment?.id === ass.id ? stagedFile : null}
+                                    isStaging={activeAssignment?.id === ass.id && isStaging}
+                                    isUploading={uploadingId === ass.id}
+                                    isDeadlineOpen={isDeadlineOpen}
+                                    onStage={(val) => {
+                                        if (val === null) {
+                                            setStagedFile(null);
+                                        } else if (val instanceof File) {
+                                            setActiveAssignment(ass);
+                                            // Use a small timeout to ensure activeAssignment is set
+                                            setTimeout(() => {
+                                                const mockEvent = { target: { files: [val] } };
+                                                handleStageFile(mockEvent, ass.id);
+                                            }, 10);
+                                        } else {
+                                            setActiveAssignment(ass);
+                                            setTimeout(() => document.getElementById(`file-stage-input`)?.click(), 10);
+                                        }
+                                    }}
+                                    onTurnIn={() => handleTurnIn(ass)}
+                                    onUndo={() => handleUndo(ass)}
+                                    onViewDetail={() => {
+                                        setActiveAssignment(ass);
+                                        setActiveResult(result);
+                                        setViewMode('detail');
                                         setStagedFile(null);
-                                    } else if (val instanceof File) {
-                                        setActiveAssignment(ass);
-                                        // Use a small timeout to ensure activeAssignment is set
-                                        setTimeout(() => {
-                                            const mockEvent = { target: { files: [val] } };
-                                            handleStageFile(mockEvent, ass.id);
-                                        }, 10);
-                                    } else {
-                                        setActiveAssignment(ass);
-                                        setTimeout(() => document.getElementById(`file-stage-input`)?.click(), 10);
-                                    }
-                                }}
-                                onTurnIn={() => handleTurnIn(ass)}
-                                onUndo={() => handleUndo(ass)}
-                                onViewDetail={() => {
-                                    setActiveAssignment(ass);
-                                    setActiveResult(result);
-                                    setViewMode('detail');
-                                    setStagedFile(null);
-                                }}
-                            />
-                        );
-                    })}
+                                    }}
+                                />
+                            );
+                        })}
+                    </div>
                     {assignments.length === 0 && (
-                        <div className="col-span-full text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                        <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200 mb-12">
                             <div className="w-16 h-16 bg-surface-low rounded-full flex items-center justify-center mx-auto mb-4">
                                 <AlertCircle size={32} className="text-slate-300" />
                             </div>
                             <p className="text-slate-500 font-bold font-headline">No assignments active at the moment.</p>
                         </div>
                     )}
-                </div>
+                </>
             ) : (
                 activeAssignment && (
                     <div className="space-y-8">
