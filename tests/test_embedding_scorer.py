@@ -5,7 +5,7 @@ import pytest
 # Ensure project root is on sys.path for test discovery environments
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
-from uploaditin_backend.utils.embedding_scorer import embedding_score_submission
+from uploaditin_backend.utils.embedding_scorer import embedding_score_submission, _cosine
 
 
 class DummyEmbeddingClient:
@@ -63,3 +63,19 @@ def test_no_questions_parsed(monkeypatch):
     assert res["avg_similarity"] == 0.0
     assert res["grade"] == 0
     assert res["per_question"] == []
+
+
+def test_cosine_zero_magnitude():
+    # Test handling of zero magnitude vectors to prevent division by zero
+    v1 = [0.0, 0.0, 0.0]
+    v2 = [1.0, 2.0, 3.0]
+
+    # One vector is zero
+    assert _cosine(v1, v2) == 0.0
+    assert _cosine(v2, v1) == 0.0
+
+    # Both vectors are zero
+    assert _cosine(v1, v1) == 0.0
+
+    # Empty vectors
+    assert _cosine([], []) == 0.0

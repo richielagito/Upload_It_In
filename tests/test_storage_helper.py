@@ -74,3 +74,9 @@ def test_download_success_returns_bytes(dummy_client):
 def test_download_missing_raises(dummy_client):
     with pytest.raises(sh.SupabaseDownloadError):
         sh.download_file("https://example.supabase.co/storage/v1/object/public/uploads/missing.pdf", client=dummy_client)
+
+
+def test_require_env_missing_raises(monkeypatch):
+    monkeypatch.delenv("MISSING_VAR", raising=False)
+    with pytest.raises(RuntimeError, match="Missing required environment variable: MISSING_VAR"):
+        sh._require_env("MISSING_VAR")

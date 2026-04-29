@@ -45,6 +45,35 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
         return filename.split('.').pop().toUpperCase();
     };
 
+    const formatDate = (dateStr) => {
+        if (!dateStr) return "";
+        try {
+            // Jika sudah ada tanda | berarti sudah terformat, langsung kembalikan
+            if (dateStr.includes(" | ")) return dateStr;
+            
+            // Coba bersihkan format string tanggal
+            const isoString = dateStr.includes(" ") ? dateStr.replace(" ", "T") : dateStr;
+            const dateObj = new Date(isoString);
+            
+            if (isNaN(dateObj.getTime())) return dateStr;
+
+            const d = dateObj.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            const t = dateObj.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace('.', ':');
+
+            return `${d} | ${t}`;
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-white z-[150] flex flex-col font-sans text-slate-900 animate-in fade-in duration-300">
             {/* Topbar */}
@@ -115,7 +144,7 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
                                     <div className="text-xl font-extrabold text-foreground font-headline tracking-tight">{result?.nama_murid || result?.name}</div>
                                     <div className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2 mt-1.5">
                                         <Clock size={14} className="text-primary/60" />
-                                        Submitted {result?.created_at}
+                                        Submitted {formatDate(result?.created_at)}
                                     </div>
                                 </div>
                             </div>
@@ -216,9 +245,8 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
                 <div className="w-full lg:w-[420px] bg-slate-50/50 overflow-y-auto relative z-10 flex flex-col shadow-[inset_1px_0_0_0_rgba(0,0,0,0.05)]">
                     <div className="p-8 lg:p-10 space-y-5 flex-1">
                         {/* Score Section */}
-                        <div className="bg-white border-2 border-primary/20 rounded-[2.5rem] p-10 shadow-md shadow-primary/5 text-center relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-125 duration-700"></div>
-                            <div className="text-lg font-black text-primary uppercase tracking-[0.1em] mb-6 font-sans relative z-10">Score</div>
+                        <div className="bg-white border-2 border-slate-100 rounded-[2.5rem] p-10 shadow-sm group hover:border-primary/20 transition-all text-center relative overflow-hidden">
+                            <div className="text-lg font-black uppercase tracking-[0.1em] mb-6 font-sans relative z-10">Score</div>
                             <div className="relative z-10 flex items-center justify-center gap-4">
                                 <input
                                     type="number"
@@ -234,7 +262,7 @@ export default function ManualReview({ result, assignment, onClose, onSave }) {
                                             setReviewForm({ ...reviewForm, grade: 0 });
                                         }
                                     }}
-                                    className="w-32 bg-surface-low border-2 border-slate-100 rounded-3xl px-6 py-5 text-4xl font-black text-primary focus:border-primary focus:ring-8 focus:ring-primary/10 outline-none transition-all shadow-inner text-center"
+                                    className="w-32 bg-surface-low border-2 border-slate-100 rounded-3xl px-6 py-5 text-4xl font-black text-slate-900 focus:border-primary focus:ring-8 focus:ring-primary/10 outline-none transition-all shadow-inner text-center"
                                 />
                                 <span className="text-slate-300 text-3xl font-black font-headline ml-1">/ 100</span>
                             </div>

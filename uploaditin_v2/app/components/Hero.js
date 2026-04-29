@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Play } from "lucide-react";
 import { motion } from "framer-motion";
+import { useSession } from "../hooks/useSession";
 
 function AnimatedScore() {
     const [score, setScore] = useState(95);
@@ -37,6 +38,8 @@ function AnimatedScore() {
 }
 
 export default function Hero() {
+    const { session } = useSession();
+
     return (
         <section className="relative pt-24 pb-16 lg:pt-36 lg:pb-20 overflow-hidden bg-background">
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
@@ -58,7 +61,7 @@ export default function Hero() {
                         </motion.div>
 
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex items-center gap-4">
-                            <Link href="/login-register" className="px-8 py-4 rounded-xl bg-gradient-to-r from-primary to-primary-container text-white font-bold transition-all duration-200 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-0.5 flex items-center gap-2">
+                            <Link href={session ? "/dashboard" : "/login-register"} className="px-8 py-4 rounded-xl bg-gradient-to-r from-primary to-primary-container text-white font-bold transition-all duration-200 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-0.5 flex items-center gap-2">
                                 Start Now <ArrowRight size={20} />
                             </Link>
                             <Link href="#how-it-works" className="px-8 py-4 rounded-xl bg-white text-slate-700 font-bold border border-slate-200 transition-all duration-200 hover:bg-slate-50 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2">

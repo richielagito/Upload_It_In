@@ -2,8 +2,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { Facebook, Instagram, Linkedin, Heart } from 'lucide-react';
+import { useSession } from '../hooks/useSession';
 
 export default function Footer() {
+  const { session } = useSession();
   return (
     <footer className="bg-foreground text-white py-24">
       <div className="container mx-auto px-6">
@@ -24,7 +26,7 @@ export default function Footer() {
                 <ul className="space-y-4 font-sans">
                     <li><Link href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">How It Works</Link></li>
                     <li><Link href="#features" className="text-slate-400 hover:text-white transition-colors">Features</Link></li>
-                    <li><Link href="/login-register" className="text-slate-400 hover:text-white transition-colors">Get Started</Link></li>
+                    <li><Link href={session ? "/dashboard" : "/login-register"} className="text-slate-400 hover:text-white transition-colors">Get Started</Link></li>
                 </ul>
             </div>
 

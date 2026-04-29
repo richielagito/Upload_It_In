@@ -40,8 +40,8 @@ def get_engine():
     return _engine
 
 
-def simpan_ke_postgres(results):
-    """Simpan atau update hasil penilaian menggunakan ON CONFLICT (atomic upsert) secara bulk."""
+def simpan_ke_postgres(results, conn=None):
+    """Simpan hasil penilaian. Menggunakan INSERT biasa (tanpa ON CONFLICT) untuk mendukung versi."""
     if not results:
         return
 
@@ -61,33 +61,25 @@ def simpan_ke_postgres(results):
             else None,
             "highlights": json.dumps(r.get("highlights")) if r.get("highlights") else None,
             "essay_text": r.get("essay_text"),
+            "version": r.get("version", 1),
+            "is_active": r.get("is_active", True),
         }
         for r in results
     ]
 
+    query = text("""
+        INSERT INTO hasil_penilaian
+            (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores, highlights, essay_text, version, is_active)
+        VALUES
+            (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores, :highlights, :essay_text, :version, :is_active)
+    """)
+
     try:
-        with get_engine().begin() as conn:
-            conn.execute(
-                text("""
-                    INSERT INTO hasil_penilaian
-                        (nama_murid, similarity, nilai, user_id, kelas_id, assignment_id, file_path, status, feedback, sub_criteria_scores, highlights, essay_text)
-                    VALUES
-                        (:name, :similarity, :grade, :user_id, :kelas_id, :assignment_id, :file_path, :status, :feedback, :sub_criteria_scores, :highlights, :essay_text)
-                    ON CONFLICT (user_id, assignment_id)
-                    DO UPDATE SET
-                        nama_murid  = EXCLUDED.nama_murid,
-                        similarity  = EXCLUDED.similarity,
-                        nilai       = EXCLUDED.nilai,
-                        file_path   = EXCLUDED.file_path,
-                        status      = EXCLUDED.status,
-                        feedback    = EXCLUDED.feedback,
-                        sub_criteria_scores = EXCLUDED.sub_criteria_scores,
-                        highlights  = EXCLUDED.highlights,
-                        essay_text  = EXCLUDED.essay_text,
-                        updated_at  = NOW()
-                """),
-                params,
-            )
+        if conn is not None:
+            conn.execute(query, params)
+        else:
+            with get_engine().begin() as c:
+                c.execute(query, params)
     except Exception:
         logger.exception("Gagal menyimpan ke PostgreSQL")
         traceback.print_exc()

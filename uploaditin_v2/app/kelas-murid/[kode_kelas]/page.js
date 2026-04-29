@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, FileText, Upload, Download, CheckCircle, Clock, AlertCircle, UploadCloud } from 'lucide-react';
@@ -90,24 +90,26 @@ export default function ClassDetailsStudent() {
         }, 1500);
     };
 
-    const handleTurnIn = async () => {
-        if (!stagedFile || !activeAssignment) return;
+    const handleTurnIn = async (assignmentOverride = null) => {
+        const targetAssignment = assignmentOverride || activeAssignment;
+        if (!stagedFile || !targetAssignment) return;
 
-        setUploadingId(activeAssignment.id);
+        setUploadingId(targetAssignment.id);
         const formData = new FormData();
         formData.append('file', stagedFile);
 
         try {
-            const res = await fetch(`/api/assignments/upload/${activeAssignment.id}`, {
+            const res = await fetch(`/api/assignments/upload/${targetAssignment.id}`, {
                 method: 'POST',
                 body: formData
             });
-
+            
+            // ... (rest of the logic remains same, but use targetAssignment)
             let data;
             try {
                 data = await res.json();
             } catch (e) {
-                throw new Error(`Server returned an invalid response (Status: ${res.status}). This usually means the request timed out because the AI took too long to respond.`);
+                throw new Error(`Server returned an invalid response (Status: ${res.status}).`);
             }
 
             if (res.ok && data?.success) {
@@ -119,7 +121,7 @@ export default function ClassDetailsStudent() {
                 const newRes = await fetch(`/api/results/kelas-kode/${kode_kelas}`);
                 if (newRes.ok) {
                     const resultsData = await newRes.json();
-                    const updatedResult = resultsData.find(r => r.assignment_id === activeAssignment.id);
+                    const updatedResult = resultsData.find(r => r.assignment_id === targetAssignment.id);
                     setActiveResult(updatedResult);
                 }
             } else {
@@ -133,11 +135,12 @@ export default function ClassDetailsStudent() {
         }
     };
 
-    const handleUndo = async () => {
-        if (!activeAssignment) return;
+    const handleUndo = async (assignmentOverride = null) => {
+        const targetAssignment = assignmentOverride || activeAssignment;
+        if (!targetAssignment) return;
 
         try {
-            const res = await fetch(`/api/submissions/undo/${activeAssignment.id}`, {
+            const res = await fetch(`/api/submissions/undo/${targetAssignment.id}`, {
                 method: 'POST'
             });
             const data = await res.json();
@@ -146,8 +149,10 @@ export default function ClassDetailsStudent() {
                 toast.success(data.message);
                 await Promise.all([fetchAssignments(), fetchMyResults()]);
                 // Update local state to reflect no submission
-                setActiveResult(null);
-                setStagedFile(null);
+                if (activeAssignment?.id === targetAssignment.id) {
+                    setActiveResult(null);
+                    setStagedFile(null);
+                }
             } else {
                 toast.error(data.error || "Failed to undo submission");
             }
@@ -157,6 +162,8 @@ export default function ClassDetailsStudent() {
         }
     };
 
+    const resultsMap = useMemo(() => new Map(myResults.map(r => [r.assignment_id, r])), [myResults]);
+
     if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
 
     const activeDeadlineDate = activeAssignment?.deadline ? new Date(activeAssignment.deadline.replace(' ', 'T')) : null;
@@ -164,6 +171,12 @@ export default function ClassDetailsStudent() {
 
     return (
         <DashboardShell role="Student" username={user?.user_metadata?.username}>
+            <input
+                type="file"
+                id={`file-stage-input`}
+                className="hidden"
+                onChange={(e) => handleStageFile(e, activeAssignment?.id)}
+            />
             <div className="mb-8">
                 {viewMode === 'list' ? (
                     <Link href="/dashboard" className="text-slate-500 hover:text-primary flex items-center gap-2 mb-6 text-sm font-bold font-sans transition-colors group">
@@ -199,73 +212,46 @@ export default function ClassDetailsStudent() {
             </div>
 
             {viewMode === 'list' ? (
-                <div className="columns-1 md:columns-2 gap-8 space-y-8 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                     {assignments.map(ass => {
                         const deadlineDate = ass.deadline ? new Date(ass.deadline.replace(' ', 'T')) : null;
-                        const isClosed = deadlineDate && new Date() > deadlineDate;
-                        const result = myResults.find(r => r.assignment_id === ass.id);
-                        const isGraded = !!result && ass.is_published;
-
-                        // This should have been the assignment cards
+                        const isDeadlineOpen = !deadlineDate || new Date() < deadlineDate;
+                        const result = resultsMap.get(ass.id);
+                        
                         return (
-                            <div key={ass.id} className="break-inside-avoid-column bg-white rounded-[2rem] border-2 border-slate-100 p-8 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all flex flex-col mb-8 last:mb-0 group">
-                                <div className="flex justify-between items-start mb-4">
-                                    <h3 className="text-2xl font-extrabold text-foreground font-headline group-hover:text-primary transition-colors">{ass.judul}</h3>
-                                    {ass.is_submitted && (
-                                        <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest border border-emerald-100">
-                                            Submitted
-                                        </span>
-                                    )}
-                                </div>
-                                <p className="text-slate-600 mb-8 text-sm leading-relaxed flex-1 font-sans font-medium line-clamp-3">{ass.deskripsi}</p>
-
-                                {/* Grade Summary (if graded AND published) */}
-                                {isGraded && (
-                                    <div className="mb-8 p-5 bg-surface-low border border-primary/10 rounded-[1.5rem] flex items-center justify-between shadow-inner">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans mb-1">Score</span>
-                                            <span className="text-2xl font-black text-primary font-headline">{result.nilai || result.grade}</span>
-                                        </div>
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest text-center font-sans mb-1">Grade</span>
-                                            <span className={cn(
-                                                "px-3 py-1 rounded-lg text-xs font-black shadow-sm",
-                                                parseFloat(result.nilai) >= 80 ? "bg-green-100 text-green-700 border border-green-200" :
-                                                    parseFloat(result.nilai) >= 60 ? "bg-yellow-100 text-yellow-700 border border-yellow-200" : "bg-red-100 text-red-700 border border-red-200"
-                                            )}>
-                                                {parseFloat(result.nilai) >= 80 ? 'A' : parseFloat(result.nilai) >= 60 ? 'B/C' : parseFloat(result.nilai) < 60 ? 'D/E' : '-'}
-                                            </span>
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest font-sans mb-1">Similarity</span>
-                                            <span className="text-sm font-black text-slate-700 font-mono">{(result.similarity * 100).toFixed(0)}%</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="space-y-3 mb-8 text-sm font-bold font-sans uppercase tracking-widest text-slate-400">
-                                    <div className="flex items-center gap-3">
-                                        <Clock size={16} className="text-primary" />
-                                        <span className={isClosed ? "text-red-500" : "text-slate-500"}>
-                                            Deadline: {ass.deadline} {isClosed && "(Closed)"}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="pt-6 border-t border-slate-100 mt-auto">
-                                    <button
-                                        onClick={() => {
-                                            setActiveAssignment(ass);
-                                            setActiveResult(result);
-                                            setViewMode('detail');
-                                            setStagedFile(null);
-                                        }}
-                                        className="w-full py-4 bg-primary text-white rounded-2xl font-extrabold hover:bg-primary-container transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 font-headline"
-                                    >
-                                        <FileText size={20} /> View Detail {isGraded && "& Feedback"}
-                                    </button>
-                                </div>
-                            </div>
+                            <AssignmentCard 
+                                key={ass.id}
+                                assignment={ass}
+                                result={result}
+                                isListView={true}
+                                stagedFile={activeAssignment?.id === ass.id ? stagedFile : null}
+                                isStaging={activeAssignment?.id === ass.id && isStaging}
+                                isUploading={uploadingId === ass.id}
+                                isDeadlineOpen={isDeadlineOpen}
+                                onStage={(val) => {
+                                    if (val === null) {
+                                        setStagedFile(null);
+                                    } else if (val instanceof File) {
+                                        setActiveAssignment(ass);
+                                        // Use a small timeout to ensure activeAssignment is set
+                                        setTimeout(() => {
+                                            const mockEvent = { target: { files: [val] } };
+                                            handleStageFile(mockEvent, ass.id);
+                                        }, 10);
+                                    } else {
+                                        setActiveAssignment(ass);
+                                        setTimeout(() => document.getElementById(`file-stage-input`)?.click(), 10);
+                                    }
+                                }}
+                                onTurnIn={() => handleTurnIn(ass)}
+                                onUndo={() => handleUndo(ass)}
+                                onViewDetail={() => {
+                                    setActiveAssignment(ass);
+                                    setActiveResult(result);
+                                    setViewMode('detail');
+                                    setStagedFile(null);
+                                }}
+                            />
                         );
                     })}
                     {assignments.length === 0 && (
@@ -287,26 +273,26 @@ export default function ClassDetailsStudent() {
                             onChange={(e) => handleStageFile(e, activeAssignment.id)}
                         />
 
-                        <AssignmentCard
-                            assignment={activeAssignment}
-                            result={activeResult}
-                            stagedFile={stagedFile}
-                            isStaging={isStaging}
-                            isUploading={uploadingId === activeAssignment.id}
-                            isDeadlineOpen={isActiveDeadlineOpen}
-                            onStage={(val) => {
-                                if (val === null) setStagedFile(null);
-                                else document.getElementById(`file-stage-input`)?.click();
-                            }}
-                            onTurnIn={handleTurnIn}
-                            onUndo={handleUndo}
-                        />
-
-                        {activeResult && activeAssignment.is_published && (
+                        {activeResult && activeAssignment.is_published ? (
                             <FeedbackPanel
                                 assignment={activeAssignment}
                                 result={activeResult}
                                 onClose={() => setViewMode('list')}
+                            />
+                        ) : (
+                            <AssignmentCard
+                                assignment={activeAssignment}
+                                result={activeResult}
+                                stagedFile={stagedFile}
+                                isStaging={isStaging}
+                                isUploading={uploadingId === activeAssignment.id}
+                                isDeadlineOpen={isActiveDeadlineOpen}
+                                onStage={(val) => {
+                                    if (val === null) setStagedFile(null);
+                                    else document.getElementById(`file-stage-input`)?.click();
+                                }}
+                                onTurnIn={() => handleTurnIn(activeAssignment)}
+                                onUndo={() => handleUndo(activeAssignment)}
                             />
                         )}
                     </div>

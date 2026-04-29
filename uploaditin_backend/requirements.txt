@@ -9,7 +9,7 @@ requests==2.32.3
 
 # --- Database ---
 SQLAlchemy==2.0.41
-psycopg2-binary==2.9.10
+psycopg2-binary>=2.9.10
 
 # --- Supabase storage ---
 supabase

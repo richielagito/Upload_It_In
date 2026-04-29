@@ -2,6 +2,9 @@
 const backendUrl = process.env.BACKEND_URL || "http://127.0.0.1:5000";
 
 const nextConfig = {
+    experimental: {
+        proxyTimeout: 300_000, // 5 minutes — AI grading can be slow
+    },
     async rewrites() {
         return [
             {

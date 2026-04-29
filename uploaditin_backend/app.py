@@ -7,7 +7,6 @@ import logging
 import os
 import pathlib
 import random
-import re
 import string
 import sys
 import tempfile
@@ -58,7 +57,19 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)
+
+_allowed_origins_raw = os.getenv("ALLOWED_ORIGINS")
+if _allowed_origins_raw is None:
+    allowed_origins = ["http://localhost:3000"]
+else:
+    allowed_origins = [origin.strip() for origin in _allowed_origins_raw.split(",") if origin.strip()]
+    if not allowed_origins:
+        raise RuntimeError(
+            "ALLOWED_ORIGINS is set but does not contain any valid origins. "
+            "Provide a comma-separated list of origins, for example: "
+            "\"http://localhost:3000,https://example.com\""
+        )
+CORS(app, origins=allowed_origins)
 
 # --- Security: secret key wajib di-set via environment variable ---
 _secret = os.getenv("FLASK_SECRET_KEY")
@@ -119,10 +130,6 @@ def generate_unique_class_code(length: int = 6):
         if not row:
             break
     return code
-
-
-def clean_part(s: str) -> str:
-    return re.sub(r'[\\/*?:"<>| ]', "", s)
 
 
 def get_clean_ext(url: str) -> str:
@@ -539,9 +546,7 @@ def api_results():
     if 'user_id' not in session:
         return jsonify([]), 401
     
-    role = session.get('role')
-    status = 'published' if role == 'Student' else None
-    results = fetch_all_results(session['user_id'], status=status)
+    results = fetch_all_results(session['user_id'])
     return jsonify(results)
 
 
@@ -550,9 +555,7 @@ def api_results_by_kelas(kelas_id):
     if 'user_id' not in session:
         return jsonify([]), 401
     
-    role = session.get('role')
-    status = 'published' if role == 'Student' else None
-    results = fetch_results_by_kelas(kelas_id, status=status)
+    results = fetch_results_by_kelas(kelas_id)
     return jsonify(results)
 
 
@@ -561,9 +564,7 @@ def api_results_by_kode_kelas(kode_kelas):
     if 'user_id' not in session:
         return jsonify([]), 401
     
-    role = session.get('role')
-    status = 'published' if role == 'Student' else None
-    results = fetch_results_by_kode_kelas(kode_kelas, session['user_id'], status=status)
+    results = fetch_results_by_kode_kelas(kode_kelas, session['user_id'])
     return jsonify(results)
 
 
@@ -817,7 +818,10 @@ def api_get_assignments_by_kode_kelas(kode_kelas):
                         SELECT 1 FROM hasil_penilaian hp
                         WHERE hp.assignment_id = a.id AND hp.user_id = :uid AND hp.is_active = TRUE
                     ) as is_submitted,
-                    a.is_published
+                    a.is_published,
+                    (SELECT COALESCE(MAX(version), 0) FROM hasil_penilaian hp
+                     WHERE hp.assignment_id = a.id AND hp.user_id = :uid
+                    ) as max_version
                 FROM assignments a
                 WHERE a.kelas_id = :kid
                 ORDER BY a.created_at DESC
@@ -837,7 +841,8 @@ def api_get_assignments_by_kode_kelas(kode_kelas):
         "jawaban_path": a[5],
         "created_at": a[6].strftime("%Y-%m-%d %H:%M"),
         "is_submitted": a[7],
-        "is_published": a[8]
+        "is_published": a[8],
+        "max_version": a[9]
     } for a in assignments])
 
 
@@ -884,7 +889,7 @@ def api_undo_submission(assignment_id):
                 {"sid": submission[0]}
             )
 
-        return jsonify({"success": true, "message": "Berhasil membatalkan pengumpulan. Silakan unggah ulang jika perlu."})
+        return jsonify({"success": True, "message": "Berhasil membatalkan pengumpulan. Silakan unggah ulang jika perlu."})
         
     except Exception:
         logger.exception("Error undoing submission")
@@ -1089,7 +1094,22 @@ def api_upload_student_answer(assignment_id):
     }
 
     try:
-        simpan_ke_postgres([result_to_save])
+        with get_engine().begin() as txn:
+            max_version_row = txn.execute(
+                text("SELECT COALESCE(MAX(version), 0) FROM hasil_penilaian WHERE user_id = :uid AND assignment_id = :aid"),
+                {"uid": session['user_id'], "aid": assignment_id}
+            ).fetchone()
+            max_version = max_version_row[0] if max_version_row else 0
+            
+            txn.execute(
+                text("UPDATE hasil_penilaian SET is_active = FALSE WHERE user_id = :uid AND assignment_id = :aid"),
+                {"uid": session['user_id'], "aid": assignment_id}
+            )
+            
+            result_to_save["version"] = max_version + 1
+            result_to_save["is_active"] = True
+            
+            simpan_ke_postgres([result_to_save], conn=txn)
     except Exception:
         logger.exception("Error saving student submission")
         return jsonify({"error": "Gagal menyimpan hasil unggahan siswa."}), 500
