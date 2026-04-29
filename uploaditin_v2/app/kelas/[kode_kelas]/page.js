@@ -25,10 +25,6 @@ export default function ClassDetailsTeacher() {
   const [loading, setLoading] = useState(true);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState(null);
 
-  const selectedAssignment = useMemo(() => {
-    return assignments.find(a => a.id === selectedAssignmentId);
-  }, [assignments, selectedAssignmentId]);
-
   // Modals
   const [isAddAssignmentOpen, setIsAddAssignmentOpen] = useState(false);
   const [isEditClassOpen, setIsEditClassOpen] = useState(false);
@@ -36,6 +32,11 @@ export default function ClassDetailsTeacher() {
 
   // Review Modal State
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+
+  const selectedAssignment = useMemo(() => {
+    if (!isReviewOpen || !selectedAssignmentId) return null;
+    return assignments.find(a => a.id === selectedAssignmentId);
+  }, [assignments, selectedAssignmentId, isReviewOpen]);
   const [reviewingResult, setReviewingResult] = useState(null);
   const [reviewForm, setReviewReviewForm] = useState({
       grade: 0,
