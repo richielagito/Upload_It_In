@@ -24,6 +24,12 @@ Welcome to **Upload It In**, the intelligent, automated essay grading platform d
 
 ---
 
+## 🔧 For Developers
+
+Looking to run Upload It In locally, configure environment variables, or contribute to the codebase? See the **[Developer Setup Guide (DEVELOPMENT.md)](./DEVELOPMENT.md)** for architecture details, prerequisites, environment variables, run instructions, and the test suite.
+
+---
+
 ## 👥 The Team
 
 We are a dedicated team of professionals committed to transforming educational technology:

@@ -18,9 +18,15 @@ We designed this portal to make your academic life smoother. As a student, you c
 - **Simple Submissions:** Upload your essay answers easily using PDF, DOCX, or TXT formats.
 - **Instant Feedback:** View your grades as soon as your assignment is evaluated by our smart system.
 
+---
+
 ## ⚙️ For Administrators
 
 Keep the platform running smoothly with our comprehensive admin tools:
 - **User Management:** Oversee all teacher and student accounts to ensure a safe learning environment.
 - **Platform Analytics:** Get a bird's-eye view of total classes, active assignments, and system usage.
 - **Content Control:** Easily customize and update the platform's landing page content.
+
+---
+
+> **Developer setup →** See [DEVELOPMENT.md](../DEVELOPMENT.md) for install commands, environment variables, and local run instructions for the Next.js frontend and Flask backend.
