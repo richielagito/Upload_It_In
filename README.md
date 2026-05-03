@@ -1,6 +1,6 @@
-# Upload It In — Automated Essay Grading System
+# SCOVA — Automated Essay Grading System
 
-Welcome to **Upload It In**, the intelligent, automated essay grading platform designed to simplify the lives of educators and empower students. Our system instantly evaluates essay answers, saving teachers countless hours of manual grading while providing quick and consistent feedback.
+Meet **SCOVA**, formerly UploadItIn, the intelligent, automated essay grading platform designed to simplify the lives of educators and empower students. Our system instantly evaluates essay answers, saving teachers countless hours of manual grading while providing quick and consistent feedback.
 
 ---
 
